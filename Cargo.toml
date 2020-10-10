@@ -4,6 +4,11 @@ version = "0.0.1"
 authors = ["m.amin.rayej <m.amin.rayej@gmail.com>"]
 edition = "2018"
 readme = "README.md"
+license-file = "LICENSE"
+description = "A graph library with simplicity in mind"
+repository = "https://github.com/maminrayej/prepona"
+homepage = "https://github.com/maminrayej/prepona"
+documentation = "https://docs.rs/prepona"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
