@@ -22,13 +22,12 @@ impl<T: Any> PartialEq<T> for Infinity {
             let other_inf = Infinity::from_ref(other).unwrap();
 
             match (self, other_inf) {
-                (Infinity::PosInfinity, Infinity::PosInfinity) => {
-                    panic!("Operator == can not be applied to two PosInfinity")
-                }
-                (Infinity::PosInfinity, Infinity::NegInfinity) => false,
+                (Infinity::PosInfinity, Infinity::NegInfinity) |
                 (Infinity::NegInfinity, Infinity::PosInfinity) => false,
+
+                (Infinity::PosInfinity, Infinity::PosInfinity) |
                 (Infinity::NegInfinity, Infinity::NegInfinity) => {
-                    panic!("Operator == can not be applied to two NegInfinity")
+                    panic!("Two PosInfinity or two NegInfinity are not comparable")
                 }
             };
         }
@@ -42,19 +41,18 @@ impl<T: Any> PartialOrd<T> for Infinity {
     fn partial_cmp(&self, _: &T) -> Option<std::cmp::Ordering> {
         panic!("Not all comparison operators are supported for Infinity")
     }
-
+    
     fn lt(&self, other: &T) -> bool {
         if other.type_id() == self.type_id() {
             let other_inf = Infinity::from_ref(other).unwrap();
 
             match (self, other_inf) {
-                (Infinity::PosInfinity, Infinity::PosInfinity) => {
-                    panic!("Operator < can not be applied to two PosInfinity")
-                }
                 (Infinity::PosInfinity, Infinity::NegInfinity) => false,
                 (Infinity::NegInfinity, Infinity::PosInfinity) => true,
+                
+                (Infinity::PosInfinity, Infinity::PosInfinity) |
                 (Infinity::NegInfinity, Infinity::NegInfinity) => {
-                    panic!("Operator < can not be applied to two NegInfinity")
+                    panic!("Two PosInfinity or two NegInfinity are not comparable")
                 }
             };
         }
@@ -66,21 +64,7 @@ impl<T: Any> PartialOrd<T> for Infinity {
     }
 
     fn gt(&self, other: &T) -> bool {
-        if other.type_id() == self.type_id() {
-            let other_inf = Infinity::from_ref(other).unwrap();
-
-            match (self, other_inf) {
-                (Infinity::PosInfinity, Infinity::PosInfinity) => {
-                    panic!("Operator < can not be applied to two PosInfinity")
-                }
-                (Infinity::PosInfinity, Infinity::NegInfinity) => true,
-                (Infinity::NegInfinity, Infinity::PosInfinity) => false,
-                (Infinity::NegInfinity, Infinity::NegInfinity) => {
-                    panic!("Operator < can not be applied to two NegInfinity")
-                }
-            };
-        }
-        matches!(&self, Infinity::PosInfinity)
+        !self.le(other)
     }
 
     fn ge(&self, other: &T) -> bool {
@@ -99,5 +83,6 @@ mod tests {
         assert!(pos_inf > 0);
         assert!(neg_inf < 0);
         assert!(neg_inf < pos_inf);
+        assert!(pos_inf > neg_inf);
     }
 }
