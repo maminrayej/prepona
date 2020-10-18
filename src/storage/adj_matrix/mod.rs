@@ -1,7 +1,10 @@
 mod utils;
 
 use magnitude::Magnitude;
+use std::any::Any;
 use std::collections::HashSet;
+
+use crate::storage::GraphStorage;
 
 pub struct AdjMatrix<W> {
     vec: Vec<Magnitude<W>>,
@@ -9,7 +12,7 @@ pub struct AdjMatrix<W> {
     vertex_count: usize,
 }
 
-impl<W> AdjMatrix<W> {
+impl<W: Any> AdjMatrix<W> {
     pub fn init() -> Self {
         AdjMatrix {
             vec: vec![],
@@ -18,7 +21,23 @@ impl<W> AdjMatrix<W> {
         }
     }
 
-    pub fn add_vertex(&mut self) -> usize {
+    fn next_reusable_id(&mut self) -> Option<usize> {
+        if let Some(id) = self.reusable_ids.iter().take(1).next().copied() {
+            self.reusable_ids.remove(&id);
+
+            Some(id)
+        } else {
+            None
+        }
+    }
+
+    pub fn total_vertex_count(&self) -> usize {
+        self.vertex_count() + self.reusable_ids.len()
+    }
+}
+
+impl<W: Any> GraphStorage<W> for AdjMatrix<W> {
+    fn add_vertex(&mut self) -> usize {
         if let Some(reusable_id) = self.next_reusable_id() {
             reusable_id
         } else {
@@ -32,7 +51,7 @@ impl<W> AdjMatrix<W> {
         }
     }
 
-    pub fn remove_vertex(&mut self, vertex_id: usize) {
+    fn remove_vertex(&mut self, vertex_id: usize) {
         self.reusable_ids.insert(vertex_id);
 
         for other_id in 0..self.total_vertex_count() {
@@ -43,22 +62,20 @@ impl<W> AdjMatrix<W> {
         self.vertex_count -= 1;
     }
 
-    pub fn vertex_count(&self) -> usize {
+    fn add_edge(&mut self, vertex1: usize, vertex2: usize, edge: Magnitude<W>) {
+        self[(vertex1, vertex2)] = edge;
+    }
+
+    fn remove_edge(&mut self, vertex1: usize, vertex2: usize) -> Magnitude<W> {
+        let mut edge = Magnitude::PosInfinite;
+
+        std::mem::swap(&mut self[(vertex1, vertex2)], &mut edge);
+
+        edge
+    }
+
+    fn vertex_count(&self) -> usize {
         self.vertex_count
-    }
-
-    pub fn total_vertex_count(&self) -> usize {
-        self.vertex_count() + self.reusable_ids.len()
-    }
-
-    fn next_reusable_id(&mut self) -> Option<usize> {
-        if let Some(id) = self.reusable_ids.iter().take(1).next().copied() {
-            self.reusable_ids.remove(&id);
-
-            Some(id)
-        } else {
-            None
-        }
     }
 }
 
