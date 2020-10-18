@@ -4,20 +4,23 @@ use magnitude::Magnitude;
 use std::any::Any;
 use std::collections::HashSet;
 
+use crate::graph::EdgeType;
 use crate::storage::GraphStorage;
 
 pub struct AdjMatrix<W> {
     vec: Vec<Magnitude<W>>,
     reusable_ids: HashSet<usize>,
     vertex_count: usize,
+    edge_type: EdgeType,
 }
 
-impl<W: Any> AdjMatrix<W> {
-    pub fn init() -> Self {
+impl<W> AdjMatrix<W> {
+    pub fn init(edge_type: EdgeType) -> Self {
         AdjMatrix {
             vec: vec![],
             reusable_ids: HashSet::new(),
             vertex_count: 0,
+            edge_type,
         }
     }
 
@@ -32,7 +35,15 @@ impl<W: Any> AdjMatrix<W> {
     }
 
     pub fn total_vertex_count(&self) -> usize {
-        self.vertex_count() + self.reusable_ids.len()
+        self.vertex_count + self.reusable_ids.len()
+    }
+
+    pub fn is_directed(&self) -> bool {
+        self.edge_type.is_directed()
+    }
+
+    pub fn is_undirected(&self) -> bool {
+        self.edge_type.is_undirected()
     }
 }
 
@@ -41,7 +52,11 @@ impl<W: Any> GraphStorage<W> for AdjMatrix<W> {
         if let Some(reusable_id) = self.next_reusable_id() {
             reusable_id
         } else {
-            let new_size = self.vec.len() + 2 * self.total_vertex_count() + 1;
+            let new_size = if self.is_directed() {
+                self.vec.len() + 2 * self.total_vertex_count() + 1
+            } else {
+                self.total_vertex_count() + 1
+            };
 
             self.vec.resize_with(new_size, || Magnitude::PosInfinite);
 
@@ -96,7 +111,7 @@ impl<W> Index<(usize, usize)> for AdjMatrix<W> {
             _ => (),
         }
 
-        let index = utils::from_ij(i, j);
+        let index = utils::from_ij(i, j, self.is_directed());
 
         if index < self.vec.len() {
             &self.vec[index]
@@ -124,7 +139,7 @@ impl<W> IndexMut<(usize, usize)> for AdjMatrix<W> {
             _ => (),
         }
 
-        let index = utils::from_ij(i, j);
+        let index = utils::from_ij(i, j, self.is_directed());
 
         if index < self.vec.len() {
             &mut self.vec[index]
@@ -144,7 +159,7 @@ mod tests {
 
     #[test]
     fn add_vertex() {
-        let mut adj_matrix = AdjMatrix::<usize>::init();
+        let mut adj_matrix = AdjMatrix::<usize>::init(EdgeType::Directed);
 
         for i in 0usize..10 {
             let vertex_id = adj_matrix.add_vertex();
@@ -157,7 +172,7 @@ mod tests {
 
     #[test]
     fn access_using_index() {
-        let mut adj_matrix = AdjMatrix::<usize>::init();
+        let mut adj_matrix = AdjMatrix::<usize>::init(EdgeType::Directed);
 
         for _ in 0usize..10 {
             let _ = adj_matrix.add_vertex();

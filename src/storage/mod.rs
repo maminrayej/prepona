@@ -5,14 +5,16 @@ pub use adj_matrix::AdjMatrix;
 use magnitude::Magnitude;
 use std::any::Any;
 
+use crate::graph::EdgeType;
+
 pub enum Storage {
     AdjMatrix,
 }
 
 impl Storage {
-    pub fn init_storage<W: Any>(&self) -> impl GraphStorage<W> {
+    pub fn init_storage<W: Any>(&self, edge_type: EdgeType) -> impl GraphStorage<W> {
         match self {
-            Storage::AdjMatrix => AdjMatrix::init(),
+            Storage::AdjMatrix => AdjMatrix::init(edge_type),
         }
     }
 }
