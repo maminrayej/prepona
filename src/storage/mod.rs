@@ -12,10 +12,10 @@ pub enum Storage {
 }
 
 impl Storage {
-    pub fn init_storage<W: Any>(&self, edge_type: EdgeType) -> impl GraphStorage<W> {
-        match self {
-            Storage::AdjMatrix => AdjMatrix::init(edge_type),
-        }
+    pub fn init<W: Any>(&self, edge_type: EdgeType) -> Box<dyn GraphStorage<W>> {
+        Box::new(match self {
+            Storage::AdjMatrix => AdjMatrix::<W>::init(edge_type),
+        })
     }
 }
 
