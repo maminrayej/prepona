@@ -55,7 +55,7 @@ impl<W: Any> GraphStorage<W> for AdjMatrix<W> {
             let new_size = if self.is_directed() {
                 self.vec.len() + 2 * self.total_vertex_count() + 1
             } else {
-                self.total_vertex_count() + 1
+                self.vec.len() + self.total_vertex_count() + 1
             };
 
             self.vec.resize_with(new_size, || Magnitude::PosInfinite);
@@ -67,12 +67,12 @@ impl<W: Any> GraphStorage<W> for AdjMatrix<W> {
     }
 
     fn remove_vertex(&mut self, vertex_id: usize) {
-        self.reusable_ids.insert(vertex_id);
-
-        for other_id in 0..self.total_vertex_count() {
+        for other_id in self.vertices() {
             self[(vertex_id, other_id)] = Magnitude::PosInfinite;
             self[(other_id, vertex_id)] = Magnitude::PosInfinite;
         }
+
+        self.reusable_ids.insert(vertex_id);
 
         self.vertex_count -= 1;
     }
@@ -91,6 +91,15 @@ impl<W: Any> GraphStorage<W> for AdjMatrix<W> {
 
     fn vertex_count(&self) -> usize {
         self.vertex_count
+    }
+
+    fn vertices(&self) -> Vec<usize> {
+        let total_vertices: HashSet<usize> = (0..self.total_vertex_count()).into_iter().collect();
+
+        total_vertices
+            .difference(&self.reusable_ids)
+            .copied()
+            .collect()
     }
 }
 
@@ -158,29 +167,157 @@ mod tests {
     use super::*;
 
     #[test]
-    fn add_vertex() {
+    fn directed_add_vertex() {
         let mut adj_matrix = AdjMatrix::<usize>::init(EdgeType::Directed);
 
-        for i in 0usize..10 {
-            let vertex_id = adj_matrix.add_vertex();
-            assert_eq!(i, vertex_id);
+        for i in 0..10 {
+            let v_id = adj_matrix.add_vertex();
+            assert!(v_id == i);
         }
 
-        assert_eq!(adj_matrix.vertex_count(), 10);
-        assert_eq!(adj_matrix.vec.len(), 100);
+        assert!(adj_matrix.vertex_count == 10);
+        assert!(adj_matrix.vec.len() == 100);
     }
 
     #[test]
-    fn access_using_index() {
-        let mut adj_matrix = AdjMatrix::<usize>::init(EdgeType::Directed);
+    fn undirected_add_vertex() {
+        let mut adj_matrix = AdjMatrix::<usize>::init(EdgeType::Undirected);
 
-        for _ in 0usize..10 {
-            let _ = adj_matrix.add_vertex();
+        for i in 0..10 {
+            let v_id = adj_matrix.add_vertex();
+            assert!(v_id == i);
         }
 
-        for i in 0..adj_matrix.vertex_count() {
-            for j in 0..adj_matrix.vertex_count() {
-                assert!(adj_matrix[(i, j)].is_pos_infinite())
+        assert!(adj_matrix.vertex_count == 10);
+        assert!(adj_matrix.vec.len() == 55);
+    }
+
+    #[test]
+    fn directed_remove_vertex() {
+        let mut adj_matrix = AdjMatrix::<usize>::init(EdgeType::Directed);
+
+        for i in 0..10 {
+            let v_id = adj_matrix.add_vertex();
+            assert!(v_id == i);
+        }
+
+        for i in 0..10 {
+            adj_matrix.remove_vertex(i);
+            assert!(adj_matrix.vertex_count() == 10 - (i + 1))
+        }
+
+        for value in adj_matrix.vec {
+            assert!(value.is_pos_infinite())
+        }
+    }
+
+    #[test]
+    fn undirected_remove_vertex() {
+        let mut adj_matrix = AdjMatrix::<usize>::init(EdgeType::Undirected);
+
+        for i in 0..10 {
+            let v_id = adj_matrix.add_vertex();
+            assert!(v_id == i);
+        }
+
+        for i in 0..10 {
+            adj_matrix.remove_vertex(i);
+            assert!(adj_matrix.vertex_count() == 10 - (i + 1))
+        }
+
+        for value in adj_matrix.vec {
+            assert!(value.is_pos_infinite())
+        }
+    }
+
+    #[test]
+    fn directed_add_edge() {
+        let mut adj_matrix = AdjMatrix::<usize>::init(EdgeType::Directed);
+
+        for i in 0..10 {
+            let v_id = adj_matrix.add_vertex();
+            assert!(v_id == i);
+        }
+
+        for v1 in adj_matrix.vertices() {
+            for v2 in adj_matrix.vertices() {
+                adj_matrix[(v1, v2)] = (v1 * 2 + v2).into();
+            }
+        }
+
+        for v1 in adj_matrix.vertices() {
+            for v2 in adj_matrix.vertices() {
+                assert_eq!(adj_matrix[(v1, v2)], (v1 * 2 + v2).into());
+            }
+        }
+    }
+
+    #[test]
+    fn undirected_add_edge() {
+        let mut adj_matrix = AdjMatrix::<usize>::init(EdgeType::Undirected);
+
+        for i in 0..10 {
+            let v_id = adj_matrix.add_vertex();
+            assert!(v_id == i);
+        }
+
+        for v1 in adj_matrix.vertices() {
+            for v2 in 0..=v1 {
+                adj_matrix[(v1, v2)] = (v1 * 2 + v2).into();
+            }
+        }
+
+        for v1 in adj_matrix.vertices() {
+            for v2 in 0..=v1 {
+                assert_eq!(adj_matrix[(v1, v2)], (v1 * 2 + v2).into());
+                assert_eq!(adj_matrix[(v2, v1)], (v1 * 2 + v2).into());
+            }
+        }
+    }
+
+    #[test]
+    fn directed_remove_edge() {
+        let mut adj_matrix = AdjMatrix::<usize>::init(EdgeType::Directed);
+
+        for i in 0..10 {
+            let v_id = adj_matrix.add_vertex();
+            assert!(v_id == i);
+        }
+
+        for v1 in adj_matrix.vertices() {
+            for v2 in adj_matrix.vertices() {
+                adj_matrix[(v1, v2)] = (v1 * 2 + v2).into();
+            }
+        }
+
+        for v1 in adj_matrix.vertices() {
+            for v2 in adj_matrix.vertices() {
+                adj_matrix.remove_edge(v1, v2);
+                assert!(adj_matrix[(v1, v2)].is_pos_infinite());
+            }
+        }
+    }
+
+    #[test]
+    fn undirected_remove_edge() {
+        let mut adj_matrix = AdjMatrix::<usize>::init(EdgeType::Undirected);
+
+        for i in 0..10 {
+            let v_id = adj_matrix.add_vertex();
+            assert!(v_id == i);
+        }
+
+        for v1 in adj_matrix.vertices() {
+            for v2 in 0..=v1 {
+                adj_matrix[(v1, v2)] = (v1 * 2 + v2).into();
+            }
+        }
+
+        for v1 in adj_matrix.vertices() {
+            for v2 in 0..=v1 {
+                adj_matrix.remove_edge(v1, v2);
+                assert!(adj_matrix[(v1, v2)].is_pos_infinite());
+                assert!(adj_matrix[(v2, v1)].is_pos_infinite());
             }
         }
     }

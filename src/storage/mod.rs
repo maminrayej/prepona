@@ -29,4 +29,6 @@ pub trait GraphStorage<W> {
     fn remove_edge(&mut self, src_vertex_id: usize, dst_vertex_id: usize) -> Magnitude<W>;
 
     fn vertex_count(&self) -> usize;
+
+    fn vertices(&self) -> Vec<usize>;
 }
