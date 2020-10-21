@@ -46,4 +46,12 @@ impl<W: Any + Copy> SimpleGraph<W> {
     pub fn vertices_count(&self) -> usize {
         self.storage.vertex_count()
     }
+
+    pub fn edges(&self) -> Vec<(usize, usize, Magnitude<W>)> {
+        self.storage.edges()
+    }
+
+    pub fn neighbors(&self, src_index: usize) -> Vec<usize> {
+        self.storage.neighbors(src_index)
+    }
 }
