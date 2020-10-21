@@ -219,9 +219,8 @@ mod tests {
     fn directed_remove_vertex() {
         let mut adj_matrix = AdjMatrix::<usize>::init(EdgeType::Directed);
 
-        for i in 0..10 {
-            let v_id = adj_matrix.add_vertex();
-            assert!(v_id == i);
+        for _ in 0..10 {
+            let _ = adj_matrix.add_vertex();
         }
 
         for i in 0..10 {
@@ -238,9 +237,8 @@ mod tests {
     fn undirected_remove_vertex() {
         let mut adj_matrix = AdjMatrix::<usize>::init(EdgeType::Undirected);
 
-        for i in 0..10 {
-            let v_id = adj_matrix.add_vertex();
-            assert!(v_id == i);
+        for _ in 0..10 {
+            let _ = adj_matrix.add_vertex();
         }
 
         for i in 0..10 {
@@ -257,9 +255,8 @@ mod tests {
     fn directed_add_edge() {
         let mut adj_matrix = AdjMatrix::<usize>::init(EdgeType::Directed);
 
-        for i in 0..10 {
-            let v_id = adj_matrix.add_vertex();
-            assert!(v_id == i);
+        for _ in 0..10 {
+            let _ = adj_matrix.add_vertex();
         }
 
         for v1 in adj_matrix.vertices() {
@@ -279,9 +276,8 @@ mod tests {
     fn undirected_add_edge() {
         let mut adj_matrix = AdjMatrix::<usize>::init(EdgeType::Undirected);
 
-        for i in 0..10 {
-            let v_id = adj_matrix.add_vertex();
-            assert!(v_id == i);
+        for _ in 0..10 {
+            let _ = adj_matrix.add_vertex();
         }
 
         for v1 in adj_matrix.vertices() {
@@ -302,9 +298,8 @@ mod tests {
     fn directed_remove_edge() {
         let mut adj_matrix = AdjMatrix::<usize>::init(EdgeType::Directed);
 
-        for i in 0..10 {
-            let v_id = adj_matrix.add_vertex();
-            assert!(v_id == i);
+        for _ in 0..10 {
+            let _ = adj_matrix.add_vertex();
         }
 
         for v1 in adj_matrix.vertices() {
@@ -325,9 +320,8 @@ mod tests {
     fn undirected_remove_edge() {
         let mut adj_matrix = AdjMatrix::<usize>::init(EdgeType::Undirected);
 
-        for i in 0..10 {
-            let v_id = adj_matrix.add_vertex();
-            assert!(v_id == i);
+        for _ in 0..10 {
+            let _ = adj_matrix.add_vertex();
         }
 
         for v1 in adj_matrix.vertices() {
@@ -349,9 +343,8 @@ mod tests {
     fn vertices() {
         let mut adj_matrix = AdjMatrix::<usize>::init(EdgeType::Undirected);
 
-        for i in 0..10 {
-            let v_id = adj_matrix.add_vertex();
-            assert!(v_id == i);
+        for _ in 0..10 {
+            let _ = adj_matrix.add_vertex();
         }
 
         for i in (0..10).step_by(2) {
@@ -370,9 +363,8 @@ mod tests {
     fn edges_directed() {
         let mut adj_matrix = AdjMatrix::<usize>::init(EdgeType::Directed);
 
-        for i in 0..5 {
-            let v_id = adj_matrix.add_vertex();
-            assert!(v_id == i);
+        for _ in 0..5 {
+            let _ = adj_matrix.add_vertex();
         }
 
         for i in (0..5).step_by(2) {
@@ -397,9 +389,8 @@ mod tests {
     fn edges_undirected() {
         let mut adj_matrix = AdjMatrix::<usize>::init(EdgeType::Undirected);
 
-        for i in 0..5 {
-            let v_id = adj_matrix.add_vertex();
-            assert!(v_id == i);
+        for _ in 0..5 {
+            let _ = adj_matrix.add_vertex();
         }
 
         for i in (0..5).step_by(2) {
@@ -423,9 +414,8 @@ mod tests {
     fn neighbors_directed() {
         let mut adj_matrix = AdjMatrix::<usize>::init(EdgeType::Directed);
 
-        for i in 0..5 {
-            let v_id = adj_matrix.add_vertex();
-            assert!(v_id == i);
+        for _ in 0..5 {
+            let _ = adj_matrix.add_vertex();
         }
 
         adj_matrix[(1, 3)] = 3.into();
@@ -451,9 +441,8 @@ mod tests {
     fn neighbors_undirected() {
         let mut adj_matrix = AdjMatrix::<usize>::init(EdgeType::Undirected);
 
-        for i in 0..5 {
-            let v_id = adj_matrix.add_vertex();
-            assert!(v_id == i);
+        for _ in 0..5 {
+            let _ = adj_matrix.add_vertex();
         }
 
         adj_matrix[(1, 3)] = 3.into();
