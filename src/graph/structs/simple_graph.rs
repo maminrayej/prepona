@@ -2,6 +2,7 @@ use magnitude::Magnitude;
 use std::any::Any;
 
 use crate::graph::EdgeType;
+use crate::provide;
 use crate::storage::{GraphStorage, Storage};
 
 pub struct SimpleGraph<W> {
@@ -50,8 +51,12 @@ impl<W: Any + Copy> SimpleGraph<W> {
     pub fn edges(&self) -> Vec<(usize, usize, Magnitude<W>)> {
         self.storage.edges()
     }
+}
 
-    pub fn neighbors(&self, src_index: usize) -> Vec<usize> {
-        self.storage.neighbors(src_index)
+impl<W> provide::Neighbors for SimpleGraph<W> {
+    fn neighbors(&self, v_index: usize) -> Vec<usize> {
+        self.storage.neighbors(v_index)
     }
 }
+
+impl<W> provide::Graph for SimpleGraph<W> {}
