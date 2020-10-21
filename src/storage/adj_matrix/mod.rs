@@ -47,7 +47,7 @@ impl<W> AdjMatrix<W> {
     }
 }
 
-impl<W: Any> GraphStorage<W> for AdjMatrix<W> {
+impl<W: Any + Copy> GraphStorage<W> for AdjMatrix<W> {
     fn add_vertex(&mut self) -> usize {
         if let Some(reusable_id) = self.next_reusable_id() {
             reusable_id
@@ -98,6 +98,24 @@ impl<W: Any> GraphStorage<W> for AdjMatrix<W> {
 
         total_vertices
             .difference(&self.reusable_ids)
+            .copied()
+            .collect()
+    }
+
+    fn edges(&self) -> Vec<(usize, usize, Magnitude<W>)> {
+        let vertices = self.vertices();
+
+        vertices
+            .iter()
+            .zip(vertices.iter())
+            .map(|(v1, v2)| (*v1, *v2, self[(*v1, *v2)]))
+            .collect()
+    }
+
+    fn neighbors(&self, src_index: usize) -> Vec<usize> {
+        self.vertices()
+            .iter()
+            .filter(|v_index| self[(src_index, **v_index)].is_finite())
             .copied()
             .collect()
     }

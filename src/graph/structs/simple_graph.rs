@@ -8,7 +8,7 @@ pub struct SimpleGraph<W> {
     storage: Box<dyn GraphStorage<W>>,
 }
 
-impl<W: Any> SimpleGraph<W> {
+impl<W: Any + Copy> SimpleGraph<W> {
     pub fn init(storage: Storage, edge_type: EdgeType) -> Self {
         SimpleGraph {
             storage: storage.init::<W>(edge_type),

@@ -12,7 +12,7 @@ pub enum Storage {
 }
 
 impl Storage {
-    pub fn init<W: Any>(&self, edge_type: EdgeType) -> Box<dyn GraphStorage<W>> {
+    pub fn init<W: Any + Copy>(&self, edge_type: EdgeType) -> Box<dyn GraphStorage<W>> {
         Box::new(match self {
             Storage::AdjMatrix => AdjMatrix::<W>::init(edge_type),
         })
@@ -31,4 +31,8 @@ pub trait GraphStorage<W> {
     fn vertex_count(&self) -> usize;
 
     fn vertices(&self) -> Vec<usize>;
+
+    fn edges(&self) -> Vec<(usize, usize, Magnitude<W>)>;
+
+    fn neighbors(&self, src_index: usize) -> Vec<usize>;
 }
