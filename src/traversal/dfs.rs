@@ -23,9 +23,9 @@ impl Dfs {
             let mut undiscovered_neighbors = graph
                 .neighbors(v_index)
                 .iter()
-                .filter(|&&neighbor_index| {
-                    !self.discovered.contains(&neighbor_index)
-                        && !self.stack.contains(&neighbor_index)
+                .filter(|&neighbor_index| {
+                    !self.discovered.contains(neighbor_index)
+                        && !self.stack.contains(neighbor_index)
                 })
                 .copied()
                 .collect::<Vec<usize>>();

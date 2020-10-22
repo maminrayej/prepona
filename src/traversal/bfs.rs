@@ -25,7 +25,10 @@ impl Bfs {
             let undiscovered_neighbors = graph
                 .neighbors(v_index)
                 .iter()
-                .filter(|&&neighbor_index| !self.discovered.contains(&neighbor_index) && !self.queue.contains(&neighbor_index))
+                .filter(|&neighbor_index| {
+                    !self.discovered.contains(neighbor_index)
+                        && !self.queue.contains(neighbor_index)
+                })
                 .copied()
                 .collect::<Vec<usize>>();
 

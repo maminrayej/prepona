@@ -94,11 +94,9 @@ impl<W: Any + Copy> GraphStorage<W> for AdjMatrix<W> {
     }
 
     fn vertices(&self) -> Vec<usize> {
-        let total_vertices: HashSet<usize> = (0..self.total_vertex_count()).into_iter().collect();
-
-        total_vertices
-            .difference(&self.reusable_ids)
-            .copied()
+        (0..self.total_vertex_count())
+            .into_iter()
+            .filter(|v_id| !self.reusable_ids.contains(v_id))
             .collect()
     }
 
@@ -117,8 +115,16 @@ impl<W: Any + Copy> GraphStorage<W> for AdjMatrix<W> {
             .collect()
     }
 
+    fn edges_from(&self, src_index: usize) -> Vec<(usize, Magnitude<W>)> {
+        self.vertices()
+            .into_iter()
+            .map(|dst_index| (dst_index, self[(src_index, dst_index)]))
+            .filter(|(_, weight)| weight.is_finite())
+            .collect()
+    }
+
     fn neighbors(&self, src_index: usize) -> Vec<usize> {
-        (0..self.total_vertex_count())
+        self.vertices()
             .into_iter()
             .filter(|dst_index| self[(src_index, *dst_index)].is_finite())
             .collect()

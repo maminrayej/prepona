@@ -34,5 +34,7 @@ pub trait GraphStorage<W> {
 
     fn edges(&self) -> Vec<(usize, usize, Magnitude<W>)>;
 
+    fn edges_from(&self, src_index: usize) -> Vec<(usize, Magnitude<W>)>;
+
     fn neighbors(&self, src_index: usize) -> Vec<usize>;
 }

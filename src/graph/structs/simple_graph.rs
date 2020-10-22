@@ -51,6 +51,10 @@ impl<W: Any + Copy> SimpleGraph<W> {
     pub fn edges(&self) -> Vec<(usize, usize, Magnitude<W>)> {
         self.storage.edges()
     }
+
+    pub fn edges_from(&self, src_index: usize) -> Vec<(usize, Magnitude<W>)> {
+        self.storage.edges_from(src_index)
+    }
 }
 
 impl<W> provide::Neighbors for SimpleGraph<W> {
