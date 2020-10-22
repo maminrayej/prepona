@@ -4,14 +4,14 @@ use crate::provide;
 
 pub struct Dfs {
     stack: Vec<usize>,
-    discovered: HashSet<usize>,
+    visited: HashSet<usize>,
 }
 
 impl Dfs {
     pub fn init(src_index: usize) -> Self {
         Dfs {
             stack: vec![src_index],
-            discovered: HashSet::new(),
+            visited: HashSet::new(),
         }
     }
 
@@ -24,7 +24,7 @@ impl Dfs {
                 .neighbors(v_index)
                 .iter()
                 .filter(|&neighbor_index| {
-                    !self.discovered.contains(neighbor_index)
+                    !self.visited.contains(neighbor_index)
                         && !self.stack.contains(neighbor_index)
                 })
                 .copied()
@@ -32,11 +32,36 @@ impl Dfs {
 
             self.stack.append(&mut undiscovered_neighbors);
 
-            self.discovered.insert(v_index);
+            self.visited.insert(v_index);
 
             Some(v_index)
         } else {
             None
+        }
+    }
+
+    pub fn traverse_with<G, F>(&mut self, graph: &G, mut callback: F)
+    where
+        G: provide::Graph + provide::Neighbors,
+        F: FnMut(usize, &Vec<usize>, &Vec<usize>, &HashSet<usize>),
+    {
+        while let Some(current_vertex) = self.stack.pop() {
+            let neighbors = graph.neighbors(current_vertex);
+
+            callback(current_vertex, &neighbors, &self.stack, &self.visited);
+
+            let mut undiscovered_neighbors = neighbors
+                .iter()
+                .filter(|&neighbor_index| {
+                    !self.visited.contains(neighbor_index)
+                        && !self.stack.contains(neighbor_index)
+                })
+                .copied()
+                .collect::<Vec<usize>>();
+
+            self.stack.append(&mut undiscovered_neighbors);
+
+            self.visited.insert(current_vertex);
         }
     }
 }
