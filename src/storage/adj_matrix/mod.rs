@@ -118,10 +118,9 @@ impl<W: Any + Copy> GraphStorage<W> for AdjMatrix<W> {
     }
 
     fn neighbors(&self, src_index: usize) -> Vec<usize> {
-        self.vertices()
-            .iter()
-            .filter(|dst_index| self[(src_index, **dst_index)].is_finite())
-            .copied()
+        (0..self.total_vertex_count())
+            .into_iter()
+            .filter(|dst_index| self[(src_index, *dst_index)].is_finite())
             .collect()
     }
 }
