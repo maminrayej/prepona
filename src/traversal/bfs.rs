@@ -17,9 +17,9 @@ impl Bfs {
         }
     }
 
-    pub fn next<G>(&mut self, graph: &G) -> Option<usize>
+    pub fn next<G, W>(&mut self, graph: &G) -> Option<usize>
     where
-        G: provide::Graph + provide::Neighbors,
+        G: provide::Graph<W> + provide::Neighbors,
     {
         if let Some(v_index) = self.queue.pop_front() {
             let undiscovered_neighbors = graph
@@ -49,6 +49,7 @@ mod tests {
     use crate::graph::structs::SimpleGraph;
     use crate::graph::EdgeType;
     use crate::storage::Storage;
+    use crate::provide::*;
 
     #[test]
     fn dense_graph() {
