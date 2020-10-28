@@ -37,4 +37,10 @@ pub trait GraphStorage<W> {
     fn edges_from(&self, src_index: usize) -> Vec<(usize, Magnitude<W>)>;
 
     fn neighbors(&self, src_index: usize) -> Vec<usize>;
+
+    fn is_directed(&self) -> bool;
+
+    fn is_undirected(&self) -> bool {
+        !self.is_directed()
+    }
 }

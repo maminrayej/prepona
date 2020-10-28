@@ -67,4 +67,8 @@ impl<W> provide::Graph<W> for SimpleGraph<W> {
     fn remove_edge(&mut self, v1: usize, v2: usize) -> Magnitude<W> {
         self.storage.remove_edge(v1, v2)
     }
+
+    fn is_directed(&self) -> bool {
+        self.storage.is_directed()
+    }
 }

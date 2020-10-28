@@ -37,14 +37,6 @@ impl<W> AdjMatrix<W> {
     pub fn total_vertex_count(&self) -> usize {
         self.vertex_count + self.reusable_ids.len()
     }
-
-    pub fn is_directed(&self) -> bool {
-        self.edge_type.is_directed()
-    }
-
-    pub fn is_undirected(&self) -> bool {
-        self.edge_type.is_undirected()
-    }
 }
 
 impl<W: Any + Copy> GraphStorage<W> for AdjMatrix<W> {
@@ -129,10 +121,14 @@ impl<W: Any + Copy> GraphStorage<W> for AdjMatrix<W> {
             .filter(|dst_index| self[(src_index, *dst_index)].is_finite())
             .collect()
     }
+
+    fn is_directed(&self) -> bool {
+        self.edge_type.is_directed()
+    }
 }
 
 use std::ops::{Index, IndexMut};
-impl<W> Index<(usize, usize)> for AdjMatrix<W> {
+impl<W: Copy + std::any::Any> Index<(usize, usize)> for AdjMatrix<W> {
     type Output = Magnitude<W>;
 
     fn index(&self, index: (usize, usize)) -> &Self::Output {
@@ -162,7 +158,7 @@ impl<W> Index<(usize, usize)> for AdjMatrix<W> {
     }
 }
 
-impl<W> IndexMut<(usize, usize)> for AdjMatrix<W> {
+impl<W: Copy + std::any::Any> IndexMut<(usize, usize)> for AdjMatrix<W> {
     fn index_mut(&mut self, index: (usize, usize)) -> &mut Self::Output {
         let (i, j) = index;
 

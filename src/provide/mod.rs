@@ -35,4 +35,10 @@ pub trait Graph<W> {
     fn add_edge(&mut self, src_vertex_id: usize, dst_vertex_id: usize, edge_weight: Magnitude<W>);
 
     fn remove_edge(&mut self, src_vertex_id: usize, dst_vertex_id: usize) -> Magnitude<W>;
+
+    fn is_directed(&self) -> bool;
+
+    fn is_undirected(&self) -> bool {
+        !self.is_directed()
+    }
 }

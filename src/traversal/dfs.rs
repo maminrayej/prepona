@@ -24,8 +24,7 @@ impl Dfs {
                 .neighbors(v_index)
                 .iter()
                 .filter(|&neighbor_index| {
-                    !self.visited.contains(neighbor_index)
-                        && !self.stack.contains(neighbor_index)
+                    !self.visited.contains(neighbor_index) && !self.stack.contains(neighbor_index)
                 })
                 .copied()
                 .collect::<Vec<usize>>();
@@ -40,29 +39,12 @@ impl Dfs {
         }
     }
 
-    pub fn traverse_with<G, W, F>(&mut self, graph: &G, mut callback: F)
-    where
-        G: provide::Graph<W> + provide::Neighbors,
-        F: FnMut(usize, &Vec<usize>, &Vec<usize>, &HashSet<usize>),
-    {
-        while let Some(current_vertex) = self.stack.pop() {
-            let neighbors = graph.neighbors(current_vertex);
+    pub fn get_stack(&self) -> &Vec<usize> {
+        &self.stack
+    }
 
-            callback(current_vertex, &neighbors, &self.stack, &self.visited);
-
-            let mut undiscovered_neighbors = neighbors
-                .iter()
-                .filter(|&neighbor_index| {
-                    !self.visited.contains(neighbor_index)
-                        && !self.stack.contains(neighbor_index)
-                })
-                .copied()
-                .collect::<Vec<usize>>();
-
-            self.stack.append(&mut undiscovered_neighbors);
-
-            self.visited.insert(current_vertex);
-        }
+    pub fn get_visited(&self) -> &HashSet<usize> {
+        &self.visited
     }
 }
 
@@ -71,8 +53,8 @@ mod tests {
     use super::*;
     use crate::graph::structs::SimpleGraph;
     use crate::graph::EdgeType;
-    use crate::storage::Storage;
     use crate::provide::*;
+    use crate::storage::Storage;
 
     #[test]
     fn dense_graph() {
