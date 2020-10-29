@@ -15,7 +15,7 @@ use crate::storage::GraphStorage;
 ///
 /// # Conventions:
 /// * |V| represents total number of vertices in the adjacency matrix: \
-/// number of vertices present in the graph + number of removed vertices that are present in the adjacency matrix
+/// number of vertices present in the graph + number of removed vertices that are present in the adjacency matrix.
 pub struct AdjMatrix<W> {
     // AdjMatrix uses a flat vector to store the adjacency matrix and uses a mapping function to map the (i,j) tuple to an index.
     // this mapping function depends on wether the matrix is used to store directed or undirected edges.
@@ -31,13 +31,13 @@ pub struct AdjMatrix<W> {
 }
 
 impl<W> AdjMatrix<W> {
-    /// Initializes an adjacency matrix
+    /// Initializes an adjacency matrix.
     ///
     /// # Arguments:
-    /// * `edge_type`: indicates wether the adjacency matrix is going to store directed or undirected edges
+    /// * `edge_type`: indicates wether the adjacency matrix is going to store directed or undirected edges.
     ///
     /// # Returns:
-    /// an adjacency matrix
+    /// An adjacency matrix.
     pub fn init(edge_type: EdgeType) -> Self {
         AdjMatrix {
             vec: vec![],
@@ -48,7 +48,7 @@ impl<W> AdjMatrix<W> {
     }
 
     // If there exists a reusable id, this method returns it and removes the id from the reusable_ids struct.
-    // If there is no reusable id, this method returns None
+    // If there is no reusable id, this method returns None.
     //
     // Complexity:
     // O(1)
@@ -66,7 +66,7 @@ impl<W> AdjMatrix<W> {
     /// In other words this method return the number of rows/columns of the adjacency matrix.
     ///
     /// # Returns:
-    /// total number of vertices present in the adjacency matrix: |V|
+    /// Total number of vertices present in the adjacency matrix: |V|.
     ///
     /// # Complexity:
     /// O(1)
@@ -79,11 +79,11 @@ impl<W: Any + Copy> GraphStorage<W> for AdjMatrix<W> {
     /// Adds a vertex into the adjacency matrix.
     ///
     /// # Returns:
-    /// id of the newly inserted vertex
+    /// Id of the newly inserted vertex.
     ///
     /// # Complexity:
-    /// * if there exists a reusable id: O(1)
-    /// * else: O(|V|)
+    /// * If there exists a reusable id: O(1).
+    /// * Else: O(|V|).
     fn add_vertex(&mut self) -> usize {
         if let Some(reusable_id) = self.next_reusable_id() {
             reusable_id
@@ -108,12 +108,12 @@ impl<W: Any + Copy> GraphStorage<W> for AdjMatrix<W> {
     /// Removes a vertex from the adjacency matrix.
     ///
     /// # Arguments:
-    /// * `vertex_id`: id of the vertex to be removed
+    /// * `vertex_id`: id of the vertex to be removed.
     ///
     /// # Complexity:
-    /// O(|V|)
+    /// O(|V|).
     fn remove_vertex(&mut self, vertex_id: usize) {
-        // When a vertex is removed, row and column corresponding to that vertex must be filled with positive infinity
+        // When a vertex is removed, row and column corresponding to that vertex must be filled with positive infinity.
         // ex: if vertex with id: 1 got removed
         //  ___________
         // |   | ∞ |   |
@@ -125,7 +125,7 @@ impl<W: Any + Copy> GraphStorage<W> for AdjMatrix<W> {
             self[(other_id, vertex_id)] = Magnitude::PosInfinite;
         }
 
-        // removed vertex id is now reusable
+        // Removed vertex id is now reusable
         self.reusable_ids.insert(vertex_id);
 
         self.vertex_count -= 1;
@@ -134,34 +134,35 @@ impl<W: Any + Copy> GraphStorage<W> for AdjMatrix<W> {
     /// Adds an edge from vertex with `src_id` to vertex with `dst_id`.
     ///
     /// # Arguments:
-    /// * `src_id`: id of the vertex at the start of the edge
-    /// * `dst_id`: id of the vertex at the end of the edge
+    /// * `src_id`: Id of the vertex at the start of the edge.
+    /// * `dst_id`: Id of the vertex at the end of the edge.
+    /// * `weight`: Weight of the edge between `src_id` and `dst_id`.
     ///
     /// # Panics:
-    /// * if vertex with `src_id` or `dst_id` is not present in the graph
-    /// * if slot [`src_id`][`dst_id`] is out of bounds
+    /// * If vertex with `src_id` or `dst_id` is not present in the graph.
+    /// * If slot [`src_id`][`dst_id`] is out of bounds.
     ///
     /// # Complexity:
-    /// O(1)
-    fn add_edge(&mut self, src_id: usize, dst_id: usize, edge_weight: Magnitude<W>) {
-        self[(src_id, dst_id)] = edge_weight;
+    /// O(1).
+    fn add_edge(&mut self, src_id: usize, dst_id: usize, weight: Magnitude<W>) {
+        self[(src_id, dst_id)] = weight;
     }
 
     /// Removes the edge from vertex with `src_id` to vertex with `dst_id`.
     ///
     /// # Arguments:
-    /// * `src_id`: id of the vertex at the start of the edge
-    /// * `dst_id`: id of the vertex at the end of the edge
+    /// * `src_id`: Id of the vertex at the start of the edge.
+    /// * `dst_id`: Id of the vertex at the end of the edge.
     ///
     /// # Returns:
-    /// The weight of the removed edge
+    /// The weight of the removed edge.
     ///
     /// # Panics:
-    /// * if vertex with `src_id` or `dst_id` is not present in the graph
-    /// * if slot [`src_id`][`dst_id`] is out of bounds
+    /// * If vertex with `src_id` or `dst_id` is not present in the graph.
+    /// * If slot [`src_id`][`dst_id`] is out of bounds.
     ///
     /// # Complexity:
-    /// O(1)
+    /// O(1).
     fn remove_edge(&mut self, src_id: usize, dst_id: usize) -> Magnitude<W> {
         let mut edge = Magnitude::PosInfinite;
 
@@ -171,21 +172,21 @@ impl<W: Any + Copy> GraphStorage<W> for AdjMatrix<W> {
     }
 
     /// # Returns:
-    /// number of vertices present in the graph
+    /// Number of vertices present in the graph.
     ///
     /// # Complexity:
-    /// O(1)
+    /// O(1).
     fn vertex_count(&self) -> usize {
         self.vertex_count
     }
 
     /// # Returns:
-    /// vector of vertex ids that are present in the graph
+    /// Vector of vertex ids that are present in the graph.
     ///
     /// # Complexity:
-    /// O(|V|)
+    /// O(|V|).
     fn vertices(&self) -> Vec<usize> {
-        // Out of all vertex ids, filter out the ones that are reusable(hence are removed and not present in the graph)
+        // Out of all vertex ids, filter out the ones that are reusable(hence are removed and not present in the graph).
         (0..self.total_vertex_count())
             .into_iter()
             .filter(|v_id| !self.reusable_ids.contains(v_id))
@@ -193,17 +194,17 @@ impl<W: Any + Copy> GraphStorage<W> for AdjMatrix<W> {
     }
 
     /// # Returns:
-    /// vector of edges in the format of (`src_id`, `dst_id`, `weight`)
+    /// Vector of edges in the format of (`src_id`, `dst_id`, `weight`).
     ///
     /// # Complexity:
-    /// O(|V|<sup>2</sup>)
+    /// O(|V|<sup>2</sup>).
     fn edges(&self) -> Vec<(usize, usize, Magnitude<W>)> {
         let vertices = self.vertices();
 
         // 1. Produce cartesian product: { vertices } x { vertices }:
-        //  1.1: for every vertex v1 produce (v1, v2): ∀v2 ∈ { vertices }
-        //  1.2: previous step will produce |V| vector of tuples each with length |V|, flat it to a single vector of |V|*|V| tuples
-        // 2. Map each tuple (v1, v2) to (v1, v2, weight of edge between v1 and v2)
+        //  1.1: For every vertex v1 produce (v1, v2): ∀v2 ∈ { vertices }.
+        //  1.2: Previous step will produce |V| vector of tuples each with length |V|, flat it to a single vector of |V|*|V| tuples.
+        // 2. Map each tuple (v1, v2) to (v1, v2, weight of edge between v1 and v2).
         vertices
             .iter()
             .flat_map(|v1| {
@@ -217,16 +218,16 @@ impl<W: Any + Copy> GraphStorage<W> for AdjMatrix<W> {
     }
 
     /// # Returns:
-    /// Vectors of edges from vertex with `src_id` in the format of (`dst_id`, `weight`)
+    /// Vector of edges from vertex with `src_id` in the format of (`dst_id`, `weight`).
     ///
     /// # Arguments:
-    /// * `src_id`: id of the source vertex
+    /// * `src_id`: Id of the source vertex.
     ///
     /// Complexity:
-    /// O(|V|)
+    /// O(|V|).
     fn edges_from(&self, src_id: usize) -> Vec<(usize, Magnitude<W>)> {
-        // 1. produce tuple (v, weight of edge between src and v): ∀v ∈ { vertices }
-        // 2. only keep those tuples that their weight is finite(weight with infinite value indicates absence of edge between src and v)
+        // 1. Produce tuple (v, weight of edge between src and v): ∀v ∈ { vertices }.
+        // 2. Only keep those tuples that their weight is finite(weight with infinite value indicates absence of edge between src and v).
         self.vertices()
             .into_iter()
             .map(|v_id| (v_id, self[(src_id, v_id)]))
@@ -235,15 +236,15 @@ impl<W: Any + Copy> GraphStorage<W> for AdjMatrix<W> {
     }
 
     /// # Returns:
-    /// Id of neighbors of the vertex with `src_id`
+    /// Id of neighbors of the vertex with `src_id`.
     ///
     /// # Arguments:
-    /// * `src_id`: id of the source vertex
+    /// * `src_id`: Id of the source vertex.
     ///
     /// # Complexity:
-    /// O(|V|)
+    /// O(|V|).
     fn neighbors(&self, src_id: usize) -> Vec<usize> {
-        // Of all vertices, only keep those that there exists a edge from vertex with `src_id` to them
+        // Of all vertices, only keep those that there exists a edge from vertex with `src_id` to them.
         self.vertices()
             .into_iter()
             .filter(|dst_id| self[(src_id, *dst_id)].is_finite())
@@ -251,10 +252,10 @@ impl<W: Any + Copy> GraphStorage<W> for AdjMatrix<W> {
     }
 
     /// # Returns:
-    /// `true` if edges stored in the matrix is directed `false` otherwise
+    /// `true` If edges stored in the matrix is directed `false` otherwise.
     ///
     /// # Complexity:
-    /// O(1)
+    /// O(1).
     fn is_directed(&self) -> bool {
         self.edge_type.is_directed()
     }
@@ -267,7 +268,7 @@ impl<W: Copy + Any> Index<(usize, usize)> for AdjMatrix<W> {
     fn index(&self, index: (usize, usize)) -> &Self::Output {
         let (src_id, dst_id) = index;
 
-        // make sure both src and dst vertices are present in the graph
+        // Make sure both src and dst vertices are present in the graph.
         match (
             self.reusable_ids.contains(&src_id),
             self.reusable_ids.contains(&dst_id),
@@ -287,7 +288,7 @@ impl<W: Copy + Any> Index<(usize, usize)> for AdjMatrix<W> {
             (false, false) => (),
         }
 
-        // map (src_id, dst_id) to the corresponding index in the flat vector
+        // Map (src_id, dst_id) to the corresponding index in the flat vector.
         let index = utils::from_ij(src_id, dst_id, self.is_directed());
 
         if index < self.vec.len() {
@@ -306,7 +307,7 @@ impl<W: Copy + Any> IndexMut<(usize, usize)> for AdjMatrix<W> {
     fn index_mut(&mut self, index: (usize, usize)) -> &mut Self::Output {
         let (src_id, dst_id) = index;
 
-        // make sure both src and dst vertices are present in the graph
+        // Make sure both src and dst vertices are present in the graph.
         match (
             self.reusable_ids.contains(&src_id),
             self.reusable_ids.contains(&dst_id),
@@ -326,7 +327,7 @@ impl<W: Copy + Any> IndexMut<(usize, usize)> for AdjMatrix<W> {
             (false, false) => (),
         }
 
-        // map (src_id, dst_id) to the corresponding index in the flat vector
+        // Map (src_id, dst_id) to the corresponding index in the flat vector.
         let index = utils::from_ij(src_id, dst_id, self.is_directed());
 
         if index < self.vec.len() {

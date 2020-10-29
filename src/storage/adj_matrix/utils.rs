@@ -19,7 +19,7 @@
 //      | 7| 8| 9|12|
 //      |13|14|15|16|
 //      -------------
-//      * Newly inserted items are marked with {}
+//      * Newly inserted items are marked with {}.
 //
 //      When we want to add vertex with id=3, we need to add row=3, column=3 and the diagonal slot [3,3].
 //      Therefore we need to allocate between 3 and 4, 6 and 7  and add the rest at the end of the vector.
@@ -41,7 +41,7 @@
 //      | 7| 8| 9|12|
 //      |13|14|15|16|
 //      -------------
-//      * Newly inserted items are marked with {}
+//      * Newly inserted items are marked with {}.
 //
 //      With this mapping when adding the vertex with id=3, the newly allocated row, column and diagonal slot will be added at the end of the vector.
 //
@@ -56,7 +56,7 @@ pub fn from_ij(mut i: usize, mut j: usize, is_directed: bool) -> usize {
         if j > i {
             std::mem::swap(&mut i, &mut j);
         }
-        // prevent division: i * (i + 1) is definitely an even number thus i * (i + 1) / 2 == i * (i + 1) >> 1
+        // Prevent division: i * (i + 1) is definitely an even number thus i * (i + 1) / 2 == i * (i + 1) >> 1.
         (i * (i + 1) >> 1) + j
     }
 }

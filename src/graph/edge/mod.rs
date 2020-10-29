@@ -4,14 +4,15 @@ pub enum EdgeType {
 }
 
 impl EdgeType {
+    /// # Returns:
+    /// * `true`: If edge is directed, `false` otherwise.
     pub fn is_directed(&self) -> bool {
-        match self {
-            EdgeType::Directed => true,
-            EdgeType::Undirected => false,
-        }
+        matches!(self, EdgeType::Directed)
     }
 
+    /// # Returns:
+    /// * `true`: If edge is undirected, `false` otherwise.
     pub fn is_undirected(&self) -> bool {
-        !self.is_directed()
+        matches!(self, EdgeType::Undirected)
     }
 }
