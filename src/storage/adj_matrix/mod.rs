@@ -229,9 +229,7 @@ mod tests {
             assert!(adj_matrix.vertex_count() == 10 - (i + 1))
         }
 
-        for value in adj_matrix.vec {
-            assert!(value.is_pos_infinite())
-        }
+        assert!(adj_matrix.vec.iter().all(|weight| weight.is_pos_infinite()));
     }
 
     #[test]
@@ -247,9 +245,7 @@ mod tests {
             assert!(adj_matrix.vertex_count() == 10 - (i + 1))
         }
 
-        for value in adj_matrix.vec {
-            assert!(value.is_pos_infinite())
-        }
+        assert!(adj_matrix.vec.iter().all(|weight| weight.is_pos_infinite()));
     }
 
     #[test]
@@ -352,12 +348,13 @@ mod tests {
             adj_matrix.remove_vertex(i);
         }
 
-        let mut vertices = adj_matrix.vertices();
-        vertices.sort();
-        assert_eq!(vertices, vec![1, 3, 5, 7, 9]);
+        let vertices = adj_matrix.vertices();
+        assert_eq!(vertices.len(), 5);
+        assert!(vec![1, 3, 5, 7, 9].iter().all(|v| vertices.contains(v)));
 
-        let reusable_ids = adj_matrix.reusable_ids;
-        assert_eq!(reusable_ids, vec![0, 2, 4, 6, 8].iter().copied().collect())
+        let reusable_ids = &adj_matrix.reusable_ids;
+        assert_eq!(reusable_ids.len(), 5);
+        assert!(vec![0, 2, 4, 6, 8].iter().all(|v| reusable_ids.contains(v)));
     }
 
     #[test]
@@ -453,6 +450,10 @@ mod tests {
         assert_eq!(one_neighbors.len(), 1);
         assert!(one_neighbors.contains(&3));
 
+        let three_neighbors = adj_matrix.neighbors(3);
+        assert_eq!(three_neighbors.len(), 1);
+        assert!(three_neighbors.contains(&1));
+
         let four_neighbors = adj_matrix.neighbors(4);
         assert_eq!(four_neighbors.len(), 1);
         assert!(four_neighbors.contains(&0));
@@ -460,10 +461,6 @@ mod tests {
         let zero_neighbors = adj_matrix.neighbors(0);
         assert_eq!(zero_neighbors.len(), 1);
         assert!(zero_neighbors.contains(&4));
-
-        let three_neighbors = adj_matrix.neighbors(3);
-        assert_eq!(three_neighbors.len(), 1);
-        assert!(three_neighbors.contains(&1));
 
         assert!(adj_matrix.neighbors(2).is_empty());
     }
