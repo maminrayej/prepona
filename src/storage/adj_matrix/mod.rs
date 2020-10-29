@@ -7,7 +7,7 @@ use std::collections::HashSet;
 use crate::graph::EdgeType;
 use crate::storage::GraphStorage;
 
-/// For a simple graph with vertex set *V*, the adjacency matrix is a square |V| × |V| matrix *A* 
+/// For a simple graph with vertex set *V*, the adjacency matrix is a square |V| × |V| matrix *A*
 /// such that its element *A<sub>ij</sub>* is the weight when there is an edge from vertex *i* to vertex *j*, and ∞ when there is no edge.
 ///
 /// In an undirected graph, the adjacency matrix is symmetric in the sense that: ∀ i,j *A<sub>ij</sub>* = *A<sub>ji</sub>*.
@@ -36,7 +36,7 @@ impl<W> AdjMatrix<W> {
     /// # Arguments:
     /// * `edge_type`: indicates wether the adjacency matrix is going to store directed or undirected edges
     ///
-    /// # Returns: 
+    /// # Returns:
     /// an adjacency matrix
     pub fn init(edge_type: EdgeType) -> Self {
         AdjMatrix {
@@ -50,7 +50,7 @@ impl<W> AdjMatrix<W> {
     // If there exists a reusable id, this method returns it and removes the id from the reusable_ids struct.
     // If there is no reusable id, this method returns None
     //
-    // Complexity: 
+    // Complexity:
     // O(1)
     fn next_reusable_id(&mut self) -> Option<usize> {
         if let Some(id) = self.reusable_ids.iter().take(1).next().copied() {
@@ -105,7 +105,6 @@ impl<W: Any + Copy> GraphStorage<W> for AdjMatrix<W> {
         }
     }
 
-
     /// Removes a vertex from the adjacency matrix.
     ///
     /// # Arguments:
@@ -131,7 +130,6 @@ impl<W: Any + Copy> GraphStorage<W> for AdjMatrix<W> {
 
         self.vertex_count -= 1;
     }
-
 
     /// Adds an edge from vertex with `src_id` to vertex with `dst_id`.
     ///
@@ -274,9 +272,18 @@ impl<W: Copy + Any> Index<(usize, usize)> for AdjMatrix<W> {
             self.reusable_ids.contains(&src_id),
             self.reusable_ids.contains(&dst_id),
         ) {
-            (true, true) => panic!("Vertices with id: {} and {} are not present in the graph", src_id, dst_id),
-            (true, false) => panic!(format!("Vertex with id: {} is not present in the graph", src_id)),
-            (false, true) => panic!(format!("Vertex with id: {} is not present in the graph", dst_id)),
+            (true, true) => panic!(
+                "Vertices with id: {} and {} are not present in the graph",
+                src_id, dst_id
+            ),
+            (true, false) => panic!(format!(
+                "Vertex with id: {} is not present in the graph",
+                src_id
+            )),
+            (false, true) => panic!(format!(
+                "Vertex with id: {} is not present in the graph",
+                dst_id
+            )),
             (false, false) => (),
         }
 
@@ -304,9 +311,18 @@ impl<W: Copy + Any> IndexMut<(usize, usize)> for AdjMatrix<W> {
             self.reusable_ids.contains(&src_id),
             self.reusable_ids.contains(&dst_id),
         ) {
-            (true, true) => panic!("Vertices with id: {} and {} are not present in the graph", src_id, dst_id),
-            (true, false) => panic!(format!("Vertex with id: {} is not present in the graph", src_id)),
-            (false, true) => panic!(format!("Vertex with id: {} is not present in the graph", dst_id)),
+            (true, true) => panic!(
+                "Vertices with id: {} and {} are not present in the graph",
+                src_id, dst_id
+            ),
+            (true, false) => panic!(format!(
+                "Vertex with id: {} is not present in the graph",
+                src_id
+            )),
+            (false, true) => panic!(format!(
+                "Vertex with id: {} is not present in the graph",
+                dst_id
+            )),
             (false, false) => (),
         }
 
