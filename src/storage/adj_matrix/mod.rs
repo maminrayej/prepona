@@ -143,8 +143,8 @@ impl<W: Any + Copy> GraphStorage<W> for AdjMatrix<W> {
     ///
     /// # Complexity:
     /// O(1)
-    fn add_edge(&mut self, src_id: usize, dst_id: usize, edge: Magnitude<W>) {
-        self[(src_id, dst_id)] = edge;
+    fn add_edge(&mut self, src_id: usize, dst_id: usize, edge_weight: Magnitude<W>) {
+        self[(src_id, dst_id)] = edge_weight;
     }
 
     /// Removes the edge from vertex with `src_id` to vertex with `dst_id`.
