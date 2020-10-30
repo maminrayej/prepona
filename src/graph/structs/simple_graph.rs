@@ -99,7 +99,7 @@ impl<W> provide::Edges<W> for SimpleGraph<W> {
 }
 
 impl<W> provide::Graph<W> for SimpleGraph<W> {
-    /// Adds a vertex into the adjacency matrix.
+    /// Adds a vertex into the graph.
     ///
     /// # Returns:
     /// Id of the newly inserted vertex.
@@ -110,7 +110,7 @@ impl<W> provide::Graph<W> for SimpleGraph<W> {
         self.storage.add_vertex()
     }
 
-    /// Removes a vertex from the adjacency matrix.
+    /// Removes a vertex from the graph.
     ///
     /// # Arguments:
     /// * `vertex_id`: Id of the vertex to be removed.
