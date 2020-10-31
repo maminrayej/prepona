@@ -5,8 +5,8 @@ use std::any::Any;
 use std::collections::HashSet;
 use std::marker::PhantomData;
 
-use crate::storage::GraphStorage;
 use crate::graph::Edge;
+use crate::storage::GraphStorage;
 
 /// For a simple graph with vertex set *V*, the adjacency matrix is a square |V| × |V| matrix *A*
 /// such that its element *A<sub>ij</sub>* is the weight when there is an edge from vertex *i* to vertex *j*, and ∞ when there is no edge.
@@ -30,8 +30,7 @@ pub struct AdjMatrix<W, E: Edge<W>> {
     vertex_count: usize,
     is_directed: bool,
 
-    phantom_w: PhantomData<W>
-
+    phantom_w: PhantomData<W>,
 }
 
 impl<W, E: Edge<W>> AdjMatrix<W, E> {
@@ -49,7 +48,7 @@ impl<W, E: Edge<W>> AdjMatrix<W, E> {
             vertex_count: 0,
             is_directed,
 
-            phantom_w: PhantomData
+            phantom_w: PhantomData,
         }
     }
 
@@ -103,7 +102,8 @@ impl<W: Any + Copy, E: Edge<W>> GraphStorage<W, E> for AdjMatrix<W, E> {
             };
 
             // Populate these new allocated slots with positive infinity
-            self.vec.resize_with(new_size, || E::init(Magnitude::PosInfinite));
+            self.vec
+                .resize_with(new_size, || E::init(Magnitude::PosInfinite));
 
             self.vertex_count += 1;
 
@@ -392,7 +392,10 @@ mod tests {
             assert!(adj_matrix.vertex_count() == 10 - (i + 1))
         }
 
-        assert!(adj_matrix.vec.iter().all(|edge| edge.get_weight().is_pos_infinite()));
+        assert!(adj_matrix
+            .vec
+            .iter()
+            .all(|edge| edge.get_weight().is_pos_infinite()));
     }
 
     #[test]
@@ -408,7 +411,10 @@ mod tests {
             assert!(adj_matrix.vertex_count() == 10 - (i + 1))
         }
 
-        assert!(adj_matrix.vec.iter().all(|edge| edge.get_weight().is_pos_infinite()));
+        assert!(adj_matrix
+            .vec
+            .iter()
+            .all(|edge| edge.get_weight().is_pos_infinite()));
     }
 
     #[test]

@@ -8,7 +8,6 @@ pub use flow_edge::FlowEdge;
 
 /// Trait to guarantee a struct can act as edge of a graph.
 pub trait Edge<W> {
-
     fn init(weight: Magnitude<W>) -> Self;
 
     /// # Returns:

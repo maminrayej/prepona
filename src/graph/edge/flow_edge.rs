@@ -39,7 +39,7 @@ impl<W> Edge<W> for FlowEdge<W> {
         FlowEdge {
             weight,
             flow: 0,
-            capacity: 0
+            capacity: 0,
         }
     }
 
