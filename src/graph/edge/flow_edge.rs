@@ -1,3 +1,6 @@
+use std::any::Any;
+use std::convert::From;
+
 use magnitude::Magnitude;
 
 use crate::graph::edge::Edge;
@@ -49,5 +52,21 @@ impl<W> Edge<W> for FlowEdge<W> {
 
     fn set_weight(&mut self, weight: Magnitude<W>) {
         self.weight = weight
+    }
+}
+
+impl<W: Any> From<W> for FlowEdge<W> {
+    fn from(weight: W) -> Self {
+        FlowEdge::init(weight.into())
+    }
+}
+
+impl<W: Any> From<(W, isize, usize)> for FlowEdge<W> {
+    fn from((weight, flow, capacity): (W, isize, usize)) -> Self {
+        FlowEdge {
+            weight: weight.into(),
+            flow,
+            capacity,
+        }
     }
 }

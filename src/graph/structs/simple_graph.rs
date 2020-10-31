@@ -1,9 +1,9 @@
 use std::any::Any;
 use std::marker::PhantomData;
 
-use crate::graph::{Edge, DefaultEdge, FlowEdge};
+use crate::graph::{DefaultEdge, Edge, FlowEdge};
 use crate::provide;
-use crate::storage::{GraphStorage, Mat, FlowMat};
+use crate::storage::{FlowMat, GraphStorage, Mat};
 
 pub type MatGraph<W> = SimpleGraph<W, DefaultEdge<W>, Mat<W>>;
 pub type FlowMatGraph<W> = SimpleGraph<W, FlowEdge<W>, FlowMat<W>>;

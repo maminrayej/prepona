@@ -1,6 +1,6 @@
 mod adj_matrix;
 
-pub use adj_matrix::{AdjMatrix, Mat, FlowMat};
+pub use adj_matrix::{AdjMatrix, FlowMat, Mat};
 
 use crate::graph::Edge;
 

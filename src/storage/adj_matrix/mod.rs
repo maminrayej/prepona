@@ -5,7 +5,7 @@ use std::any::Any;
 use std::collections::HashSet;
 use std::marker::PhantomData;
 
-use crate::graph::{Edge, DefaultEdge, FlowEdge};
+use crate::graph::{DefaultEdge, Edge, FlowEdge};
 use crate::storage::GraphStorage;
 
 pub type Mat<W> = AdjMatrix<W, DefaultEdge<W>>;

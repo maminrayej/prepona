@@ -25,3 +25,9 @@ impl<W> Edge<W> for DefaultEdge<W> {
         self.weight = weight
     }
 }
+
+impl<W: std::any::Any> std::convert::From<W> for DefaultEdge<W> {
+    fn from(weight: W) -> Self {
+        DefaultEdge::init(weight.into())
+    }
+}
