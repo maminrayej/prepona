@@ -19,8 +19,8 @@ impl Storage {
     ///
     /// # Returns:
     /// A struct that can act as a storage for graph data.
-    pub fn init<W: Any + Copy>(&self, is_directed: bool) -> Box<dyn GraphStorage<W>> {
-        Box::new(match self {
+    pub fn init<W: Any + Copy>(storage: Storage, is_directed: bool) -> Box<dyn GraphStorage<W>> {
+        Box::new(match storage {
             Storage::AdjMatrix => AdjMatrix::<W>::init(is_directed),
         })
     }

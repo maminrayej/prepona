@@ -24,7 +24,7 @@ impl<W: Any + Copy> SimpleGraph<W> {
     /// * Initialized graph.
     pub fn init(storage: Storage, is_directed: bool) -> Self {
         SimpleGraph {
-            storage: storage.init::<W>(is_directed),
+            storage: Storage::init::<W>(storage, is_directed),
         }
     }
 

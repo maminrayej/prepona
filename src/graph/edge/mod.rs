@@ -37,10 +37,12 @@ impl Edge {
     ///
     /// # Returns:
     /// * A struct that can act as edge of a graph based on the value of the `Edge` enum.
-    pub fn init<W: Any>(&self, weight: Magnitude<W>) -> Box<dyn AsEdge<W>> {
-        match self {
+    pub fn init<W: Any>(edge: Edge, weight: Magnitude<W>) -> Box<dyn AsEdge<W>> {
+        match edge {
             Edge::DefaultEdge => Box::new(DefaultEdge::init(weight)),
             Edge::FlowEdge => Box::new(FlowEdge::init(weight)),
         }
     }
+
+
 }
