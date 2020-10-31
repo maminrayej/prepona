@@ -1,74 +1,76 @@
-// use std::collections::HashSet;
+use std::collections::HashSet;
 
-// use crate::provide;
+use crate::provide;
+use crate::graph::Edge;
 
-// pub struct Dfs {
-//     stack: Vec<usize>,
-//     visited: HashSet<usize>,
-// }
+pub struct Dfs {
+    stack: Vec<usize>,
+    visited: HashSet<usize>,
+}
 
-// impl Dfs {
-//     pub fn init(src_index: usize) -> Self {
-//         Dfs {
-//             stack: vec![src_index],
-//             visited: HashSet::new(),
-//         }
-//     }
+impl Dfs {
+    pub fn init(src_index: usize) -> Self {
+        Dfs {
+            stack: vec![src_index],
+            visited: HashSet::new(),
+        }
+    }
 
-//     pub fn next<G, W>(&mut self, graph: &G) -> Option<usize>
-//     where
-//         G: provide::Graph<W> + provide::Neighbors,
-//     {
-//         if let Some(v_index) = self.stack.pop() {
-//             let mut undiscovered_neighbors = graph
-//                 .neighbors(v_index)
-//                 .into_iter()
-//                 .filter(|neighbor_id| self.is_discovered(neighbor_id))
-//                 .collect::<Vec<usize>>();
+    pub fn next<G, W, E: Edge<W>>(&mut self, graph: &G) -> Option<usize>
+    where
+        G: provide::Graph<W, E> + provide::Neighbors,
+    {
+        if let Some(v_index) = self.stack.pop() {
+            let mut undiscovered_neighbors = graph
+                .neighbors(v_index)
+                .into_iter()
+                .filter(|neighbor_id| self.is_discovered(neighbor_id))
+                .collect::<Vec<usize>>();
 
-//             self.stack.append(&mut undiscovered_neighbors);
+            self.stack.append(&mut undiscovered_neighbors);
 
-//             self.visited.insert(v_index);
+            self.visited.insert(v_index);
 
-//             Some(v_index)
-//         } else {
-//             None
-//         }
-//     }
+            Some(v_index)
+        } else {
+            None
+        }
+    }
 
-//     pub fn get_stack(&self) -> &Vec<usize> {
-//         &self.stack
-//     }
+    pub fn get_stack(&self) -> &Vec<usize> {
+        &self.stack
+    }
 
-//     pub fn get_visited(&self) -> &HashSet<usize> {
-//         &self.visited
-//     }
+    pub fn get_visited(&self) -> &HashSet<usize> {
+        &self.visited
+    }
 
-//     pub fn is_discovered(&self, vertex_id: &usize) -> bool {
-//         !self.visited.contains(vertex_id) && !self.stack.contains(vertex_id)
-//     }
+    pub fn is_discovered(&self, vertex_id: &usize) -> bool {
+        !self.visited.contains(vertex_id) && !self.stack.contains(vertex_id)
+    }
 
-//     pub fn execute<G, W>(mut self, graph: &G) -> HashSet<usize>
-//     where
-//         G: provide::Graph<W> + provide::Neighbors,
-//     {
-//         while let Some(_) = &mut self.next(graph) {}
+    pub fn execute<G, W, E: Edge<W>>(mut self, graph: &G) -> HashSet<usize>
+    where
+        G: provide::Graph<W, E> + provide::Neighbors,
+    {
+        while let Some(_) = &mut self.next(graph) {}
 
-//         self.visited
-//     }
-// }
+        self.visited
+    }
+}
 
 // #[cfg(test)]
 // mod tests {
 //     use super::*;
 //     use crate::graph::structs::SimpleGraph;
 //     use crate::provide::*;
-//     use crate::storage::Storage;
+//     use crate::graph::DefaultEdge;
+//     use crate::storage::AdjMatrix;
 
 //     #[test]
 //     fn one_vertex_directed_graph() {
 //         // Given: directed graph with single vertex.
-//         let mut graph = SimpleGraph::<usize>::init(Storage::AdjMatrix, true);
+//         let mut graph = SimpleGraph::<usize, DefaultEdge<usize>, AdjMatrix<usize, DefaultEdge<usize>>>::init(true);
 //         graph.add_vertex();
 
 //         // When: traversing graph using dfs algorithm.
@@ -85,7 +87,8 @@
 //     #[test]
 //     fn one_vertex_undirected_graph() {
 //         // Given: undirected graph with single vertex.
-//         let mut graph = SimpleGraph::<usize>::init(Storage::AdjMatrix, false);
+//         let adj_matrix = AdjMatrix::<usize, DefaultEdge<usize>>::init(false);
+//         let mut graph = SimpleGraph::<usize, DefaultEdge<usize>, AdjMatrix<usize, DefaultEdge<usize>>>::init(adj_matrix);
 //         graph.add_vertex();
 
 //         // When: traversing graph using dfs algorithm.
@@ -102,7 +105,7 @@
 //     #[test]
 //     fn acyclic_directed_graph() {
 //         // Given: directed graph: a -> b.
-//         let mut graph = SimpleGraph::<usize>::init(Storage::AdjMatrix, true);
+//         let mut graph = SimpleGraph::<usize, DefaultEdge<usize>>::init(Storage::AdjMatrix, true);
 //         let a = graph.add_vertex();
 //         let b = graph.add_vertex();
 //         graph.add_edge(a, b, 1.into());
@@ -131,7 +134,7 @@
 //     #[test]
 //     fn acyclic_undirected_graph() {
 //         // Given: undirected graph: a -- b.
-//         let mut graph = SimpleGraph::<usize>::init(Storage::AdjMatrix, false);
+//         let mut graph = SimpleGraph::<usize, DefaultEdge<usize>>::init(Storage::AdjMatrix, false);
 //         let a = graph.add_vertex();
 //         let b = graph.add_vertex();
 //         graph.add_edge(a, b, 1.into());
@@ -163,7 +166,7 @@
 //         //                          ^     |
 //         //                          |     |
 //         //                          c <----
-//         let mut graph = SimpleGraph::<usize>::init(Storage::AdjMatrix, true);
+//         let mut graph = SimpleGraph::<usize, DefaultEdge<usize>>::init(Storage::AdjMatrix, true);
 //         let a = graph.add_vertex();
 //         let b = graph.add_vertex();
 //         let c = graph.add_vertex();
@@ -190,7 +193,7 @@
 //         // Given: undirected graph:    a --- b
 //         //                             |     |
 //         //                             c ----
-//         let mut graph = SimpleGraph::<usize>::init(Storage::AdjMatrix, false);
+//         let mut graph = SimpleGraph::<usize, DefaultEdge<usize>>::init(Storage::AdjMatrix, false);
 //         let a = graph.add_vertex();
 //         let b = graph.add_vertex();
 //         let c = graph.add_vertex();
@@ -215,7 +218,7 @@
 //     #[test]
 //     fn disconnected_directed_graph() {
 //         // Given: directed graph:   a ---> b   c ---> d
-//         let mut graph = SimpleGraph::<usize>::init(Storage::AdjMatrix, true);
+//         let mut graph = SimpleGraph::<usize, DefaultEdge<usize>>::init(Storage::AdjMatrix, true);
 //         let a = graph.add_vertex();
 //         let b = graph.add_vertex();
 //         let c = graph.add_vertex();
@@ -245,7 +248,7 @@
 //     #[test]
 //     fn disconnected_undirected_graph() {
 //         // Given: undirected graph:   a --- b   c --- d
-//         let mut graph = SimpleGraph::<usize>::init(Storage::AdjMatrix, false);
+//         let mut graph = SimpleGraph::<usize, DefaultEdge<usize>>::init(Storage::AdjMatrix, false);
 //         let a = graph.add_vertex();
 //         let b = graph.add_vertex();
 //         let c = graph.add_vertex();
@@ -275,7 +278,7 @@
 //     #[test]
 //     fn fully_connected_directed_graph() {
 //         // Given: A fully connected graph with 5 vertices.
-//         let mut graph = SimpleGraph::<usize>::init(Storage::AdjMatrix, true);
+//         let mut graph = SimpleGraph::<usize, DefaultEdge<usize>>::init(Storage::AdjMatrix, true);
 //         for _ in 0..5 {
 //             graph.add_vertex();
 //         }

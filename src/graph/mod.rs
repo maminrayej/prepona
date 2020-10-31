@@ -1,4 +1,5 @@
 mod edge;
-pub mod structs;
+mod structs;
 
-pub use edge::*;
+pub use edge::{Edge, DefaultEdge, FlowEdge};
+pub use structs::{SimpleGraph, MatGraph, FlowMatGraph};
