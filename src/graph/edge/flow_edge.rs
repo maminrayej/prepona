@@ -1,6 +1,6 @@
 use magnitude::Magnitude;
 
-use crate::graph::edge::AsEdge;
+use crate::graph::edge::Edge;
 
 pub struct FlowEdge<W> {
     weight: Magnitude<W>,
@@ -34,7 +34,15 @@ impl<W> FlowEdge<W> {
     }
 }
 
-impl<W> AsEdge<W> for FlowEdge<W> {
+impl<W> Edge<W> for FlowEdge<W> {
+    fn init(weight: Magnitude<W>) -> Self {
+        FlowEdge {
+            weight,
+            flow: 0,
+            capacity: 0
+        }
+    }
+
     fn get_weight(&self) -> &Magnitude<W> {
         &self.weight
     }

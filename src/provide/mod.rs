@@ -1,5 +1,7 @@
 use magnitude::Magnitude;
 
+use crate::graph::Edge;
+
 /// Trait to guarantee that graph can provide access to neighbors of a vertex.
 pub trait Neighbors {
     /// # Returns:
@@ -27,10 +29,10 @@ pub trait Vertices {
 }
 
 /// Trait to guarantee that graph can provide access to edges in the graph.
-pub trait Edges<W> {
+pub trait Edges<W, E: Edge<W>> {
     /// # Returns:
     /// Vector of edges in the format of (`src_id`, `dst_id`, `weight`).
-    fn edges(&self) -> Vec<(usize, usize, Magnitude<W>)>;
+    fn edges(&self) -> Vec<(usize, usize, &E)>;
 
     /// # Returns:
     /// Vector of edges from vertex with `src_id` in the format of (`dst_id`, `weight`).
@@ -40,13 +42,13 @@ pub trait Edges<W> {
     ///
     /// # Note:
     /// This function has a default implementation but for better performance its usually better to implement it manually.
-    fn edges_from(&self, src_id: usize) -> Vec<(usize, Magnitude<W>)> {
+    fn edges_from(&self, src_id: usize) -> Vec<(usize, &E)> {
         // 1. From triplets produced by `edges` function, only keep those that their source vertex id is `src_id`.
         // 2. Map each triplet to a pair by discarding the source vertex id
         self.edges()
             .into_iter()
             .filter(|(v1, _, _)| *v1 == src_id)
-            .map(|(_, v2, weight)| (v2, weight))
+            .map(|(_, v2, edge)| (v2, edge))
             .collect()
     }
 
@@ -61,7 +63,7 @@ pub trait Edges<W> {
 }
 
 /// Trait to guarantee that graph can provide basic functions needed for graph computation.
-pub trait Graph<W> {
+pub trait Graph<W, E: Edge<W>> {
     /// Adds a vertex into the graph.
     ///
     /// # Returns:
@@ -80,7 +82,7 @@ pub trait Graph<W> {
     /// * `src_id`: Id of the vertex at the start of the edge.
     /// * `dst_id`: Id of the vertex at the end of the edge.
     /// * `weight`: Weight of the edge between `src_id` and `dst_id`.
-    fn add_edge(&mut self, src_id: usize, dst_id: usize, weight: Magnitude<W>);
+    fn add_edge(&mut self, src_id: usize, dst_id: usize, edge: E);
 
     /// Removes the edge from vertex with `src_id` to vertex with `dst_id`.
     ///
@@ -90,7 +92,7 @@ pub trait Graph<W> {
     ///
     /// # Returns:
     /// The weight of the removed edge.
-    fn remove_edge(&mut self, src_id: usize, dst_id: usize) -> Magnitude<W>;
+    fn remove_edge(&mut self, src_id: usize, dst_id: usize) -> E;
 
     /// # Returns:
     /// `true`: If edges stored in the graph are directed `false` otherwise.

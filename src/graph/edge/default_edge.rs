@@ -1,6 +1,6 @@
 use magnitude::Magnitude;
 
-use crate::graph::edge::AsEdge;
+use crate::graph::edge::Edge;
 
 pub struct DefaultEdge<W> {
     weight: Magnitude<W>,
@@ -12,7 +12,11 @@ impl<W> DefaultEdge<W> {
     }
 }
 
-impl<W> AsEdge<W> for DefaultEdge<W> {
+impl<W> Edge<W> for DefaultEdge<W> {
+    fn init(weight: Magnitude<W>) -> Self {
+        DefaultEdge { weight }
+    }
+
     fn get_weight(&self) -> &Magnitude<W> {
         &self.weight
     }

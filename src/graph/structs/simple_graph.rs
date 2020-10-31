@@ -1,19 +1,23 @@
-use magnitude::Magnitude;
 use std::any::Any;
+use std::marker::PhantomData;
 
+use crate::graph::Edge;
 use crate::provide;
-use crate::storage::{GraphStorage, Storage};
+use crate::storage::GraphStorage;
 
 /// By simple graph we mean a graph without loops and multiple edges.
-/// 
+///
 /// Unlike its formal definition which indicates that a simple graph is an unweighted, undirected graph containing no graph loops or multiple edges.\
 /// But this can be achieved easily with our `SimpleGraph` too.
-pub struct SimpleGraph<W> {
+pub struct SimpleGraph<W, E: Edge<W>, S: GraphStorage<W, E>> {
     // Backend storage to store graph data
-    storage: Box<dyn GraphStorage<W>>,
+    storage: S,
+
+    phantom_w: PhantomData<W>,
+    phantom_e: PhantomData<E>,
 }
 
-impl<W: Any + Copy> SimpleGraph<W> {
+impl<W: Any + Copy, E: Edge<W>, S: GraphStorage<W, E>> SimpleGraph<W, E, S> {
     /// Initialize the graph with specified `storage` and `edge_type`.
     ///
     /// # Arguments:
@@ -22,25 +26,17 @@ impl<W: Any + Copy> SimpleGraph<W> {
     ///
     /// # Returns:
     /// * Initialized graph.
-    pub fn init(storage: Storage, is_directed: bool) -> Self {
+    pub fn init(storage: S) -> Self {
         SimpleGraph {
-            storage: Storage::init::<W>(storage, is_directed),
-        }
-    }
+            storage,
 
-    /// Initializes the graph with a custom storage.
-    ///
-    /// # Arguments:
-    /// * `storage`: The storage for graph to use to store its data.
-    ///
-    /// # Returns:
-    /// * Initialized graph.
-    pub fn init_with_storage(storage: Box<dyn GraphStorage<W>>) -> Self {
-        SimpleGraph { storage }
+            phantom_e: PhantomData,
+            phantom_w: PhantomData,
+        }
     }
 }
 
-impl<W> provide::Neighbors for SimpleGraph<W> {
+impl<W, E: Edge<W>, S: GraphStorage<W, E>> provide::Neighbors for SimpleGraph<W, E, S> {
     /// # Returns:
     /// Id of neighbors of the vertex with `src_id`.
     ///
@@ -54,7 +50,7 @@ impl<W> provide::Neighbors for SimpleGraph<W> {
     }
 }
 
-impl<W> provide::Vertices for SimpleGraph<W> {
+impl<W, E: Edge<W>, S: GraphStorage<W, E>> provide::Vertices for SimpleGraph<W, E, S> {
     /// # Returns:
     /// Vector of vertex ids that are present in the graph.
     ///
@@ -74,13 +70,13 @@ impl<W> provide::Vertices for SimpleGraph<W> {
     }
 }
 
-impl<W> provide::Edges<W> for SimpleGraph<W> {
+impl<W, E: Edge<W>, S: GraphStorage<W, E>> provide::Edges<W, E> for SimpleGraph<W, E, S> {
     /// # Returns:
     /// Vector of edges in the format of (`src_id`, `dst_id`, `weight`).
     ///
     /// # Complexity:
     /// Depends on the storage type.
-    fn edges(&self) -> Vec<(usize, usize, Magnitude<W>)> {
+    fn edges(&self) -> Vec<(usize, usize, &E)> {
         self.storage.edges()
     }
 
@@ -92,12 +88,12 @@ impl<W> provide::Edges<W> for SimpleGraph<W> {
     ///
     /// # Complexity:
     /// Depends on the storage type.
-    fn edges_from(&self, src_id: usize) -> Vec<(usize, Magnitude<W>)> {
+    fn edges_from(&self, src_id: usize) -> Vec<(usize, &E)> {
         self.storage.edges_from(src_id)
     }
 }
 
-impl<W> provide::Graph<W> for SimpleGraph<W> {
+impl<W, E: Edge<W>, S: GraphStorage<W, E>> provide::Graph<W, E> for SimpleGraph<W, E, S> {
     /// Adds a vertex into the graph.
     ///
     /// # Returns:
@@ -132,12 +128,12 @@ impl<W> provide::Graph<W> for SimpleGraph<W> {
     ///
     /// # Complexity:
     /// Depends on the storage type.
-    fn add_edge(&mut self, src_id: usize, dst_id: usize, weight: Magnitude<W>) {
+    fn add_edge(&mut self, src_id: usize, dst_id: usize, edge: E) {
         if src_id == dst_id {
             panic!("Can not create loop in simple graph")
         }
 
-        self.storage.add_edge(src_id, dst_id, weight);
+        self.storage.add_edge(src_id, dst_id, edge);
     }
 
     /// Removes the edge from vertex with `src_id` to vertex with `dst_id`.
@@ -151,7 +147,7 @@ impl<W> provide::Graph<W> for SimpleGraph<W> {
     ///
     /// # Complexity:
     /// Depends on the storage type.
-    fn remove_edge(&mut self, src_id: usize, dst_id: usize) -> Magnitude<W> {
+    fn remove_edge(&mut self, src_id: usize, dst_id: usize) -> E {
         self.storage.remove_edge(src_id, dst_id)
     }
 

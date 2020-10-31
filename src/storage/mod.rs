@@ -2,32 +2,10 @@ mod adj_matrix;
 
 pub use adj_matrix::AdjMatrix;
 
-use magnitude::Magnitude;
-use std::any::Any;
-
-/// Different types of storage a graph can use to store its data.
-pub enum Storage {
-    /// An adjacency matrix.
-    AdjMatrix,
-}
-
-impl Storage {
-    /// Initializes a storage.
-    ///
-    /// # Arguments:
-    /// * `edge_type`: Indicates wether the storage stores directed or undirected edges.
-    ///
-    /// # Returns:
-    /// A struct that can act as a storage for graph data.
-    pub fn init<W: Any + Copy>(storage: Storage, is_directed: bool) -> Box<dyn GraphStorage<W>> {
-        Box::new(match storage {
-            Storage::AdjMatrix => AdjMatrix::<W>::init(is_directed),
-        })
-    }
-}
+use crate::graph::Edge;
 
 /// Trait that describes a struct that can act as a storage for graph data.
-pub trait GraphStorage<W> {
+pub trait GraphStorage<W, E: Edge<W>> {
     /// Adds a vertex into the adjacency matrix.
     ///
     /// # Returns:
@@ -46,7 +24,7 @@ pub trait GraphStorage<W> {
     /// * `src_id`: Id of the vertex at the start of the edge.
     /// * `dst_id`: Id of the vertex at the end of the edge.
     /// * `weight`: Weight of the edge between `src_id` and `dst_id`.
-    fn add_edge(&mut self, src_id: usize, dst_id: usize, weight: Magnitude<W>);
+    fn add_edge(&mut self, src_id: usize, dst_id: usize, edge: E);
 
     /// Removes the edge from vertex with `src_id` to vertex with `dst_id`.
     ///
@@ -56,7 +34,7 @@ pub trait GraphStorage<W> {
     ///
     /// # Returns:
     /// The weight of the removed edge.
-    fn remove_edge(&mut self, src_id: usize, dst_id: usize) -> Magnitude<W>;
+    fn remove_edge(&mut self, src_id: usize, dst_id: usize) -> E;
 
     /// # Returns:
     /// Number of vertices present in the graph.
@@ -68,14 +46,14 @@ pub trait GraphStorage<W> {
 
     /// # Returns:
     /// Vector of edges in the format of (`src_id`, `dst_id`, `weight`).
-    fn edges(&self) -> Vec<(usize, usize, Magnitude<W>)>;
+    fn edges(&self) -> Vec<(usize, usize, &E)>;
 
     /// # Returns:
     /// Vector of edges from vertex with `src_id` in the format of (`dst_id`, `weight`).
     ///
     /// # Arguments:
     /// * `src_id`: Id of the source vertex.
-    fn edges_from(&self, src_id: usize) -> Vec<(usize, Magnitude<W>)>;
+    fn edges_from(&self, src_id: usize) -> Vec<(usize, &E)>;
 
     /// # Returns:
     /// Id of neighbors of the vertex with `src_id`.
