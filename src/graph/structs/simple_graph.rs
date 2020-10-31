@@ -1,7 +1,6 @@
 use magnitude::Magnitude;
 use std::any::Any;
 
-use crate::graph::EdgeType;
 use crate::provide;
 use crate::storage::{GraphStorage, Storage};
 
@@ -23,9 +22,9 @@ impl<W: Any + Copy> SimpleGraph<W> {
     ///
     /// # Returns:
     /// * Initialized graph.
-    pub fn init(storage: Storage, edge_type: EdgeType) -> Self {
+    pub fn init(storage: Storage, is_directed: bool) -> Self {
         SimpleGraph {
-            storage: storage.init::<W>(edge_type),
+            storage: storage.init::<W>(is_directed),
         }
     }
 

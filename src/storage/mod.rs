@@ -5,8 +5,6 @@ pub use adj_matrix::AdjMatrix;
 use magnitude::Magnitude;
 use std::any::Any;
 
-use crate::graph::EdgeType;
-
 /// Different types of storage a graph can use to store its data.
 pub enum Storage {
     /// An adjacency matrix.
@@ -21,9 +19,9 @@ impl Storage {
     ///
     /// # Returns:
     /// A struct that can act as a storage for graph data.
-    pub fn init<W: Any + Copy>(&self, edge_type: EdgeType) -> Box<dyn GraphStorage<W>> {
+    pub fn init<W: Any + Copy>(&self, is_directed: bool) -> Box<dyn GraphStorage<W>> {
         Box::new(match self {
-            Storage::AdjMatrix => AdjMatrix::<W>::init(edge_type),
+            Storage::AdjMatrix => AdjMatrix::<W>::init(is_directed),
         })
     }
 }

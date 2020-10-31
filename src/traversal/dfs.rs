@@ -62,14 +62,13 @@ impl Dfs {
 mod tests {
     use super::*;
     use crate::graph::structs::SimpleGraph;
-    use crate::graph::EdgeType;
     use crate::provide::*;
     use crate::storage::Storage;
 
     #[test]
     fn one_vertex_directed_graph() {
         // Given: directed graph with single vertex.
-        let mut graph = SimpleGraph::<usize>::init(Storage::AdjMatrix, EdgeType::Directed);
+        let mut graph = SimpleGraph::<usize>::init(Storage::AdjMatrix, true);
         graph.add_vertex();
 
         // When: traversing graph using dfs algorithm.
@@ -86,7 +85,7 @@ mod tests {
     #[test]
     fn one_vertex_undirected_graph() {
         // Given: undirected graph with single vertex.
-        let mut graph = SimpleGraph::<usize>::init(Storage::AdjMatrix, EdgeType::Undirected);
+        let mut graph = SimpleGraph::<usize>::init(Storage::AdjMatrix, false);
         graph.add_vertex();
 
         // When: traversing graph using dfs algorithm.
@@ -103,7 +102,7 @@ mod tests {
     #[test]
     fn acyclic_directed_graph() {
         // Given: directed graph: a -> b.
-        let mut graph = SimpleGraph::<usize>::init(Storage::AdjMatrix, EdgeType::Directed);
+        let mut graph = SimpleGraph::<usize>::init(Storage::AdjMatrix, true);
         let a = graph.add_vertex();
         let b = graph.add_vertex();
         graph.add_edge(a, b, 1.into());
@@ -132,7 +131,7 @@ mod tests {
     #[test]
     fn acyclic_undirected_graph() {
         // Given: undirected graph: a -- b.
-        let mut graph = SimpleGraph::<usize>::init(Storage::AdjMatrix, EdgeType::Undirected);
+        let mut graph = SimpleGraph::<usize>::init(Storage::AdjMatrix, false);
         let a = graph.add_vertex();
         let b = graph.add_vertex();
         graph.add_edge(a, b, 1.into());
@@ -164,7 +163,7 @@ mod tests {
         //                          ^     |
         //                          |     |
         //                          c <----
-        let mut graph = SimpleGraph::<usize>::init(Storage::AdjMatrix, EdgeType::Directed);
+        let mut graph = SimpleGraph::<usize>::init(Storage::AdjMatrix, true);
         let a = graph.add_vertex();
         let b = graph.add_vertex();
         let c = graph.add_vertex();
@@ -191,7 +190,7 @@ mod tests {
         // Given: undirected graph:    a --- b
         //                             |     |
         //                             c ----
-        let mut graph = SimpleGraph::<usize>::init(Storage::AdjMatrix, EdgeType::Undirected);
+        let mut graph = SimpleGraph::<usize>::init(Storage::AdjMatrix, false);
         let a = graph.add_vertex();
         let b = graph.add_vertex();
         let c = graph.add_vertex();
@@ -216,7 +215,7 @@ mod tests {
     #[test]
     fn disconnected_directed_graph() {
         // Given: directed graph:   a ---> b   c ---> d
-        let mut graph = SimpleGraph::<usize>::init(Storage::AdjMatrix, EdgeType::Directed);
+        let mut graph = SimpleGraph::<usize>::init(Storage::AdjMatrix, true);
         let a = graph.add_vertex();
         let b = graph.add_vertex();
         let c = graph.add_vertex();
@@ -246,7 +245,7 @@ mod tests {
     #[test]
     fn disconnected_undirected_graph() {
         // Given: undirected graph:   a --- b   c --- d
-        let mut graph = SimpleGraph::<usize>::init(Storage::AdjMatrix, EdgeType::Undirected);
+        let mut graph = SimpleGraph::<usize>::init(Storage::AdjMatrix, false);
         let a = graph.add_vertex();
         let b = graph.add_vertex();
         let c = graph.add_vertex();
@@ -276,7 +275,7 @@ mod tests {
     #[test]
     fn fully_connected_directed_graph() {
         // Given: A fully connected graph with 5 vertices.
-        let mut graph = SimpleGraph::<usize>::init(Storage::AdjMatrix, EdgeType::Directed);
+        let mut graph = SimpleGraph::<usize>::init(Storage::AdjMatrix, true);
         for _ in 0..5 {
             graph.add_vertex();
         }

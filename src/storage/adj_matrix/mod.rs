@@ -4,7 +4,6 @@ use magnitude::Magnitude;
 use std::any::Any;
 use std::collections::HashSet;
 
-use crate::graph::EdgeType;
 use crate::storage::GraphStorage;
 
 /// For a simple graph with vertex set *V*, the adjacency matrix is a square |V| × |V| matrix *A*
@@ -27,7 +26,7 @@ pub struct AdjMatrix<W> {
     reusable_ids: HashSet<usize>,
 
     vertex_count: usize,
-    edge_type: EdgeType,
+    is_directed: bool,
 }
 
 impl<W> AdjMatrix<W> {
@@ -38,12 +37,12 @@ impl<W> AdjMatrix<W> {
     ///
     /// # Returns:
     /// An adjacency matrix.
-    pub fn init(edge_type: EdgeType) -> Self {
+    pub fn init(is_directed: bool) -> Self {
         AdjMatrix {
             vec: vec![],
             reusable_ids: HashSet::new(),
             vertex_count: 0,
-            edge_type,
+            is_directed,
         }
     }
 
@@ -257,7 +256,7 @@ impl<W: Any + Copy> GraphStorage<W> for AdjMatrix<W> {
     /// # Complexity:
     /// O(1).
     fn is_directed(&self) -> bool {
-        self.edge_type.is_directed()
+        self.is_directed
     }
 }
 
@@ -348,7 +347,7 @@ mod tests {
 
     #[test]
     fn directed_add_vertex() {
-        let mut adj_matrix = AdjMatrix::<usize>::init(EdgeType::Directed);
+        let mut adj_matrix = AdjMatrix::<usize>::init(true);
 
         for i in 0..10 {
             let v_id = adj_matrix.add_vertex();
@@ -361,7 +360,7 @@ mod tests {
 
     #[test]
     fn undirected_add_vertex() {
-        let mut adj_matrix = AdjMatrix::<usize>::init(EdgeType::Undirected);
+        let mut adj_matrix = AdjMatrix::<usize>::init(true);
 
         for i in 0..10 {
             let v_id = adj_matrix.add_vertex();
@@ -374,7 +373,7 @@ mod tests {
 
     #[test]
     fn directed_remove_vertex() {
-        let mut adj_matrix = AdjMatrix::<usize>::init(EdgeType::Directed);
+        let mut adj_matrix = AdjMatrix::<usize>::init(true);
 
         for _ in 0..10 {
             let _ = adj_matrix.add_vertex();
@@ -390,7 +389,7 @@ mod tests {
 
     #[test]
     fn undirected_remove_vertex() {
-        let mut adj_matrix = AdjMatrix::<usize>::init(EdgeType::Undirected);
+        let mut adj_matrix = AdjMatrix::<usize>::init(true);
 
         for _ in 0..10 {
             let _ = adj_matrix.add_vertex();
@@ -406,7 +405,7 @@ mod tests {
 
     #[test]
     fn directed_add_edge() {
-        let mut adj_matrix = AdjMatrix::<usize>::init(EdgeType::Directed);
+        let mut adj_matrix = AdjMatrix::<usize>::init(true);
 
         for _ in 0..10 {
             let _ = adj_matrix.add_vertex();
@@ -427,7 +426,7 @@ mod tests {
 
     #[test]
     fn undirected_add_edge() {
-        let mut adj_matrix = AdjMatrix::<usize>::init(EdgeType::Undirected);
+        let mut adj_matrix = AdjMatrix::<usize>::init(true);
 
         for _ in 0..10 {
             let _ = adj_matrix.add_vertex();
@@ -449,7 +448,7 @@ mod tests {
 
     #[test]
     fn directed_remove_edge() {
-        let mut adj_matrix = AdjMatrix::<usize>::init(EdgeType::Directed);
+        let mut adj_matrix = AdjMatrix::<usize>::init(true);
 
         for _ in 0..10 {
             let _ = adj_matrix.add_vertex();
@@ -471,7 +470,7 @@ mod tests {
 
     #[test]
     fn undirected_remove_edge() {
-        let mut adj_matrix = AdjMatrix::<usize>::init(EdgeType::Undirected);
+        let mut adj_matrix = AdjMatrix::<usize>::init(true);
 
         for _ in 0..10 {
             let _ = adj_matrix.add_vertex();
@@ -494,7 +493,7 @@ mod tests {
 
     #[test]
     fn vertices() {
-        let mut adj_matrix = AdjMatrix::<usize>::init(EdgeType::Undirected);
+        let mut adj_matrix = AdjMatrix::<usize>::init(true);
 
         for _ in 0..10 {
             let _ = adj_matrix.add_vertex();
@@ -515,7 +514,7 @@ mod tests {
 
     #[test]
     fn edges_directed() {
-        let mut adj_matrix = AdjMatrix::<usize>::init(EdgeType::Directed);
+        let mut adj_matrix = AdjMatrix::<usize>::init(true);
 
         for _ in 0..5 {
             let _ = adj_matrix.add_vertex();
@@ -541,7 +540,7 @@ mod tests {
 
     #[test]
     fn edges_undirected() {
-        let mut adj_matrix = AdjMatrix::<usize>::init(EdgeType::Undirected);
+        let mut adj_matrix = AdjMatrix::<usize>::init(true);
 
         for _ in 0..5 {
             let _ = adj_matrix.add_vertex();
@@ -566,7 +565,7 @@ mod tests {
 
     #[test]
     fn neighbors_directed() {
-        let mut adj_matrix = AdjMatrix::<usize>::init(EdgeType::Directed);
+        let mut adj_matrix = AdjMatrix::<usize>::init(true);
 
         for _ in 0..5 {
             let _ = adj_matrix.add_vertex();
@@ -593,7 +592,7 @@ mod tests {
 
     #[test]
     fn neighbors_undirected() {
-        let mut adj_matrix = AdjMatrix::<usize>::init(EdgeType::Undirected);
+        let mut adj_matrix = AdjMatrix::<usize>::init(true);
 
         for _ in 0..5 {
             let _ = adj_matrix.add_vertex();

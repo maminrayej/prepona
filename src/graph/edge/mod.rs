@@ -7,27 +7,6 @@ use std::any::Any;
 pub use default_edge::DefaultEdge;
 pub use flow_edge::FlowEdge;
 
-// TODO: try to remove EdgeType or do sth with it!
-/// Enumerates different types of edges.
-pub enum EdgeType {
-    Directed,
-    Undirected,
-}
-
-impl EdgeType {
-    /// # Returns:
-    /// * `true`: If edge is directed, `false` otherwise.
-    pub fn is_directed(&self) -> bool {
-        matches!(self, EdgeType::Directed)
-    }
-
-    /// # Returns:
-    /// * `true`: If edge is undirected, `false` otherwise.
-    pub fn is_undirected(&self) -> bool {
-        matches!(self, EdgeType::Undirected)
-    }
-}
-
 /// Trait to guarantee a struct can act as edge of a graph.
 pub trait AsEdge<W> {
     /// # Returns:

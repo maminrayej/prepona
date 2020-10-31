@@ -47,13 +47,12 @@ impl Bfs {
 mod tests {
     use super::*;
     use crate::graph::structs::SimpleGraph;
-    use crate::graph::EdgeType;
     use crate::storage::Storage;
     use crate::provide::*;
 
     #[test]
     fn dense_graph() {
-        let mut graph = SimpleGraph::<usize>::init(Storage::AdjMatrix, EdgeType::Directed);
+        let mut graph = SimpleGraph::<usize>::init(Storage::AdjMatrix, true);
         for _ in 0..5 {
             graph.add_vertex();
         }
