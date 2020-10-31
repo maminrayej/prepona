@@ -1,5 +1,3 @@
-use magnitude::Magnitude;
-
 use crate::graph::Edge;
 
 /// Trait to guarantee that graph can provide access to neighbors of a vertex.

@@ -348,283 +348,283 @@ impl<W: Copy + Any, E: Edge<W>> IndexMut<(usize, usize)> for AdjMatrix<W, E> {
     }
 }
 
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
-//     use crate::graph::DefaultEdge;
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::graph::DefaultEdge;
 
-//     #[test]
-//     fn directed_add_vertex() {
-//         let mut adj_matrix = AdjMatrix::<usize, DefaultEdge<usize>>::init(true);
+    #[test]
+    fn directed_add_vertex() {
+        let mut adj_matrix = AdjMatrix::<usize, DefaultEdge<usize>>::init(true);
 
-//         for i in 0..10 {
-//             let v_id = adj_matrix.add_vertex();
-//             assert!(v_id == i);
-//         }
+        for i in 0..10 {
+            let v_id = adj_matrix.add_vertex();
+            assert!(v_id == i);
+        }
 
-//         assert!(adj_matrix.vertex_count == 10);
-//         assert!(adj_matrix.vec.len() == 100);
-//     }
+        assert!(adj_matrix.vertex_count == 10);
+        assert!(adj_matrix.vec.len() == 100);
+    }
 
-//     #[test]
-//     fn undirected_add_vertex() {
-//         let mut adj_matrix = AdjMatrix::<usize, DefaultEdge<usize>>::init(true);
+    #[test]
+    fn undirected_add_vertex() {
+        let mut adj_matrix = AdjMatrix::<usize, DefaultEdge<usize>>::init(false);
 
-//         for i in 0..10 {
-//             let v_id = adj_matrix.add_vertex();
-//             assert!(v_id == i);
-//         }
+        for i in 0..10 {
+            let v_id = adj_matrix.add_vertex();
+            assert!(v_id == i);
+        }
 
-//         assert!(adj_matrix.vertex_count == 10);
-//         assert!(adj_matrix.vec.len() == 55);
-//     }
+        assert!(adj_matrix.vertex_count == 10);
+        assert!(adj_matrix.vec.len() == 55);
+    }
 
-//     #[test]
-//     fn directed_remove_vertex() {
-//         let mut adj_matrix = AdjMatrix::<usize, DefaultEdge<usize>>::init(true);
+    #[test]
+    fn directed_remove_vertex() {
+        let mut adj_matrix = AdjMatrix::<usize, DefaultEdge<usize>>::init(true);
 
-//         for _ in 0..10 {
-//             let _ = adj_matrix.add_vertex();
-//         }
+        for _ in 0..10 {
+            let _ = adj_matrix.add_vertex();
+        }
 
-//         for i in 0..10 {
-//             adj_matrix.remove_vertex(i);
-//             assert!(adj_matrix.vertex_count() == 10 - (i + 1))
-//         }
+        for i in 0..10 {
+            adj_matrix.remove_vertex(i);
+            assert!(adj_matrix.vertex_count() == 10 - (i + 1))
+        }
 
-//         assert!(adj_matrix.vec.iter().all(|edge| edge.get_weight().is_pos_infinite()));
-//     }
+        assert!(adj_matrix.vec.iter().all(|edge| edge.get_weight().is_pos_infinite()));
+    }
 
-//     #[test]
-//     fn undirected_remove_vertex() {
-//         let mut adj_matrix = AdjMatrix::<usize, DefaultEdge<usize>>::init(true);
+    #[test]
+    fn undirected_remove_vertex() {
+        let mut adj_matrix = AdjMatrix::<usize, DefaultEdge<usize>>::init(false);
 
-//         for _ in 0..10 {
-//             let _ = adj_matrix.add_vertex();
-//         }
+        for _ in 0..10 {
+            let _ = adj_matrix.add_vertex();
+        }
 
-//         for i in 0..10 {
-//             adj_matrix.remove_vertex(i);
-//             assert!(adj_matrix.vertex_count() == 10 - (i + 1))
-//         }
+        for i in 0..10 {
+            adj_matrix.remove_vertex(i);
+            assert!(adj_matrix.vertex_count() == 10 - (i + 1))
+        }
 
-//         assert!(adj_matrix.vec.iter().all(|weight| weight.is_pos_infinite()));
-//     }
+        assert!(adj_matrix.vec.iter().all(|edge| edge.get_weight().is_pos_infinite()));
+    }
 
-//     #[test]
-//     fn directed_add_edge() {
-//         let mut adj_matrix = AdjMatrix::<usize, DefaultEdge<usize>>::init(true);
+    #[test]
+    fn directed_add_edge() {
+        let mut adj_matrix = AdjMatrix::<usize, DefaultEdge<usize>>::init(true);
 
-//         for _ in 0..10 {
-//             let _ = adj_matrix.add_vertex();
-//         }
+        for _ in 0..10 {
+            let _ = adj_matrix.add_vertex();
+        }
 
-//         for v1 in adj_matrix.vertices() {
-//             for v2 in adj_matrix.vertices() {
-//                 adj_matrix[(v1, v2)] = DefaultEdge::init((v1 * 2 + v2).into());
-//             }
-//         }
+        for v1 in adj_matrix.vertices() {
+            for v2 in adj_matrix.vertices() {
+                adj_matrix[(v1, v2)] = DefaultEdge::init((v1 * 2 + v2).into());
+            }
+        }
 
-//         for v1 in adj_matrix.vertices() {
-//             for v2 in adj_matrix.vertices() {
-//                 assert_eq!(adj_matrix[(v1, v2)].get_weight(), (v1 * 2 + v2).into());
-//             }
-//         }
-//     }
+        for v1 in adj_matrix.vertices() {
+            for v2 in adj_matrix.vertices() {
+                assert_eq!(adj_matrix[(v1, v2)].get_weight(), &(v1 * 2 + v2).into());
+            }
+        }
+    }
 
-//     #[test]
-//     fn undirected_add_edge() {
-//         let mut adj_matrix = AdjMatrix::<usize, DefaultEdge<usize>>::init(true);
+    #[test]
+    fn undirected_add_edge() {
+        let mut adj_matrix = AdjMatrix::<usize, DefaultEdge<usize>>::init(false);
 
-//         for _ in 0..10 {
-//             let _ = adj_matrix.add_vertex();
-//         }
+        for _ in 0..10 {
+            let _ = adj_matrix.add_vertex();
+        }
 
-//         for v1 in adj_matrix.vertices() {
-//             for v2 in 0..=v1 {
-//                 adj_matrix[(v1, v2)] = (v1 * 2 + v2).into();
-//             }
-//         }
+        for v1 in adj_matrix.vertices() {
+            for v2 in 0..=v1 {
+                adj_matrix[(v1, v2)] = Edge::init((v1 * 2 + v2).into());
+            }
+        }
 
-//         for v1 in adj_matrix.vertices() {
-//             for v2 in 0..=v1 {
-//                 assert_eq!(adj_matrix[(v1, v2)], (v1 * 2 + v2).into());
-//                 assert_eq!(adj_matrix[(v2, v1)], (v1 * 2 + v2).into());
-//             }
-//         }
-//     }
+        for v1 in adj_matrix.vertices() {
+            for v2 in 0..=v1 {
+                assert_eq!(adj_matrix[(v1, v2)].get_weight(), &(v1 * 2 + v2).into());
+                assert_eq!(adj_matrix[(v2, v1)].get_weight(), &(v1 * 2 + v2).into());
+            }
+        }
+    }
 
-//     #[test]
-//     fn directed_remove_edge() {
-//         let mut adj_matrix = AdjMatrix::<usize, DefaultEdge<usize>>::init(true);
+    #[test]
+    fn directed_remove_edge() {
+        let mut adj_matrix = AdjMatrix::<usize, DefaultEdge<usize>>::init(true);
 
-//         for _ in 0..10 {
-//             let _ = adj_matrix.add_vertex();
-//         }
+        for _ in 0..10 {
+            let _ = adj_matrix.add_vertex();
+        }
 
-//         for v1 in adj_matrix.vertices() {
-//             for v2 in adj_matrix.vertices() {
-//                 adj_matrix[(v1, v2)] = (v1 * 2 + v2).into();
-//             }
-//         }
+        for v1 in adj_matrix.vertices() {
+            for v2 in adj_matrix.vertices() {
+                adj_matrix[(v1, v2)] = Edge::init((v1 * 2 + v2).into());
+            }
+        }
 
-//         for v1 in adj_matrix.vertices() {
-//             for v2 in adj_matrix.vertices() {
-//                 adj_matrix.remove_edge(v1, v2);
-//                 assert!(adj_matrix[(v1, v2)].is_pos_infinite());
-//             }
-//         }
-//     }
+        for v1 in adj_matrix.vertices() {
+            for v2 in adj_matrix.vertices() {
+                adj_matrix.remove_edge(v1, v2);
+                assert!(adj_matrix[(v1, v2)].get_weight().is_pos_infinite());
+            }
+        }
+    }
 
-//     #[test]
-//     fn undirected_remove_edge() {
-//         let mut adj_matrix = AdjMatrix::<usize, DefaultEdge<usize>>::init(true);
+    #[test]
+    fn undirected_remove_edge() {
+        let mut adj_matrix = AdjMatrix::<usize, DefaultEdge<usize>>::init(false);
 
-//         for _ in 0..10 {
-//             let _ = adj_matrix.add_vertex();
-//         }
+        for _ in 0..10 {
+            let _ = adj_matrix.add_vertex();
+        }
 
-//         for v1 in adj_matrix.vertices() {
-//             for v2 in 0..=v1 {
-//                 adj_matrix[(v1, v2)] = (v1 * 2 + v2).into();
-//             }
-//         }
+        for v1 in adj_matrix.vertices() {
+            for v2 in 0..=v1 {
+                adj_matrix[(v1, v2)] = Edge::init((v1 * 2 + v2).into());
+            }
+        }
 
-//         for v1 in adj_matrix.vertices() {
-//             for v2 in 0..=v1 {
-//                 adj_matrix.remove_edge(v1, v2);
-//                 assert!(adj_matrix[(v1, v2)].is_pos_infinite());
-//                 assert!(adj_matrix[(v2, v1)].is_pos_infinite());
-//             }
-//         }
-//     }
+        for v1 in adj_matrix.vertices() {
+            for v2 in 0..=v1 {
+                adj_matrix.remove_edge(v1, v2);
+                assert!(adj_matrix[(v1, v2)].get_weight().is_pos_infinite());
+                assert!(adj_matrix[(v2, v1)].get_weight().is_pos_infinite());
+            }
+        }
+    }
 
-//     #[test]
-//     fn vertices() {
-//         let mut adj_matrix = AdjMatrix::<usize, DefaultEdge<usize>>::init(true);
+    #[test]
+    fn vertices() {
+        let mut adj_matrix = AdjMatrix::<usize, DefaultEdge<usize>>::init(true);
 
-//         for _ in 0..10 {
-//             let _ = adj_matrix.add_vertex();
-//         }
+        for _ in 0..10 {
+            let _ = adj_matrix.add_vertex();
+        }
 
-//         for i in (0..10).step_by(2) {
-//             adj_matrix.remove_vertex(i);
-//         }
+        for i in (0..10).step_by(2) {
+            adj_matrix.remove_vertex(i);
+        }
 
-//         let vertices = adj_matrix.vertices();
-//         assert_eq!(vertices.len(), 5);
-//         assert!(vec![1, 3, 5, 7, 9].iter().all(|v| vertices.contains(v)));
+        let vertices = adj_matrix.vertices();
+        assert_eq!(vertices.len(), 5);
+        assert!(vec![1, 3, 5, 7, 9].iter().all(|v| vertices.contains(v)));
 
-//         let reusable_ids = &adj_matrix.reusable_ids;
-//         assert_eq!(reusable_ids.len(), 5);
-//         assert!(vec![0, 2, 4, 6, 8].iter().all(|v| reusable_ids.contains(v)));
-//     }
+        let reusable_ids = &adj_matrix.reusable_ids;
+        assert_eq!(reusable_ids.len(), 5);
+        assert!(vec![0, 2, 4, 6, 8].iter().all(|v| reusable_ids.contains(v)));
+    }
 
-//     #[test]
-//     fn edges_directed() {
-//         let mut adj_matrix = AdjMatrix::<usize, DefaultEdge<usize>>::init(true);
+    #[test]
+    fn edges_directed() {
+        let mut adj_matrix = AdjMatrix::<usize, DefaultEdge<usize>>::init(true);
 
-//         for _ in 0..5 {
-//             let _ = adj_matrix.add_vertex();
-//         }
+        for _ in 0..5 {
+            let _ = adj_matrix.add_vertex();
+        }
 
-//         for i in (0..5).step_by(2) {
-//             adj_matrix.remove_vertex(i);
-//         }
+        for i in (0..5).step_by(2) {
+            adj_matrix.remove_vertex(i);
+        }
 
-//         adj_matrix[(1, 3)] = 3.into();
-//         adj_matrix[(3, 1)] = 4.into();
+        adj_matrix[(1, 3)] = Edge::init(3.into());
+        adj_matrix[(3, 1)] = Edge::init(4.into());
 
-//         for (v1, v2, weight) in adj_matrix.edges() {
-//             match (v1, v2) {
-//                 (1, 1) => assert!(weight.is_pos_infinite()),
-//                 (1, 3) => assert_eq!(weight, 3.into()),
-//                 (3, 1) => assert_eq!(weight, 4.into()),
-//                 (3, 3) => assert!(weight.is_pos_infinite()),
-//                 _ => panic!("not valid vertices"),
-//             }
-//         }
-//     }
+        for (v1, v2, edge) in adj_matrix.edges() {
+            match (v1, v2) {
+                (1, 1) => assert!(edge.get_weight().is_pos_infinite()),
+                (1, 3) => assert_eq!(edge.get_weight(), &3.into()),
+                (3, 1) => assert_eq!(edge.get_weight(), &4.into()),
+                (3, 3) => assert!(edge.get_weight().is_pos_infinite()),
+                _ => panic!("not valid vertices"),
+            }
+        }
+    }
 
-//     #[test]
-//     fn edges_undirected() {
-//         let mut adj_matrix = AdjMatrix::<usize, DefaultEdge<usize>>::init(true);
+    #[test]
+    fn edges_undirected() {
+        let mut adj_matrix = AdjMatrix::<usize, DefaultEdge<usize>>::init(false);
 
-//         for _ in 0..5 {
-//             let _ = adj_matrix.add_vertex();
-//         }
+        for _ in 0..5 {
+            let _ = adj_matrix.add_vertex();
+        }
 
-//         for i in (0..5).step_by(2) {
-//             adj_matrix.remove_vertex(i);
-//         }
+        for i in (0..5).step_by(2) {
+            adj_matrix.remove_vertex(i);
+        }
 
-//         adj_matrix[(1, 3)] = 3.into();
+        adj_matrix[(1, 3)] = Edge::init(3.into());
 
-//         for (v1, v2, weight) in adj_matrix.edges() {
-//             match (v1, v2) {
-//                 (1, 1) => assert!(weight.is_pos_infinite()),
-//                 (1, 3) => assert_eq!(weight, 3.into()),
-//                 (3, 1) => assert_eq!(weight, 3.into()),
-//                 (3, 3) => assert!(weight.is_pos_infinite()),
-//                 _ => panic!("not valid vertices"),
-//             }
-//         }
-//     }
+        for (v1, v2, edge) in adj_matrix.edges() {
+            match (v1, v2) {
+                (1, 1) => assert!(edge.get_weight().is_pos_infinite()),
+                (1, 3) => assert_eq!(edge.get_weight(), &3.into()),
+                (3, 1) => assert_eq!(edge.get_weight(), &3.into()),
+                (3, 3) => assert!(edge.get_weight().is_pos_infinite()),
+                _ => panic!("not valid vertices"),
+            }
+        }
+    }
 
-//     #[test]
-//     fn neighbors_directed() {
-//         let mut adj_matrix = AdjMatrix::<usize, DefaultEdge<usize>>::init(true);
+    #[test]
+    fn neighbors_directed() {
+        let mut adj_matrix = AdjMatrix::<usize, DefaultEdge<usize>>::init(true);
 
-//         for _ in 0..5 {
-//             let _ = adj_matrix.add_vertex();
-//         }
+        for _ in 0..5 {
+            let _ = adj_matrix.add_vertex();
+        }
 
-//         adj_matrix[(1, 3)] = 3.into();
-//         adj_matrix[(1, 2)] = 2.into();
-//         adj_matrix[(4, 0)] = 1.into();
+        adj_matrix[(1, 3)] = Edge::init(3.into());
+        adj_matrix[(1, 2)] = Edge::init(2.into());
+        adj_matrix[(4, 0)] = Edge::init(1.into());
 
-//         let one_neighbors = adj_matrix.neighbors(1);
+        let one_neighbors = adj_matrix.neighbors(1);
 
-//         assert_eq!(one_neighbors.len(), 2);
-//         assert!(one_neighbors.contains(&3));
-//         assert!(one_neighbors.contains(&2));
+        assert_eq!(one_neighbors.len(), 2);
+        assert!(one_neighbors.contains(&3));
+        assert!(one_neighbors.contains(&2));
 
-//         let four_neighbors = adj_matrix.neighbors(4);
-//         assert_eq!(four_neighbors.len(), 1);
-//         assert!(four_neighbors.contains(&0));
+        let four_neighbors = adj_matrix.neighbors(4);
+        assert_eq!(four_neighbors.len(), 1);
+        assert!(four_neighbors.contains(&0));
 
-//         assert!(adj_matrix.neighbors(0).is_empty());
-//         assert!(adj_matrix.neighbors(2).is_empty());
-//         assert!(adj_matrix.neighbors(3).is_empty());
-//     }
+        assert!(adj_matrix.neighbors(0).is_empty());
+        assert!(adj_matrix.neighbors(2).is_empty());
+        assert!(adj_matrix.neighbors(3).is_empty());
+    }
 
-//     #[test]
-//     fn neighbors_undirected() {
-//         let mut adj_matrix = AdjMatrix::<usize, DefaultEdge<usize>>::init(true);
+    #[test]
+    fn neighbors_undirected() {
+        let mut adj_matrix = AdjMatrix::<usize, DefaultEdge<usize>>::init(false);
 
-//         for _ in 0..5 {
-//             let _ = adj_matrix.add_vertex();
-//         }
+        for _ in 0..5 {
+            let _ = adj_matrix.add_vertex();
+        }
 
-//         adj_matrix[(1, 3)] = 3.into();
-//         adj_matrix[(4, 0)] = 1.into();
+        adj_matrix[(1, 3)] = Edge::init(3.into());
+        adj_matrix[(4, 0)] = Edge::init(1.into());
 
-//         let one_neighbors = adj_matrix.neighbors(1);
-//         assert_eq!(one_neighbors.len(), 1);
-//         assert!(one_neighbors.contains(&3));
+        let one_neighbors = adj_matrix.neighbors(1);
+        assert_eq!(one_neighbors.len(), 1);
+        assert!(one_neighbors.contains(&3));
 
-//         let three_neighbors = adj_matrix.neighbors(3);
-//         assert_eq!(three_neighbors.len(), 1);
-//         assert!(three_neighbors.contains(&1));
+        let three_neighbors = adj_matrix.neighbors(3);
+        assert_eq!(three_neighbors.len(), 1);
+        assert!(three_neighbors.contains(&1));
 
-//         let four_neighbors = adj_matrix.neighbors(4);
-//         assert_eq!(four_neighbors.len(), 1);
-//         assert!(four_neighbors.contains(&0));
+        let four_neighbors = adj_matrix.neighbors(4);
+        assert_eq!(four_neighbors.len(), 1);
+        assert!(four_neighbors.contains(&0));
 
-//         let zero_neighbors = adj_matrix.neighbors(0);
-//         assert_eq!(zero_neighbors.len(), 1);
-//         assert!(zero_neighbors.contains(&4));
+        let zero_neighbors = adj_matrix.neighbors(0);
+        assert_eq!(zero_neighbors.len(), 1);
+        assert!(zero_neighbors.contains(&4));
 
-//         assert!(adj_matrix.neighbors(2).is_empty());
-//     }
-// }
+        assert!(adj_matrix.neighbors(2).is_empty());
+    }
+}
