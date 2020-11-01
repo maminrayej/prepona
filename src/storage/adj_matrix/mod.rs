@@ -17,13 +17,17 @@ pub type FlowMat<W> = AdjMatrix<W, FlowEdge<W>>;
 /// In an undirected graph, the adjacency matrix is symmetric in the sense that: ∀ i,j *A<sub>ij</sub>* = *A<sub>ji</sub>*.
 /// Therefore `AdjMatrix` only stores the lower triangle of the matrix to save space.
 ///
+/// # Generic Parameters:
+/// * `W`: Weight of the edge.
+/// * `E`: Edge of the graph.
+///
 /// # Conventions:
 /// * |V| represents total number of vertices in the adjacency matrix: \
 /// number of vertices present in the graph + number of removed vertices that are present in the adjacency matrix.
 pub struct AdjMatrix<W, E: Edge<W>> {
     // AdjMatrix uses a flat vector to store the adjacency matrix and uses a mapping function to map the (i,j) tuple to an index.
     // this mapping function depends on wether the matrix is used to store directed or undirected edges.
-    // for more info about the mapping function checkout utils module.
+    // for more info about the mapping function, checkout utils module.
     vec: Vec<E>,
 
     // When a vertex is deleted from the graph, AdjMatrix stores the removed vertex id in this struct to use it later when a vertex needs to be inserted into the graph.
@@ -40,7 +44,7 @@ impl<W, E: Edge<W>> AdjMatrix<W, E> {
     /// Initializes an adjacency matrix.
     ///
     /// # Arguments:
-    /// * `edge_type`: indicates wether the adjacency matrix is going to store directed or undirected edges.
+    /// * `is_directed`: indicates wether the adjacency matrix is going to store directed or undirected edges.
     ///
     /// # Returns:
     /// An adjacency matrix.
@@ -83,7 +87,7 @@ impl<W, E: Edge<W>> AdjMatrix<W, E> {
     }
 }
 
-impl<W: Any + Copy, E: Edge<W>> GraphStorage<W, E> for AdjMatrix<W, E> {
+impl<W: Any, E: Edge<W>> GraphStorage<W, E> for AdjMatrix<W, E> {
     /// Adds a vertex into the adjacency matrix.
     ///
     /// # Returns:
@@ -97,16 +101,16 @@ impl<W: Any + Copy, E: Edge<W>> GraphStorage<W, E> for AdjMatrix<W, E> {
             reusable_id
         } else {
             let new_size = if self.is_directed() {
-                // Has to allocate for a new row(|V|) + a new column(|V|) + one slot for the diagonal: 2 * |V| + 1
+                // Has to allocate for a new row(|V|) + a new column(|V|) + one slot for the diagonal: 2 * |V| + 1.
                 self.vec.len() + 2 * self.total_vertex_count() + 1
             } else {
-                // Has to allocate just one row(|V|) + one slot for diagonal: |V| + 1
+                // Has to allocate just one row(|V|) + one slot for diagonal: |V| + 1.
                 self.vec.len() + self.total_vertex_count() + 1
             };
 
-            // Populate these new allocated slots with positive infinity
+            // Populate these new allocated slots with positive infinity.
             self.vec
-                .resize_with(new_size, || E::init(Magnitude::PosInfinite));
+                .resize_with(new_size, || Edge::init(Magnitude::PosInfinite));
 
             self.vertex_count += 1;
 
@@ -130,11 +134,11 @@ impl<W: Any + Copy, E: Edge<W>> GraphStorage<W, E> for AdjMatrix<W, E> {
         // |   | ∞ |   |
         //  -----------
         for other_id in self.vertices() {
-            self[(vertex_id, other_id)] = E::init(Magnitude::PosInfinite);
-            self[(other_id, vertex_id)] = E::init(Magnitude::PosInfinite);
+            self[(vertex_id, other_id)] = Edge::init(Magnitude::PosInfinite);
+            self[(other_id, vertex_id)] = Edge::init(Magnitude::PosInfinite);
         }
 
-        // Removed vertex id is now reusable
+        // Removed vertex id is now reusable.
         self.reusable_ids.insert(vertex_id);
 
         self.vertex_count -= 1;
@@ -145,7 +149,7 @@ impl<W: Any + Copy, E: Edge<W>> GraphStorage<W, E> for AdjMatrix<W, E> {
     /// # Arguments:
     /// * `src_id`: Id of the vertex at the start of the edge.
     /// * `dst_id`: Id of the vertex at the end of the edge.
-    /// * `weight`: Weight of the edge between `src_id` and `dst_id`.
+    /// * `edge`: The edge between `src_id` and `dst_id`.
     ///
     /// # Panics:
     /// * If vertex with `src_id` or `dst_id` is not present in the graph.
@@ -164,7 +168,7 @@ impl<W: Any + Copy, E: Edge<W>> GraphStorage<W, E> for AdjMatrix<W, E> {
     /// * `dst_id`: Id of the vertex at the end of the edge.
     ///
     /// # Returns:
-    /// The weight of the removed edge.
+    /// The removed edge.
     ///
     /// # Panics:
     /// * If vertex with `src_id` or `dst_id` is not present in the graph.
@@ -195,7 +199,7 @@ impl<W: Any + Copy, E: Edge<W>> GraphStorage<W, E> for AdjMatrix<W, E> {
     /// # Complexity:
     /// O(|V|).
     fn vertices(&self) -> Vec<usize> {
-        // Out of all vertex ids, filter out the ones that are reusable(hence are removed and not present in the graph).
+        // Out of all vertex ids, remove ids that are reusable(hence are removed and not present in the graph).
         (0..self.total_vertex_count())
             .into_iter()
             .filter(|v_id| !self.reusable_ids.contains(v_id))
@@ -203,7 +207,7 @@ impl<W: Any + Copy, E: Edge<W>> GraphStorage<W, E> for AdjMatrix<W, E> {
     }
 
     /// # Returns:
-    /// Vector of edges in the format of (`src_id`, `dst_id`, `weight`).
+    /// Vector of edges in the format of (`src_id`, `dst_id`, `edge`).
     ///
     /// # Complexity:
     /// O(|V|<sup>2</sup>).
@@ -213,7 +217,7 @@ impl<W: Any + Copy, E: Edge<W>> GraphStorage<W, E> for AdjMatrix<W, E> {
         // 1. Produce cartesian product: { vertices } x { vertices }:
         //  1.1: For every vertex v1 produce (v1, v2): ∀v2 ∈ { vertices }.
         //  1.2: Previous step will produce |V| vector of tuples each with length |V|, flat it to a single vector of |V|*|V| tuples.
-        // 2. Map each tuple (v1, v2) to (v1, v2, weight of edge between v1 and v2).
+        // 2. Map each tuple (v1, v2) to (v1, v2, edge between v1 and v2).
         vertices
             .iter()
             .flat_map(|v1| {
@@ -227,7 +231,7 @@ impl<W: Any + Copy, E: Edge<W>> GraphStorage<W, E> for AdjMatrix<W, E> {
     }
 
     /// # Returns:
-    /// Vector of edges from vertex with `src_id` in the format of (`dst_id`, `weight`).
+    /// Vector of edges from vertex with `src_id` in the format of (`dst_id`, `edge`).
     ///
     /// # Arguments:
     /// * `src_id`: Id of the source vertex.
@@ -235,8 +239,8 @@ impl<W: Any + Copy, E: Edge<W>> GraphStorage<W, E> for AdjMatrix<W, E> {
     /// Complexity:
     /// O(|V|).
     fn edges_from(&self, src_id: usize) -> Vec<(usize, &E)> {
-        // 1. Produce tuple (v, weight of edge between src and v): ∀v ∈ { vertices }.
-        // 2. Only keep those tuples that their weight is finite(weight with infinite value indicates absence of edge between src and v).
+        // 1. Produce tuple (v, edge between src and v): ∀v ∈ { vertices }.
+        // 2. Only keep those tuples that weight of their edge is finite(weight with infinite value indicates absence of edge between src and v).
         self.vertices()
             .into_iter()
             .map(|v_id| (v_id, &self[(src_id, v_id)]))
@@ -253,7 +257,7 @@ impl<W: Any + Copy, E: Edge<W>> GraphStorage<W, E> for AdjMatrix<W, E> {
     /// # Complexity:
     /// O(|V|).
     fn neighbors(&self, src_id: usize) -> Vec<usize> {
-        // Of all vertices, only keep those that there exists a edge from vertex with `src_id` to them.
+        // Of all vertices, only keep those that there exists an edge from vertex with `src_id` to them.
         self.vertices()
             .into_iter()
             .filter(|dst_id| self[(src_id, *dst_id)].get_weight().is_finite())
@@ -271,7 +275,7 @@ impl<W: Any + Copy, E: Edge<W>> GraphStorage<W, E> for AdjMatrix<W, E> {
 }
 
 use std::ops::{Index, IndexMut};
-impl<W: Copy + Any, E: Edge<W>> Index<(usize, usize)> for AdjMatrix<W, E> {
+impl<W: Any, E: Edge<W>> Index<(usize, usize)> for AdjMatrix<W, E> {
     type Output = E;
 
     fn index(&self, index: (usize, usize)) -> &Self::Output {
@@ -312,7 +316,7 @@ impl<W: Copy + Any, E: Edge<W>> Index<(usize, usize)> for AdjMatrix<W, E> {
     }
 }
 
-impl<W: Copy + Any, E: Edge<W>> IndexMut<(usize, usize)> for AdjMatrix<W, E> {
+impl<W: Any, E: Edge<W>> IndexMut<(usize, usize)> for AdjMatrix<W, E> {
     fn index_mut(&mut self, index: (usize, usize)) -> &mut Self::Output {
         let (src_id, dst_id) = index;
 

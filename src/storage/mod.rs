@@ -5,14 +5,18 @@ pub use adj_matrix::{AdjMatrix, FlowMat, Mat};
 use crate::graph::Edge;
 
 /// Trait that describes a struct that can act as a storage for graph data.
+///
+/// # Generic Parameters:
+/// * `W`: Weight of the edge.
+/// * `E`: Edge of the graph.
 pub trait GraphStorage<W, E: Edge<W>> {
-    /// Adds a vertex into the adjacency matrix.
+    /// Adds a vertex to the storage.
     ///
     /// # Returns:
     /// Id of the newly inserted vertex.
     fn add_vertex(&mut self) -> usize;
 
-    /// Removes a vertex from the adjacency matrix.
+    /// Removes a vertex from the storage.
     ///
     /// # Arguments:
     /// * `vertex_id`: Id of the vertex to be removed.
@@ -23,7 +27,7 @@ pub trait GraphStorage<W, E: Edge<W>> {
     /// # Arguments:
     /// * `src_id`: Id of the vertex at the start of the edge.
     /// * `dst_id`: Id of the vertex at the end of the edge.
-    /// * `weight`: Weight of the edge between `src_id` and `dst_id`.
+    /// * `edge`: The edge between `src_id` and `dst_id`.
     fn add_edge(&mut self, src_id: usize, dst_id: usize, edge: E);
 
     /// Removes the edge from vertex with `src_id` to vertex with `dst_id`.
@@ -33,7 +37,7 @@ pub trait GraphStorage<W, E: Edge<W>> {
     /// * `dst_id`: Id of the vertex at the end of the edge.
     ///
     /// # Returns:
-    /// The weight of the removed edge.
+    /// The removed edge.
     fn remove_edge(&mut self, src_id: usize, dst_id: usize) -> E;
 
     /// # Returns:
@@ -45,11 +49,11 @@ pub trait GraphStorage<W, E: Edge<W>> {
     fn vertices(&self) -> Vec<usize>;
 
     /// # Returns:
-    /// Vector of edges in the format of (`src_id`, `dst_id`, `weight`).
+    /// Vector of edges in the format of (`src_id`, `dst_id`, `edge`).
     fn edges(&self) -> Vec<(usize, usize, &E)>;
 
     /// # Returns:
-    /// Vector of edges from vertex with `src_id` in the format of (`dst_id`, `weight`).
+    /// Vector of edges from vertex with `src_id` in the format of (`dst_id`, `edge`).
     ///
     /// # Arguments:
     /// * `src_id`: Id of the source vertex.
