@@ -5,13 +5,21 @@ use crate::graph::{DefaultEdge, Edge, FlowEdge};
 use crate::provide;
 use crate::storage::{FlowMat, GraphStorage, Mat};
 
+/// A `SimpleGraph` with a `DefaultEdge` that uses `AdjMatrix` as its storage.
 pub type MatGraph<W> = SimpleGraph<W, DefaultEdge<W>, Mat<W>>;
+
+/// A `SimpleGraph` with a `FlowEdge` that uses `AdjMatrix` as its storage.
 pub type FlowMatGraph<W> = SimpleGraph<W, FlowEdge<W>, FlowMat<W>>;
 
 /// By simple graph we mean a graph without loops and multiple edges.
 ///
 /// Unlike its formal definition which indicates that a simple graph is an unweighted, undirected graph containing no graph loops or multiple edges.\
 /// But this can be achieved easily with our `SimpleGraph` too.
+///
+/// # Generic Parameters:
+/// `W`: Weight of the edge.
+/// `E`: Edge of the graph.
+/// `S`: Storage that graph uses.
 pub struct SimpleGraph<W, E: Edge<W>, S: GraphStorage<W, E>> {
     // Backend storage to store graph data
     storage: S,
@@ -21,11 +29,10 @@ pub struct SimpleGraph<W, E: Edge<W>, S: GraphStorage<W, E>> {
 }
 
 impl<W: Any + Copy, E: Edge<W>, S: GraphStorage<W, E>> SimpleGraph<W, E, S> {
-    /// Initialize the graph with specified `storage` and `edge_type`.
+    /// Initialize the graph with specified `storage`.
     ///
     /// # Arguments:
-    /// * `storage`: Indicates what type of storage should this graph use for storing its data.
-    /// * `edge_type`: Indicates edges of the graph are directed or undirected.
+    /// * `storage`: Storage that graph will use to store its data.
     ///
     /// # Returns:
     /// * Initialized graph.
@@ -75,7 +82,7 @@ impl<W, E: Edge<W>, S: GraphStorage<W, E>> provide::Vertices for SimpleGraph<W, 
 
 impl<W, E: Edge<W>, S: GraphStorage<W, E>> provide::Edges<W, E> for SimpleGraph<W, E, S> {
     /// # Returns:
-    /// Vector of edges in the format of (`src_id`, `dst_id`, `weight`).
+    /// Vector of edges in the format of (`src_id`, `dst_id`, `edge`).
     ///
     /// # Complexity:
     /// Depends on the storage type.
@@ -84,7 +91,7 @@ impl<W, E: Edge<W>, S: GraphStorage<W, E>> provide::Edges<W, E> for SimpleGraph<
     }
 
     /// # Returns:
-    /// Vector of edges from vertex with `src_id` in the format of (`dst_id`, `weight`).
+    /// Vector of edges from vertex with `src_id` in the format of (`dst_id`, `edge`).
     ///
     /// # Arguments:
     /// * `src_id`: Id of the source vertex.
@@ -124,7 +131,7 @@ impl<W, E: Edge<W>, S: GraphStorage<W, E>> provide::Graph<W, E> for SimpleGraph<
     /// # Arguments:
     /// * `src_id`: Id of the vertex at the start of the edge.
     /// * `dst_id`: Id of the vertex at the end of the edge.
-    /// * `weight`: Weight of the edge between `src_id` and `dst_id`.
+    /// * `edge`: Edge between `src_id` and `dst_id`.
     ///
     /// # Panics:
     /// * If `src_id` == `dst_id`: because it causes a loop.
@@ -146,7 +153,7 @@ impl<W, E: Edge<W>, S: GraphStorage<W, E>> provide::Graph<W, E> for SimpleGraph<
     /// * `dst_id`: Id of the vertex at the end of the edge.
     ///
     /// # Returns:
-    /// The weight of the removed edge.
+    /// The removed edge.
     ///
     /// # Complexity:
     /// Depends on the storage type.
@@ -155,7 +162,7 @@ impl<W, E: Edge<W>, S: GraphStorage<W, E>> provide::Graph<W, E> for SimpleGraph<
     }
 
     /// # Returns:
-    /// `true`: If edges stored in the graph are directed `false` otherwise.
+    /// `true`: If edges stored in the graph are directed, `false` otherwise.
     ///
     /// # Complexity:
     /// Depends on the storage type.
