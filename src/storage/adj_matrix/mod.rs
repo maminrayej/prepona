@@ -8,7 +8,10 @@ use std::marker::PhantomData;
 use crate::graph::{DefaultEdge, Edge, FlowEdge};
 use crate::storage::GraphStorage;
 
+/// An `AdjMatrix` that stores edges of type `DefaultEdge`.
 pub type Mat<W> = AdjMatrix<W, DefaultEdge<W>>;
+
+/// An `AdjMatrix` that stores edges of type `FlowEdge`.
 pub type FlowMat<W> = AdjMatrix<W, FlowEdge<W>>;
 
 /// For a simple graph with vertex set *V*, the adjacency matrix is a square |V| × |V| matrix *A*
