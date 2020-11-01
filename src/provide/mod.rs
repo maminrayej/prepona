@@ -1,3 +1,7 @@
+mod id_map;
+
+pub use id_map::IdMap;
+
 use crate::graph::Edge;
 
 /// Trait to guarantee that graph can provide access to neighbors of a vertex.
@@ -23,6 +27,17 @@ pub trait Vertices {
     /// This function has a default implementation but for better performance its usually better to implement it manually.
     fn vertex_count(&self) -> usize {
         self.vertices().len()
+    }
+
+    fn continuos_id_map(&self) -> IdMap {
+        let mut id_map = IdMap::init();
+
+        self.vertices().iter().enumerate().for_each(|(virt_id, &real_id)| {
+            id_map.put_virt_to_real(virt_id, real_id);
+            id_map.put_real_to_virt(real_id, virt_id);
+        });
+
+        id_map
     }
 }
 
