@@ -27,13 +27,17 @@ pub trait Vertices {
 }
 
 /// Trait to guarantee that graph can provide access to edges in the graph.
+///
+/// # Generic Parameters:
+/// * `W`: Weight of the edge.
+/// * `E`: Edge of the graph.
 pub trait Edges<W, E: Edge<W>> {
     /// # Returns:
-    /// Vector of edges in the format of (`src_id`, `dst_id`, `weight`).
+    /// Vector of edges in the format of (`src_id`, `dst_id`, `edge`).
     fn edges(&self) -> Vec<(usize, usize, &E)>;
 
     /// # Returns:
-    /// Vector of edges from vertex with `src_id` in the format of (`dst_id`, `weight`).
+    /// Vector of edges from vertex with `src_id` in the format of (`dst_id`, `edge`).
     ///
     /// # Arguments:
     /// * `src_id`: Id of the source vertex.
@@ -61,6 +65,10 @@ pub trait Edges<W, E: Edge<W>> {
 }
 
 /// Trait to guarantee that graph can provide basic functions needed for graph computation.
+///
+/// # Generic Parameters:
+/// * `W`: Weight of the edge.
+/// * `E`: Edge of the graph.
 pub trait Graph<W, E: Edge<W>> {
     /// Adds a vertex into the graph.
     ///
@@ -79,7 +87,7 @@ pub trait Graph<W, E: Edge<W>> {
     /// # Arguments:
     /// * `src_id`: Id of the vertex at the start of the edge.
     /// * `dst_id`: Id of the vertex at the end of the edge.
-    /// * `weight`: Weight of the edge between `src_id` and `dst_id`.
+    /// * `edge`: Edge between `src_id` and `dst_id`.
     fn add_edge(&mut self, src_id: usize, dst_id: usize, edge: E);
 
     /// Removes the edge from vertex with `src_id` to vertex with `dst_id`.
@@ -89,7 +97,7 @@ pub trait Graph<W, E: Edge<W>> {
     /// * `dst_id`: Id of the vertex at the end of the edge.
     ///
     /// # Returns:
-    /// The weight of the removed edge.
+    /// The removed edge.
     fn remove_edge(&mut self, src_id: usize, dst_id: usize) -> E;
 
     /// # Returns:
