@@ -7,7 +7,16 @@ pub use default_edge::DefaultEdge;
 pub use flow_edge::FlowEdge;
 
 /// Trait to guarantee a struct can act as edge of a graph.
+///
+/// `W`: Weight of the edge.
 pub trait Edge<W> {
+    /// Initializes an edge with the given `weight`.
+    ///
+    /// # Arguments:
+    /// * `weight`: Weight of the edge.
+    ///
+    /// # Returns:
+    /// * Initialized edge.
     fn init(weight: Magnitude<W>) -> Self;
 
     /// # Returns:
