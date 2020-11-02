@@ -87,11 +87,6 @@ impl Dfs {
                 let color = self.colors.borrow()[virt_id];
                 match color {
                     Color::White => {
-                        println!(
-                            "vertex {} with color: {:?}",
-                            self.id_map.borrow().get_virt_to_real(virt_id).unwrap(),
-                            color
-                        );
                         *self.time.borrow_mut() += 1;
                         self.discovered.borrow_mut()[virt_id] = (*self.time.borrow()).into();
 
