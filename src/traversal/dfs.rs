@@ -1,6 +1,9 @@
+use magnitude::Magnitude;
+use std::cell::{Ref, RefCell};
+
 use crate::provide;
 
-#[derive(Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, PartialEq, Debug)]
 pub enum Color {
     White,
     Gray,
@@ -8,12 +11,13 @@ pub enum Color {
 }
 
 pub struct Dfs {
-    stack: Vec<usize>,
-    colors: Vec<Color>,
-    discovered: Vec<usize>,
-    finished: Vec<usize>,
-    time: usize,
-    id_map: provide::IdMap,
+    stack: RefCell<Vec<usize>>,
+    colors: RefCell<Vec<Color>>,
+    discovered: RefCell<Vec<Magnitude<usize>>>,
+    finished: RefCell<Vec<Magnitude<usize>>>,
+    time: RefCell<usize>,
+    id_map: RefCell<provide::IdMap>,
+    start_ids: RefCell<Vec<usize>>,
 }
 
 impl Dfs {
@@ -21,340 +25,667 @@ impl Dfs {
     where
         G: provide::Vertices + provide::Neighbors,
     {
+        Dfs::init_with(graph, vec![])
+    }
+
+    pub fn init_with<G>(graph: &G, start_ids: Vec<usize>) -> Self
+    where
+        G: provide::Vertices + provide::Neighbors,
+    {
         let vertex_count = graph.vertex_count();
 
         Dfs {
-            stack: vec![],
-            colors: vec![Color::White; vertex_count],
-            discovered: vec![],
-            finished: vec![],
-            time: 0,
-            id_map: graph.continuos_id_map(),
+            stack: RefCell::new(vec![]),
+            colors: RefCell::new(vec![Color::White; vertex_count]),
+            discovered: RefCell::new(vec![Magnitude::PosInfinite; vertex_count]),
+            finished: RefCell::new(vec![Magnitude::PosInfinite; vertex_count]),
+            time: RefCell::new(0),
+            id_map: RefCell::new(graph.continuos_id_map()),
+            start_ids: RefCell::new(start_ids),
         }
     }
 
+    fn next_start_id(&self) -> Option<usize> {
+        if self.start_ids.borrow().is_empty() {
+            for (virt_start_id, &color) in self.colors.borrow().iter().enumerate() {
+                if color == Color::White {
+                    return Some(virt_start_id);
+                }
+            }
+
+            None
+        } else {
+            self.start_ids.borrow_mut().pop()
+        }
+    }
+
+    fn next_virt_id(&self) -> Option<usize> {
+        self.stack.borrow_mut().pop()
+    }
+
     pub fn execute<G>(
-        &mut self,
+        &self,
         graph: &G,
-        on_start: &dyn Fn(usize),
-        on_white: &dyn Fn(usize),
-        on_gray: &dyn Fn(usize),
-        on_black: &dyn Fn(usize),
+        mut on_start: impl FnMut(usize),
+        mut on_white: impl FnMut(usize),
+        mut on_gray: impl FnMut(usize),
+        mut on_black: impl FnMut(usize),
     ) where
         G: provide::Vertices + provide::Neighbors,
     {
-        while let Some((virt_start_id, _)) = self
-            .colors
-            .iter()
-            .enumerate()
-            .find(|(_, color)| **color == Color::White)
-        {
+        while let Some(virt_start_id) = self.next_start_id() {
+            if self.colors.borrow()[virt_start_id] != Color::White {
+                continue;
+            }
+
             // On start.
-            self.stack.push(virt_start_id);
+            *self.time.borrow_mut() = 0;
+            self.stack.borrow_mut().push(virt_start_id);
             on_start(virt_start_id);
 
-            while let Some(virt_id) = self.stack.pop() {
-                match self.colors[virt_id] {
+            while let Some(virt_id) = self.next_virt_id() {
+                let color = self.colors.borrow()[virt_id];
+                match color {
                     Color::White => {
-                        self.time += 1;
+                        println!(
+                            "vertex {} with color: {:?}",
+                            self.id_map.borrow().get_virt_to_real(virt_id).unwrap(),
+                            color
+                        );
+                        *self.time.borrow_mut() += 1;
+                        self.discovered.borrow_mut()[virt_id] = (*self.time.borrow()).into();
 
                         // On white.
-                        self.discovered[virt_id] = self.time;
                         on_white(virt_id);
 
-                        self.colors[virt_id] = Color::Gray;
+                        self.colors.borrow_mut()[virt_id] = Color::Gray;
 
-                        let real_id = self.id_map.get_virt_to_real(virt_id).unwrap();
+                        let real_id = self.id_map.borrow().get_virt_to_real(virt_id).unwrap();
 
                         let mut undiscovered_neighbors = graph
                             .neighbors(real_id)
                             .into_iter()
-                            .filter(|n_id| self.colors[*n_id] == Color::White)
-                            .map(|real_id| self.id_map.get_real_to_virt(real_id).unwrap())
+                            .filter(|n_id| self.colors.borrow()[*n_id] == Color::White)
+                            .map(|real_id| self.id_map.borrow().get_real_to_virt(real_id).unwrap())
                             .collect::<Vec<usize>>();
 
-                        self.stack.push(virt_id);
-                        self.stack.append(&mut undiscovered_neighbors);
+                        self.stack.borrow_mut().push(virt_id);
+                        self.stack.borrow_mut().append(&mut undiscovered_neighbors);
                     }
                     Color::Gray => {
                         // On gray.
-                        self.colors[virt_id] = Color::Black;
                         on_gray(virt_id);
-                    }
-                    Color::Black => {
+
                         // On black.
-                        self.time += 1;
-                        self.finished[virt_id] = self.time;
+                        self.colors.borrow_mut()[virt_id] = Color::Black;
+                        *self.time.borrow_mut() += 1;
+                        self.finished.borrow_mut()[virt_id] = (*self.time.borrow()).into();
                         on_black(virt_id);
                     }
+                    Color::Black => {}
                 };
             }
         }
     }
 
-    pub fn get_stack(&self) -> &Vec<usize> {
-        &self.stack
+    pub fn get_stack(&self) -> Ref<'_, Vec<usize>> {
+        self.stack.borrow()
     }
 
-    pub fn get_colors(&self) -> &Vec<Color> {
-        &self.colors
+    pub fn get_colors(&self) -> Ref<'_, Vec<Color>> {
+        self.colors.borrow()
     }
 
-    pub fn get_discovered(&self) -> &Vec<usize> {
-        &self.discovered
+    pub fn get_discovered(&self) -> Ref<'_, Vec<Magnitude<usize>>> {
+        self.discovered.borrow()
     }
 
-    pub fn get_finished(&self) -> &Vec<usize> {
-        &self.finished
+    pub fn get_finished(&self) -> Ref<'_, Vec<Magnitude<usize>>> {
+        self.finished.borrow()
     }
 
-    pub fn get_id_map(&self) -> &provide::IdMap {
-        &self.id_map
+    pub fn get_id_map(&self) -> Ref<'_, provide::IdMap> {
+        self.id_map.borrow()
+    }
+
+    pub fn get_time(&self) -> usize {
+        *self.time.borrow()
     }
 }
 
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
-//     // use crate::graph::structs::SimpleGraph;
-//     use crate::graph::MatGraph;
-//     use crate::provide::*;
-//     use crate::storage::Mat;
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::graph::MatGraph;
+    use crate::provide::*;
+    use crate::storage::Mat;
 
-//     #[test]
-//     fn one_vertex_directed_graph() {
-//         // Given: directed graph with single vertex.
-//         let mut graph = MatGraph::<usize>::init(Mat::init(true));
-//         graph.add_vertex();
+    #[test]
+    fn empty_directed_graph() {
+        // Given: An empty directed graph.
+        let graph = MatGraph::init(Mat::<usize>::init(true));
 
-//         // When: traversing graph using dfs algorithm.
-//         let dfs = Dfs::init(0);
-//         let visited = dfs.execute(&graph);
+        // When: traversing the graph.
+        let dfs = Dfs::init(&graph);
 
-//         // Then:
-//         // Visited set must contain only one item.
-//         assert_eq!(visited.len(), 1);
-//         // Visited set mut contain only the vertex itself.
-//         assert!(visited.contains(&0));
-//     }
+        let mut on_start_called = 0;
+        let mut on_white_called = 0;
+        let mut on_gray_called = 0;
+        let mut on_black_called = 0;
 
-//     #[test]
-//     fn one_vertex_undirected_graph() {
-//         // Given: undirected graph with single vertex.
-//         let mut graph = MatGraph::<usize>::init(Mat::init(false));
-//         graph.add_vertex();
+        dfs.execute(
+            &graph,
+            |_| on_start_called += 1,
+            |_| on_white_called += 1,
+            |_| on_gray_called += 1,
+            |_| on_black_called += 1,
+        );
 
-//         // When: traversing graph using dfs algorithm.
-//         let dfs = Dfs::init(0);
-//         let visited = dfs.execute(&graph);
+        // Then:
+        assert_eq!(on_start_called, 0);
+        assert_eq!(on_white_called, 0);
+        assert_eq!(on_gray_called, 0);
+        assert_eq!(on_black_called, 0);
+    }
 
-//         // Then:
-//         // Visited set must contain only one item.
-//         assert_eq!(visited.len(), 1);
-//         // Visited set mut contain only the vertex itself.
-//         assert!(visited.contains(&0));
-//     }
+    #[test]
+    fn empty_undirected_graph() {
+        // Given: An empty undirected graph.
+        let graph = MatGraph::init(Mat::<usize>::init(false));
 
-//     #[test]
-//     fn acyclic_directed_graph() {
-//         // Given: directed graph: a -> b.
-//         let mut graph = MatGraph::<usize>::init(Mat::init(true));
-//         let a = graph.add_vertex();
-//         let b = graph.add_vertex();
-//         graph.add_edge(a, b, 1.into());
+        // When: traversing the graph.
+        let dfs = Dfs::init(&graph);
 
-//         // When: traversing graph using dfs algorithm from vertex a.
-//         let dfs = Dfs::init(a);
-//         let visited = dfs.execute(&graph);
+        let mut on_start_called = 0;
+        let mut on_white_called = 0;
+        let mut on_gray_called = 0;
+        let mut on_black_called = 0;
 
-//         // Then:
-//         // Visited set must contain two elements.
-//         assert_eq!(visited.len(), 2);
-//         // Visited set must contain both a and b.
-//         assert!(vec![a, b].into_iter().all(|v_id| visited.contains(&v_id)));
+        dfs.execute(
+            &graph,
+            |_| on_start_called += 1,
+            |_| on_white_called += 1,
+            |_| on_gray_called += 1,
+            |_| on_black_called += 1,
+        );
 
-//         // When: traversing graph using dfs algorithm from vertex b.
-//         let dfs = Dfs::init(b);
-//         let visited = dfs.execute(&graph);
+        // Then:
+        assert_eq!(on_start_called, 0);
+        assert_eq!(on_white_called, 0);
+        assert_eq!(on_gray_called, 0);
+        assert_eq!(on_black_called, 0);
+    }
 
-//         // Then:
-//         // Visited set must contain only one element.
-//         assert_eq!(visited.len(), 1);
-//         // Visited set must only contain b.
-//         assert!(visited.contains(&b));
-//     }
+    #[test]
+    fn directed_graph_with_one_vertex() {
+        // Given: A directed graph: a.
+        let mut graph = MatGraph::init(Mat::<usize>::init(true));
+        let _ = graph.add_vertex();
 
-//     #[test]
-//     fn acyclic_undirected_graph() {
-//         // Given: undirected graph: a -- b.
-//         let mut graph = MatGraph::<usize>::init(Mat::init(false));
-//         let a = graph.add_vertex();
-//         let b = graph.add_vertex();
-//         graph.add_edge(a, b, 1.into());
+        // When: traversing graph.
+        let dfs = Dfs::init(&graph);
 
-//         // When: traversing graph using dfs algorithm from vertex a.
-//         let dfs = Dfs::init(a);
-//         let visited = dfs.execute(&graph);
+        let mut on_start_called = 0;
+        let mut on_white_called = 0;
+        let mut on_gray_called = 0;
+        let mut on_black_called = 0;
 
-//         // Then:
-//         // Visited set must contain two elements.
-//         assert_eq!(visited.len(), 2);
-//         // Visited set must contain both a and b.
-//         assert!(vec![a, b].into_iter().all(|v_id| visited.contains(&v_id)));
+        dfs.execute(
+            &graph,
+            |_| {
+                on_start_called += 1;
+                assert!(dfs.get_time() == 0);
+            },
+            |_| on_white_called += 1,
+            |_| on_gray_called += 1,
+            |_| on_black_called += 1,
+        );
 
-//         // When: traversing graph using dfs algorithm from vertex b.
-//         let dfs = Dfs::init(b);
-//         let visited = dfs.execute(&graph);
+        // Then:
+        assert_eq!(on_start_called, 1);
+        assert_eq!(on_white_called, 1);
+        assert_eq!(on_gray_called, 1);
+        assert_eq!(on_black_called, 1);
+    }
 
-//         // Then:
-//         // Visited set must contain two elements.
-//         assert_eq!(visited.len(), 2);
-//         // Visited set must contain both a and b.
-//         assert!(vec![a, b].into_iter().all(|v_id| visited.contains(&v_id)));
-//     }
+    #[test]
+    fn undirected_graph_with_one_vertex() {
+        // Given: An undirected graph: a.
+        let mut graph = MatGraph::init(Mat::<usize>::init(false));
+        let _ = graph.add_vertex();
 
-//     #[test]
-//     fn directed_graph_with_cycle() {
-//         // Given: directed graph:   a --> b
-//         //                          ^     |
-//         //                          |     |
-//         //                          c <----
-//         let mut graph = MatGraph::<usize>::init(Mat::init(true));
-//         let a = graph.add_vertex();
-//         let b = graph.add_vertex();
-//         let c = graph.add_vertex();
-//         graph.add_edge(a, b, 1.into());
-//         graph.add_edge(b, c, 1.into());
-//         graph.add_edge(c, a, 1.into());
+        // When: traversing graph.
+        let dfs = Dfs::init(&graph);
 
-//         // When traversing graph from either a or b or c.
-//         for vertex_id in 0..3 {
-//             let visited = Dfs::init(vertex_id).execute(&graph);
+        let mut on_start_called = 0;
+        let mut on_white_called = 0;
+        let mut on_gray_called = 0;
+        let mut on_black_called = 0;
 
-//             // Then:
-//             // Visited set must contain 3 elements.
-//             assert_eq!(visited.len(), 3);
-//             // Visited set must contain a and b and c.
-//             assert!(vec![a, b, c]
-//                 .into_iter()
-//                 .all(|v_id| visited.contains(&v_id)));
-//         }
-//     }
+        dfs.execute(
+            &graph,
+            |_| {
+                on_start_called += 1;
+                assert!(dfs.get_time() == 0);
+            },
+            |_| on_white_called += 1,
+            |_| on_gray_called += 1,
+            |_| on_black_called += 1,
+        );
 
-//     #[test]
-//     fn undirected_graph_with_cycle() {
-//         // Given: undirected graph:    a --- b
-//         //                             |     |
-//         //                             c ----
-//         let mut graph = MatGraph::<usize>::init(Mat::init(false));
-//         let a = graph.add_vertex();
-//         let b = graph.add_vertex();
-//         let c = graph.add_vertex();
-//         graph.add_edge(a, b, 1.into());
-//         graph.add_edge(b, c, 1.into());
-//         graph.add_edge(c, a, 1.into());
+        // Then:
+        assert_eq!(on_start_called, 1);
+        assert_eq!(on_white_called, 1);
+        assert_eq!(on_gray_called, 1);
+        assert_eq!(on_black_called, 1);
+    }
 
-//         // When traversing graph from either a or b or c.
-//         for vertex_id in 0..3 {
-//             let visited = Dfs::init(vertex_id).execute(&graph);
+    #[test]
+    fn directed_graph_with_two_separate_vertices() {
+        // Given: A directed graph: a  b.
+        let mut graph = MatGraph::init(Mat::<usize>::init(true));
+        let _ = graph.add_vertex();
+        let _ = graph.add_vertex();
 
-//             // Then:
-//             // Visited set must contain 3 elements.
-//             assert_eq!(visited.len(), 3);
-//             // Visited set must contain a and b and c.
-//             assert!(vec![a, b, c]
-//                 .into_iter()
-//                 .all(|v_id| visited.contains(&v_id)));
-//         }
-//     }
+        // When: traversing graph.
+        let dfs = Dfs::init(&graph);
 
-//     #[test]
-//     fn disconnected_directed_graph() {
-//         // Given: directed graph:   a ---> b   c ---> d
-//         let mut graph = MatGraph::<usize>::init(Mat::init(true));
-//         let a = graph.add_vertex();
-//         let b = graph.add_vertex();
-//         let c = graph.add_vertex();
-//         let d = graph.add_vertex();
-//         graph.add_edge(a, b, 1.into());
-//         graph.add_edge(c, d, 1.into());
+        let mut on_start_called = 0;
+        let mut on_white_called = 0;
+        let mut on_gray_called = 0;
+        let mut on_black_called = 0;
 
-//         // When: traversing graph with dfs algorithm from a.
-//         let visited = Dfs::init(a).execute(&graph);
+        dfs.execute(
+            &graph,
+            |_| {
+                on_start_called += 1;
+                assert!(dfs.get_time() == 0);
+            },
+            |_| on_white_called += 1,
+            |_| on_gray_called += 1,
+            |_| on_black_called += 1,
+        );
 
-//         // Then:
-//         // Visited set must contain two elements.
-//         assert_eq!(visited.len(), 2);
-//         // Visited set must only contain a and b.
-//         assert!(vec![a, b].into_iter().all(|v_id| visited.contains(&v_id)));
+        // Then:
+        assert_eq!(on_start_called, 2);
+        assert_eq!(on_white_called, 2);
+        assert_eq!(on_gray_called, 2);
+        assert_eq!(on_black_called, 2);
+    }
+    #[test]
+    fn undirected_graph_with_two_separate_vertices() {
+        // Given: An undirected graph: a  b.
+        let mut graph = MatGraph::init(Mat::<usize>::init(false));
+        let _ = graph.add_vertex();
+        let _ = graph.add_vertex();
 
-//         // When: traversing graph with dfs algorithm from c.
-//         let visited = Dfs::init(c).execute(&graph);
+        // When: traversing graph.
+        let dfs = Dfs::init(&graph);
 
-//         // Then:
-//         // Visited set must contain two elements.
-//         assert_eq!(visited.len(), 2);
-//         // Visited set must contain c and d.
-//         assert!(vec![c, d].into_iter().all(|v_id| visited.contains(&v_id)));
-//     }
+        let mut on_start_called = 0;
+        let mut on_white_called = 0;
+        let mut on_gray_called = 0;
+        let mut on_black_called = 0;
 
-//     #[test]
-//     fn disconnected_undirected_graph() {
-//         // Given: undirected graph:   a --- b   c --- d
-//         let mut graph = MatGraph::<usize>::init(Mat::init(false));
-//         let a = graph.add_vertex();
-//         let b = graph.add_vertex();
-//         let c = graph.add_vertex();
-//         let d = graph.add_vertex();
-//         graph.add_edge(a, b, 1.into());
-//         graph.add_edge(c, d, 1.into());
+        dfs.execute(
+            &graph,
+            |_| {
+                on_start_called += 1;
+                assert!(dfs.get_time() == 0);
+            },
+            |_| on_white_called += 1,
+            |_| on_gray_called += 1,
+            |_| on_black_called += 1,
+        );
 
-//         // When: traversing graph with dfs algorithm from a.
-//         let visited = Dfs::init(a).execute(&graph);
+        // Then:
+        assert_eq!(on_start_called, 2);
+        assert_eq!(on_white_called, 2);
+        assert_eq!(on_gray_called, 2);
+        assert_eq!(on_black_called, 2);
+    }
 
-//         // Then:
-//         // Visited set must contain two elements.
-//         assert_eq!(visited.len(), 2);
-//         // Visited set must only contain a and b.
-//         assert!(vec![a, b].into_iter().all(|v_id| visited.contains(&v_id)));
+    #[test]
+    fn directed_graph_with_three_vertices_in_a_line() {
+        // Given: A directed graph: a -> b -> c.
+        let mut graph = MatGraph::init(Mat::<usize>::init(true));
+        let a = graph.add_vertex();
+        let b = graph.add_vertex();
+        let c = graph.add_vertex();
+        graph.add_edge(a, b, 1.into());
+        graph.add_edge(b, c, 1.into());
 
-//         // When: traversing graph with dfs algorithm from c.
-//         let visited = Dfs::init(c).execute(&graph);
+        // When: traversing graph.
+        let dfs = Dfs::init_with(&graph, vec![a]);
 
-//         // Then:
-//         // Visited set must contain two elements.
-//         assert_eq!(visited.len(), 2);
-//         // Visited set must contain c and d.
-//         assert!(vec![c, d].into_iter().all(|v_id| visited.contains(&v_id)));
-//     }
+        let mut on_start_called = 0;
+        let mut on_white_called = 0;
+        let mut on_gray_called = 0;
+        let mut on_black_called = 0;
 
-//     #[test]
-//     fn fully_connected_directed_graph() {
-//         // Given: A fully connected graph with 5 vertices.
-//         let mut graph = MatGraph::<usize>::init(Mat::init(true));
-//         for _ in 0..5 {
-//             graph.add_vertex();
-//         }
-//         for i in 0..5 {
-//             for j in 0..5 {
-//                 if i == j {
-//                     continue;
-//                 }
-//                 graph.add_edge(i, j, 1.into());
-//             }
-//         }
+        dfs.execute(
+            &graph,
+            |_| {
+                on_start_called += 1;
+                assert!(dfs.get_time() == 0);
+            },
+            |_| on_white_called += 1,
+            |_| on_gray_called += 1,
+            |_| on_black_called += 1,
+        );
 
-//         // When: traversing graph with dfs algorithm from each vertex.
-//         for src_index in 0..5 {
-//             let visited = Dfs::init(src_index).execute(&graph);
+        // Then:
+        assert_eq!(on_start_called, 1);
+        assert_eq!(on_white_called, 3);
+        assert_eq!(on_gray_called, 3);
+        assert_eq!(on_black_called, 3);
+    }
 
-//             // Then:
-//             // Visited set must contain 5 elements;
-//             assert_eq!(visited.len(), 5);
-//             // Visited set must contain all vertices.
-//             assert!(vec![0, 1, 2, 3, 4]
-//                 .into_iter()
-//                 .all(|v_id| visited.contains(&v_id)));
-//         }
-//     }
-// }
+    #[test]
+    fn undirected_graph_with_three_vertices_in_a_line() {
+        // Given: An undirected graph: a -- b -- c.
+        let mut graph = MatGraph::init(Mat::<usize>::init(false));
+        let a = graph.add_vertex();
+        let b = graph.add_vertex();
+        let c = graph.add_vertex();
+        graph.add_edge(a, b, 1.into());
+        graph.add_edge(b, c, 1.into());
+
+        // When: traversing graph.
+        let dfs = Dfs::init_with(&graph, vec![c]);
+
+        let mut on_start_called = 0;
+        let mut on_white_called = 0;
+        let mut on_gray_called = 0;
+        let mut on_black_called = 0;
+
+        dfs.execute(
+            &graph,
+            |_| {
+                on_start_called += 1;
+                assert!(dfs.get_time() == 0);
+            },
+            |_| on_white_called += 1,
+            |_| on_gray_called += 1,
+            |_| on_black_called += 1,
+        );
+
+        // Then:
+        assert_eq!(on_start_called, 1);
+        assert_eq!(on_white_called, 3);
+        assert_eq!(on_gray_called, 3);
+        assert_eq!(on_black_called, 3);
+    }
+
+    #[test]
+    fn directed_graph_with_cycle() {
+        // Given: A directed graph: a -> b -> c.
+        //                          ^         |
+        //                          '---------
+        let mut graph = MatGraph::init(Mat::<usize>::init(true));
+        let a = graph.add_vertex();
+        let b = graph.add_vertex();
+        let c = graph.add_vertex();
+        graph.add_edge(a, b, 1.into());
+        graph.add_edge(b, c, 1.into());
+        graph.add_edge(c, a, 1.into());
+
+        // When: traversing graph.
+        let dfs = Dfs::init_with(&graph, vec![a]);
+
+        let mut on_start_called = 0;
+        let mut on_white_called = 0;
+        let mut on_gray_called = 0;
+        let mut on_black_called = 0;
+
+        dfs.execute(
+            &graph,
+            |_| {
+                on_start_called += 1;
+                assert!(dfs.get_time() == 0);
+            },
+            |_| on_white_called += 1,
+            |_| on_gray_called += 1,
+            |_| on_black_called += 1,
+        );
+
+        // Then:
+        assert_eq!(on_start_called, 1);
+        assert_eq!(on_white_called, 3);
+        assert_eq!(on_gray_called, 3);
+        assert_eq!(on_black_called, 3);
+    }
+
+    #[test]
+    fn undirected_graph_with_cycle() {
+        // Given: An undirected graph: a -- b -- c.
+        //                             |         |
+        //                             -----------
+        let mut graph = MatGraph::init(Mat::<usize>::init(false));
+        let a = graph.add_vertex();
+        let b = graph.add_vertex();
+        let c = graph.add_vertex();
+        graph.add_edge(a, b, 1.into());
+        graph.add_edge(b, c, 1.into());
+        graph.add_edge(c, a, 1.into());
+
+        // When: traversing graph.
+        let dfs = Dfs::init_with(&graph, vec![a]);
+
+        let mut on_start_called = 0;
+        let mut on_white_called = 0;
+        let mut on_gray_called = 0;
+        let mut on_black_called = 0;
+
+        dfs.execute(
+            &graph,
+            |_| {
+                on_start_called += 1;
+                assert!(dfs.get_time() == 0);
+            },
+            |_| on_white_called += 1,
+            |_| on_gray_called += 1,
+            |_| on_black_called += 1,
+        );
+
+        // Then:
+        assert_eq!(on_start_called, 1);
+        assert_eq!(on_white_called, 3);
+        assert_eq!(on_gray_called, 3);
+        assert_eq!(on_black_called, 3);
+    }
+
+    #[test]
+    fn trivial_directed_graph() {
+        // Given: A directed graph:
+        //                           _____________________
+        //                          |                    |
+        //                          |                    v
+        //                          a -> b -> c -> d -> f
+        //                          ^         |     |
+        //                          '---------      v
+        //                                          e
+        let mut graph = MatGraph::init(Mat::<usize>::init(true));
+        let a = graph.add_vertex();
+        let b = graph.add_vertex();
+        let c = graph.add_vertex();
+        let d = graph.add_vertex();
+        let e = graph.add_vertex();
+        let f = graph.add_vertex();
+        graph.add_edge(a, b, 1.into());
+        graph.add_edge(a, f, 1.into());
+        graph.add_edge(b, c, 1.into());
+        graph.add_edge(c, a, 1.into());
+        graph.add_edge(c, d, 1.into());
+        graph.add_edge(d, e, 1.into());
+        graph.add_edge(d, f, 1.into());
+
+        // When: traversing graph.
+        let dfs = Dfs::init_with(&graph, vec![a]);
+
+        let mut on_start_called = 0;
+        let mut on_white_called = 0;
+        let mut on_gray_called = 0;
+        let mut on_black_called = 0;
+
+        dfs.execute(
+            &graph,
+            |_| {
+                on_start_called += 1;
+                assert!(dfs.get_time() == 0);
+            },
+            |_| on_white_called += 1,
+            |_| on_gray_called += 1,
+            |_| on_black_called += 1,
+        );
+
+        // Then:
+        assert_eq!(on_start_called, 1);
+        assert_eq!(on_white_called, 6);
+        assert_eq!(on_gray_called, 6);
+        assert_eq!(on_black_called, 6);
+    }
+
+    #[test]
+    fn trivial_undirected_graph() {
+        // Given: An undirected graph:
+        //                          ----------------------
+        //                          |                    |
+        //                          a -- b -- c -- d -- f
+        //                          |         |    |
+        //                          '---------     e
+        let mut graph = MatGraph::init(Mat::<usize>::init(true));
+        let a = graph.add_vertex();
+        let b = graph.add_vertex();
+        let c = graph.add_vertex();
+        let d = graph.add_vertex();
+        let e = graph.add_vertex();
+        let f = graph.add_vertex();
+        graph.add_edge(a, b, 1.into());
+        graph.add_edge(a, f, 1.into());
+        graph.add_edge(b, c, 1.into());
+        graph.add_edge(c, a, 1.into());
+        graph.add_edge(c, d, 1.into());
+        graph.add_edge(d, e, 1.into());
+        graph.add_edge(d, f, 1.into());
+
+        // When: traversing graph.
+        let dfs = Dfs::init_with(&graph, vec![a]);
+
+        let mut on_start_called = 0;
+        let mut on_white_called = 0;
+        let mut on_gray_called = 0;
+        let mut on_black_called = 0;
+
+        dfs.execute(
+            &graph,
+            |_| {
+                on_start_called += 1;
+                assert!(dfs.get_time() == 0);
+            },
+            |_| on_white_called += 1,
+            |_| on_gray_called += 1,
+            |_| on_black_called += 1,
+        );
+
+        // Then:
+        assert_eq!(on_start_called, 1);
+        assert_eq!(on_white_called, 6);
+        assert_eq!(on_gray_called, 6);
+        assert_eq!(on_black_called, 6);
+    }
+
+    #[test]
+    fn directed_graph_of_two_forests() {
+        // Given: A directed graph:
+        //                          a -> b -> c     d -> f
+        //                          ^         |     |
+        //                          '---------      v
+        //                                          e
+        let mut graph = MatGraph::init(Mat::<usize>::init(true));
+        let a = graph.add_vertex();
+        let b = graph.add_vertex();
+        let c = graph.add_vertex();
+        let d = graph.add_vertex();
+        let e = graph.add_vertex();
+        let f = graph.add_vertex();
+        graph.add_edge(a, b, 1.into());
+        graph.add_edge(b, c, 1.into());
+        graph.add_edge(c, a, 1.into());
+
+        graph.add_edge(d, e, 1.into());
+        graph.add_edge(d, f, 1.into());
+
+        // When: traversing graph.
+        let dfs = Dfs::init_with(&graph, vec![a, d]);
+
+        let mut on_start_called = 0;
+        let mut on_white_called = 0;
+        let mut on_gray_called = 0;
+        let mut on_black_called = 0;
+
+        dfs.execute(
+            &graph,
+            |_| {
+                on_start_called += 1;
+                assert!(dfs.get_time() == 0);
+            },
+            |_| on_white_called += 1,
+            |_| on_gray_called += 1,
+            |_| on_black_called += 1,
+        );
+
+        // Then:
+        assert_eq!(on_start_called, 2);
+        assert_eq!(on_white_called, 6);
+        assert_eq!(on_gray_called, 6);
+        assert_eq!(on_black_called, 6);
+    }
+
+    #[test]
+    fn undirected_graph_of_two_forests() {
+        // Given: An undirected graph:
+        //                          a -- b -- c    d -- f
+        //                          |         |    |
+        //                          '---------     e
+        let mut graph = MatGraph::init(Mat::<usize>::init(false));
+        let a = graph.add_vertex();
+        let b = graph.add_vertex();
+        let c = graph.add_vertex();
+        let d = graph.add_vertex();
+        let e = graph.add_vertex();
+        let f = graph.add_vertex();
+        graph.add_edge(a, b, 1.into());
+        graph.add_edge(b, c, 1.into());
+        graph.add_edge(c, a, 1.into());
+
+        graph.add_edge(d, e, 1.into());
+        graph.add_edge(d, f, 1.into());
+
+        // When: traversing graph.
+        let dfs = Dfs::init_with(&graph, vec![a, d]);
+
+        let mut on_start_called = 0;
+        let mut on_white_called = 0;
+        let mut on_gray_called = 0;
+        let mut on_black_called = 0;
+
+        dfs.execute(
+            &graph,
+            |_| {
+                println!("start");
+                on_start_called += 1;
+                assert!(dfs.get_time() == 0);
+            },
+            |_| on_white_called += 1,
+            |_| on_gray_called += 1,
+            |_| on_black_called += 1,
+        );
+
+        // Then:
+        assert_eq!(on_start_called, 2);
+        assert_eq!(on_white_called, 6);
+        assert_eq!(on_gray_called, 6);
+        assert_eq!(on_black_called, 6);
+    }
+}
