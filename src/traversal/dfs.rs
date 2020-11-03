@@ -106,28 +106,28 @@ impl Dfs {
     where
         G: provide::Vertices + provide::Neighbors,
     {
-        self.execute(graph, on_start, |_| (), |_| (), |_| ())
+        self.execute(graph, on_start, |_| (), |_| (), |_| (), || ())
     }
 
     pub fn execute_with_white_callback<G>(&self, graph: &G, on_white: impl FnMut(usize))
     where
         G: provide::Vertices + provide::Neighbors,
     {
-        self.execute(graph, |_| (), on_white, |_| (), |_| ())
+        self.execute(graph, |_| (), on_white, |_| (), |_| (), || ())
     }
 
     pub fn execute_with_gray_callback<G>(&self, graph: &G, on_gray: impl FnMut(usize))
     where
         G: provide::Vertices + provide::Neighbors,
     {
-        self.execute(graph, |_| (), |_| (), on_gray, |_| ())
+        self.execute(graph, |_| (), |_| (), on_gray, |_| (), || ())
     }
 
     pub fn execute_with_black_callback<G>(&self, graph: &G, on_black: impl FnMut(usize))
     where
         G: provide::Vertices + provide::Neighbors,
     {
-        self.execute(graph, |_| (), |_| (), |_| (), on_black)
+        self.execute(graph, |_| (), |_| (), |_| (), on_black, || ())
     }
 
     // Double callbacks.
@@ -139,7 +139,7 @@ impl Dfs {
     ) where
         G: provide::Vertices + provide::Neighbors,
     {
-        self.execute(graph, on_start, on_white, |_| (), |_| ())
+        self.execute(graph, on_start, on_white, |_| (), |_| (), || ())
     }
 
     pub fn execute_with_start_gray_callback<G>(
@@ -150,7 +150,7 @@ impl Dfs {
     ) where
         G: provide::Vertices + provide::Neighbors,
     {
-        self.execute(graph, on_start, |_| (), on_gray, |_| ())
+        self.execute(graph, on_start, |_| (), on_gray, |_| (), || ())
     }
 
     pub fn execute_with_start_black_callback<G>(
@@ -161,7 +161,7 @@ impl Dfs {
     ) where
         G: provide::Vertices + provide::Neighbors,
     {
-        self.execute(graph, on_start, |_| (), |_| (), on_black)
+        self.execute(graph, on_start, |_| (), |_| (), on_black, || ())
     }
 
     pub fn execute_with_white_gray_callback<G>(
@@ -172,7 +172,7 @@ impl Dfs {
     ) where
         G: provide::Vertices + provide::Neighbors,
     {
-        self.execute(graph, |_| (), on_white, on_gray, |_| ())
+        self.execute(graph, |_| (), on_white, on_gray, |_| (), || ())
     }
 
     pub fn execute_with_white_black_callback<G>(
@@ -183,7 +183,7 @@ impl Dfs {
     ) where
         G: provide::Vertices + provide::Neighbors,
     {
-        self.execute(graph, |_| (), on_white, |_| (), on_black)
+        self.execute(graph, |_| (), on_white, |_| (), on_black, || ())
     }
 
     pub fn execute_with_gray_black_callback<G>(
@@ -194,7 +194,7 @@ impl Dfs {
     ) where
         G: provide::Vertices + provide::Neighbors,
     {
-        self.execute(graph, |_| (), |_| (), on_gray, on_black)
+        self.execute(graph, |_| (), |_| (), on_gray, on_black, || ())
     }
 
     pub fn execute<G>(
@@ -204,6 +204,7 @@ impl Dfs {
         mut on_white: impl FnMut(usize),
         mut on_gray: impl FnMut(usize),
         mut on_black: impl FnMut(usize),
+        mut on_finish: impl FnMut()
     ) where
         G: provide::Vertices + provide::Neighbors,
     {
@@ -254,6 +255,8 @@ impl Dfs {
                     Color::Black => {}
                 };
             }
+
+            on_finish();
         }
     }
 
@@ -308,6 +311,7 @@ mod tests {
             |_| on_white_called += 1,
             |_| on_gray_called += 1,
             |_| on_black_called += 1,
+            || ()
         );
 
         // Then:
@@ -336,6 +340,7 @@ mod tests {
             |_| on_white_called += 1,
             |_| on_gray_called += 1,
             |_| on_black_called += 1,
+            || ()
         );
 
         // Then:
@@ -368,6 +373,7 @@ mod tests {
             |_| on_white_called += 1,
             |_| on_gray_called += 1,
             |_| on_black_called += 1,
+            || ()
         );
 
         // Then:
@@ -400,6 +406,7 @@ mod tests {
             |_| on_white_called += 1,
             |_| on_gray_called += 1,
             |_| on_black_called += 1,
+            || ()
         );
 
         // Then:
@@ -433,6 +440,7 @@ mod tests {
             |_| on_white_called += 1,
             |_| on_gray_called += 1,
             |_| on_black_called += 1,
+            || ()
         );
 
         // Then:
@@ -465,6 +473,7 @@ mod tests {
             |_| on_white_called += 1,
             |_| on_gray_called += 1,
             |_| on_black_called += 1,
+            || ()
         );
 
         // Then:
@@ -501,6 +510,7 @@ mod tests {
             |_| on_white_called += 1,
             |_| on_gray_called += 1,
             |_| on_black_called += 1,
+            || ()
         );
 
         // Then:
@@ -537,6 +547,7 @@ mod tests {
             |_| on_white_called += 1,
             |_| on_gray_called += 1,
             |_| on_black_called += 1,
+            || ()
         );
 
         // Then:
@@ -576,6 +587,7 @@ mod tests {
             |_| on_white_called += 1,
             |_| on_gray_called += 1,
             |_| on_black_called += 1,
+            || ()
         );
 
         // Then:
@@ -615,6 +627,7 @@ mod tests {
             |_| on_white_called += 1,
             |_| on_gray_called += 1,
             |_| on_black_called += 1,
+            || ()
         );
 
         // Then:
@@ -666,6 +679,7 @@ mod tests {
             |_| on_white_called += 1,
             |_| on_gray_called += 1,
             |_| on_black_called += 1,
+            || ()
         );
 
         // Then:
@@ -715,6 +729,7 @@ mod tests {
             |_| on_white_called += 1,
             |_| on_gray_called += 1,
             |_| on_black_called += 1,
+            || ()
         );
 
         // Then:
@@ -762,6 +777,7 @@ mod tests {
             |_| on_white_called += 1,
             |_| on_gray_called += 1,
             |_| on_black_called += 1,
+            || ()
         );
 
         // Then:
@@ -809,6 +825,7 @@ mod tests {
             |_| on_white_called += 1,
             |_| on_gray_called += 1,
             |_| on_black_called += 1,
+            || ()
         );
 
         // Then:

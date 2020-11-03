@@ -68,6 +68,7 @@ impl HasCycle {
             |_| {
                 self.stack.borrow_mut().pop();
             },
+            || ()
         );
 
         cycle
