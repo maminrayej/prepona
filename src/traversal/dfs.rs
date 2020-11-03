@@ -2,14 +2,51 @@ use magnitude::Magnitude;
 use std::cell::{Ref, RefCell};
 
 use crate::provide;
+use crate::traversal::Color;
 
-#[derive(Copy, Clone, PartialEq, Debug)]
-pub enum Color {
-    White,
-    Gray,
-    Black,
-}
-
+/// Traverses the graph using DFS algorithm.
+///
+/// This implementation uses an event-based approach which means you can register functions and `Dfs` will call you back on certain events(which are listed below). \
+/// `Dfs` provides full info about the traversal which you can access at each event including color, discovered time and finished time of each vertex.
+/// It also provides info about its internal data such as its `stack` and current `time`.
+///
+/// # Events:
+/// * `on_start`: Because the provided graph might not be connected , dfs algorithm may need to start more than once to traverse all the vertices.
+/// So every time dfs can not proceed any further in the graph, it looks for an undiscovered vertex. When it finds one, this callback is called. For example if we have the graph below: \
+/// <pre>
+/// a  -->  b       d  -->  c
+/// </pre>
+/// If we start from `a`, dfs then will discover `b` and since there is no other vertex to visit from `a` or `b`, dfs will start at `d` again.
+/// So `on_start` will be called once when dfs discovers `a` and once when it discovers `d`.
+///
+/// * `on_white`: Whenever dfs discovers a new vertex that it did not discover before this callback will be called. Note that when this callback is called, discovered time of the vertex is set by `Dfs` already.
+/// When the callback returns, all undiscovered neighbors of the newly discovered vertex will be added to stack on top of the newly discovered vertex. And also color of the vertex will be set to gray.
+/// For example if we have graph below and start from `a`: \
+/// <pre>
+/// a  -->  b
+/// </pre>
+/// `on_white` will be called when `Dfs` discovers `a`. When `on_white` is called the `discovered_time = 1` is set for `a`.
+/// When `on_white` callback returns, `b` will be added to stack on top of `a` and color of `a` will be set to gray.
+///
+/// * `on_gray`: When all nodes reachable from a vertex gets discovered, Vertex will be at top of the stack. When vertex gets popped, this callback will be called.
+/// For example if we have graph below and start from `a`: \
+/// <pre>
+/// a  -->  b
+/// </pre>
+/// After `a`, `b` will get discovered and added to top of the stack with gray color. Since `b` has no other neighbor to get discovered, `b` will be popped from top of the stack.
+/// At this time `b` has gray color so `on_gray` will be called and after the callback returns, finished time of `b` will be set and its color will be changed to black.
+/// Same thing will happen for `a` after `b`.
+///
+/// * `on_black`: This will be called shortly after `on_gray`. The only difference is when `on_black` is called, `finished_time` of the vertex has been set.
+///
+/// # Initialization:
+/// You can initialize `Dfs` in two ways:
+/// * Initialize it id of vertices that you want to be used as starting points for the algorithm.
+/// * Simply Initialize `Dfs` and let it choose how to traverse the graph.
+///
+/// # Execution:
+/// As stated above you can register functions as callbacks. but defining all callbacks is cumbersome. So there are different variants of `execution` method.
+/// Their names indicates which callbacks should be provided for the method. Use the one that suits you the most.
 pub struct Dfs {
     stack: RefCell<Vec<usize>>,
     colors: RefCell<Vec<Color>>,
@@ -25,10 +62,10 @@ impl Dfs {
     where
         G: provide::Vertices + provide::Neighbors,
     {
-        Dfs::init_with(graph, vec![])
+        Dfs::init_with_starts(graph, vec![])
     }
 
-    pub fn init_with<G>(graph: &G, start_ids: Vec<usize>) -> Self
+    pub fn init_with_starts<G>(graph: &G, start_ids: Vec<usize>) -> Self
     where
         G: provide::Vertices + provide::Neighbors,
     {
@@ -61,6 +98,103 @@ impl Dfs {
 
     fn next_virt_id(&self) -> Option<usize> {
         self.stack.borrow_mut().pop()
+    }
+
+    // Single callbacks.
+
+    pub fn execute_with_start_callback<G>(&self, graph: &G, on_start: impl FnMut(usize))
+    where
+        G: provide::Vertices + provide::Neighbors,
+    {
+        self.execute(graph, on_start, |_| (), |_| (), |_| ())
+    }
+
+    pub fn execute_with_white_callback<G>(&self, graph: &G, on_white: impl FnMut(usize))
+    where
+        G: provide::Vertices + provide::Neighbors,
+    {
+        self.execute(graph, |_| (), on_white, |_| (), |_| ())
+    }
+
+    pub fn execute_with_gray_callback<G>(&self, graph: &G, on_gray: impl FnMut(usize))
+    where
+        G: provide::Vertices + provide::Neighbors,
+    {
+        self.execute(graph, |_| (), |_| (), on_gray, |_| ())
+    }
+
+    pub fn execute_with_black_callback<G>(&self, graph: &G, on_black: impl FnMut(usize))
+    where
+        G: provide::Vertices + provide::Neighbors,
+    {
+        self.execute(graph, |_| (), |_| (), |_| (), on_black)
+    }
+
+    // Double callbacks.
+    pub fn execute_with_start_white_callback<G>(
+        &self,
+        graph: &G,
+        on_start: impl FnMut(usize),
+        on_white: impl FnMut(usize),
+    ) where
+        G: provide::Vertices + provide::Neighbors,
+    {
+        self.execute(graph, on_start, on_white, |_| (), |_| ())
+    }
+
+    pub fn execute_with_start_gray_callback<G>(
+        &self,
+        graph: &G,
+        on_start: impl FnMut(usize),
+        on_gray: impl FnMut(usize),
+    ) where
+        G: provide::Vertices + provide::Neighbors,
+    {
+        self.execute(graph, on_start, |_| (), on_gray, |_| ())
+    }
+
+    pub fn execute_with_start_black_callback<G>(
+        &self,
+        graph: &G,
+        on_start: impl FnMut(usize),
+        on_black: impl FnMut(usize),
+    ) where
+        G: provide::Vertices + provide::Neighbors,
+    {
+        self.execute(graph, on_start, |_| (), |_| (), on_black)
+    }
+
+    pub fn execute_with_white_gray_callback<G>(
+        &self,
+        graph: &G,
+        on_white: impl FnMut(usize),
+        on_gray: impl FnMut(usize),
+    ) where
+        G: provide::Vertices + provide::Neighbors,
+    {
+        self.execute(graph, |_| (), on_white, on_gray, |_| ())
+    }
+
+    pub fn execute_with_white_black_callback<G>(
+        &self,
+        graph: &G,
+        on_white: impl FnMut(usize),
+        on_black: impl FnMut(usize),
+    ) where
+        G: provide::Vertices + provide::Neighbors,
+    {
+        self.execute(graph, |_| (), on_white, |_| (), on_black)
+    }
+
+    pub fn execute_with_gray_black_callback<G>(
+        &self,
+        graph: &G,
+        on_gray: impl FnMut(usize),
+        on_black: impl FnMut(usize),
+    ) where
+        G: provide::Vertices + provide::Neighbors,
+    {
+        self.execute(graph, |_| (), |_| (), on_gray, on_black)
     }
 
     pub fn execute<G>(
@@ -351,7 +485,7 @@ mod tests {
         graph.add_edge(b, c, 1.into());
 
         // When: traversing graph.
-        let dfs = Dfs::init_with(&graph, vec![a]);
+        let dfs = Dfs::init_with_starts(&graph, vec![a]);
 
         let mut on_start_called = 0;
         let mut on_white_called = 0;
@@ -387,7 +521,7 @@ mod tests {
         graph.add_edge(b, c, 1.into());
 
         // When: traversing graph.
-        let dfs = Dfs::init_with(&graph, vec![c]);
+        let dfs = Dfs::init_with_starts(&graph, vec![c]);
 
         let mut on_start_called = 0;
         let mut on_white_called = 0;
@@ -426,7 +560,7 @@ mod tests {
         graph.add_edge(c, a, 1.into());
 
         // When: traversing graph.
-        let dfs = Dfs::init_with(&graph, vec![a]);
+        let dfs = Dfs::init_with_starts(&graph, vec![a]);
 
         let mut on_start_called = 0;
         let mut on_white_called = 0;
@@ -465,7 +599,7 @@ mod tests {
         graph.add_edge(c, a, 1.into());
 
         // When: traversing graph.
-        let dfs = Dfs::init_with(&graph, vec![a]);
+        let dfs = Dfs::init_with_starts(&graph, vec![a]);
 
         let mut on_start_called = 0;
         let mut on_white_called = 0;
@@ -516,7 +650,7 @@ mod tests {
         graph.add_edge(d, f, 1.into());
 
         // When: traversing graph.
-        let dfs = Dfs::init_with(&graph, vec![a]);
+        let dfs = Dfs::init_with_starts(&graph, vec![a]);
 
         let mut on_start_called = 0;
         let mut on_white_called = 0;
@@ -565,7 +699,7 @@ mod tests {
         graph.add_edge(d, f, 1.into());
 
         // When: traversing graph.
-        let dfs = Dfs::init_with(&graph, vec![a]);
+        let dfs = Dfs::init_with_starts(&graph, vec![a]);
 
         let mut on_start_called = 0;
         let mut on_white_called = 0;
@@ -612,7 +746,7 @@ mod tests {
         graph.add_edge(d, f, 1.into());
 
         // When: traversing graph.
-        let dfs = Dfs::init_with(&graph, vec![a, d]);
+        let dfs = Dfs::init_with_starts(&graph, vec![a, d]);
 
         let mut on_start_called = 0;
         let mut on_white_called = 0;
@@ -658,7 +792,7 @@ mod tests {
         graph.add_edge(d, f, 1.into());
 
         // When: traversing graph.
-        let dfs = Dfs::init_with(&graph, vec![a, d]);
+        let dfs = Dfs::init_with_starts(&graph, vec![a, d]);
 
         let mut on_start_called = 0;
         let mut on_white_called = 0;
