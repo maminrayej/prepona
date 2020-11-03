@@ -1,7 +1,9 @@
+mod connected_components;
 mod has_cycle;
-mod topological_sort;
 mod scc;
+mod topological_sort;
 
+pub use connected_components::ConnectedComponents;
 pub use has_cycle::HasCycle;
-pub use topological_sort::topological_sort;
 pub use scc::TarjanSCC;
+pub use topological_sort::topological_sort;
