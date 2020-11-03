@@ -27,7 +27,7 @@ mod tests {
     use crate::storage::Mat;
 
     #[test]
-    fn mine_mine() {
+    fn topological_sort_test() {
         // a  -->  b.
         let mut graph = MatGraph::init(Mat::<usize>::init(true));
         let a = graph.add_vertex();
