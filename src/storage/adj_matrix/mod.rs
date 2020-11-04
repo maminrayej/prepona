@@ -214,7 +214,7 @@ impl<W: Any, E: Edge<W>> GraphStorage<W, E> for AdjMatrix<W, E> {
     ///
     /// # Complexity:
     /// O(|V|<sup>2</sup>).
-    fn edges(&self) -> Vec<(usize, usize, &E)> {
+    fn edges(&self, doubles: bool) -> Vec<(usize, usize, &E)> {
         let vertices = self.vertices();
 
         // 1. Produce cartesian product: { vertices } x { vertices }:
@@ -231,7 +231,7 @@ impl<W: Any, E: Edge<W>> GraphStorage<W, E> for AdjMatrix<W, E> {
             })
             .map(|(v1, v2)| (v1, v2, &self[(v1, v2)]))
             .filter(|(v1, v2, edge)| {
-                edge.get_weight().is_finite() && if self.is_undirected() { v1 <= v2 } else { true }
+                edge.get_weight().is_finite() && if self.is_undirected() && !doubles { v1 <= v2 } else { true }
             })
             .collect()
     }
@@ -554,7 +554,7 @@ mod tests {
         adj_matrix[(1, 3)] = Edge::init(3.into());
         adj_matrix[(3, 1)] = Edge::init(4.into());
 
-        for (v1, v2, edge) in adj_matrix.edges() {
+        for (v1, v2, edge) in adj_matrix.edges(true) {
             match (v1, v2) {
                 (1, 1) => assert!(edge.get_weight().is_pos_infinite()),
                 (1, 3) => assert_eq!(edge.get_weight(), &3.into()),
@@ -579,7 +579,7 @@ mod tests {
 
         adj_matrix[(1, 3)] = Edge::init(3.into());
 
-        for (v1, v2, edge) in adj_matrix.edges() {
+        for (v1, v2, edge) in adj_matrix.edges(true) {
             match (v1, v2) {
                 (1, 1) => assert!(edge.get_weight().is_pos_infinite()),
                 (1, 3) => assert_eq!(edge.get_weight(), &3.into()),

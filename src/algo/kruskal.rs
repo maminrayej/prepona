@@ -39,7 +39,7 @@ impl Kruskal {
 
         let id_map = graph.continuos_id_map();
 
-        let mut edges = graph.edges();
+        let mut edges = graph.edges(false);
 
         edges.sort_by(|(_, _, e1), (_, _, e2)| e1.get_weight().cmp(e2.get_weight()));
 

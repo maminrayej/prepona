@@ -49,7 +49,7 @@ pub trait Vertices {
 pub trait Edges<W, E: Edge<W>> {
     /// # Returns:
     /// Vector of edges in the format of (`src_id`, `dst_id`, `edge`).
-    fn edges(&self) -> Vec<(usize, usize, &E)>;
+    fn edges(&self, doubles: bool) -> Vec<(usize, usize, &E)>;
 
     /// # Returns:
     /// Vector of edges from vertex with `src_id` in the format of (`dst_id`, `edge`).
@@ -62,7 +62,7 @@ pub trait Edges<W, E: Edge<W>> {
     fn edges_from(&self, src_id: usize) -> Vec<(usize, &E)> {
         // 1. From triplets produced by `edges` function, only keep those that their source vertex id is `src_id`.
         // 2. Map each triplet to a pair by discarding the source vertex id
-        self.edges()
+        self.edges(true)
             .into_iter()
             .filter(|(v1, _, _)| *v1 == src_id)
             .map(|(_, v2, edge)| (v2, edge))
@@ -75,7 +75,7 @@ pub trait Edges<W, E: Edge<W>> {
     /// # Note:
     /// This function has a default implementation but for better performance its usually better to implement it manually.
     fn edges_count(&self) -> usize {
-        self.edges().len()
+        self.edges(false).len()
     }
 }
 

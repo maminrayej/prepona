@@ -86,8 +86,8 @@ impl<W, E: Edge<W>, S: GraphStorage<W, E>> provide::Edges<W, E> for SimpleGraph<
     ///
     /// # Complexity:
     /// Depends on the storage type.
-    fn edges(&self) -> Vec<(usize, usize, &E)> {
-        self.storage.edges()
+    fn edges(&self, doubles: bool) -> Vec<(usize, usize, &E)> {
+        self.storage.edges(doubles)
     }
 
     /// # Returns:
