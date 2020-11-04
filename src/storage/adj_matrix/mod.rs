@@ -230,7 +230,9 @@ impl<W: Any, E: Edge<W>> GraphStorage<W, E> for AdjMatrix<W, E> {
                     .collect::<Vec<(usize, usize)>>()
             })
             .map(|(v1, v2)| (v1, v2, &self[(v1, v2)]))
-            .filter(|(v1, v2, edge)| edge.get_weight().is_finite() && if self.is_undirected() { v1 <= v2 } else { true })
+            .filter(|(v1, v2, edge)| {
+                edge.get_weight().is_finite() && if self.is_undirected() { v1 <= v2 } else { true }
+            })
             .collect()
     }
 
