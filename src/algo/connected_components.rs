@@ -1,10 +1,23 @@
 use crate::graph::Edge;
 use crate::provide;
-use crate::traversal::Dfs;
-use std::cell::RefCell;
+use crate::traversal::{Dfs, DfsListener};
 
 pub struct ConnectedComponents {
+    current_component: Vec<usize>,
     ccs: Vec<Vec<usize>>,
+}
+
+impl DfsListener for ConnectedComponents {
+    fn on_gray(&mut self, dfs: &Dfs<Self>, virt_id: usize) {
+        let real_id = dfs.get_id_map().get_virt_to_real(virt_id).unwrap();
+
+        self.current_component.push(real_id);
+    }
+
+    fn on_finish(&mut self, _: &Dfs<Self>) {
+        self.ccs.push(self.current_component.clone());
+        self.current_component.clear();
+    }
 }
 
 impl ConnectedComponents {
@@ -16,32 +29,19 @@ impl ConnectedComponents {
             panic!("Can not execute this algorithm on an undirected graph. Use one of the algorithms in scc module.")
         }
 
-        ConnectedComponents { ccs: vec![] }
+        ConnectedComponents {
+            ccs: vec![],
+            current_component: vec![],
+        }
     }
 
     pub fn execute<G, W, E: Edge<W>>(mut self, graph: &G) -> Vec<Vec<usize>>
     where
         G: provide::Graph<W, E> + provide::Vertices + provide::Neighbors,
     {
-        let current_component = RefCell::new(vec![]);
+        let dfs = Dfs::init(graph, &mut self);
 
-        let dfs = Dfs::init(graph);
-
-        dfs.execute(
-            graph,
-            |_| (),
-            |virt_id| {
-                let real_id = dfs.get_id_map().get_virt_to_real(virt_id).unwrap();
-
-                current_component.borrow_mut().push(real_id);
-            },
-            |_| (),
-            |_| (),
-            || {
-                self.ccs.push(current_component.borrow().clone());
-                current_component.borrow_mut().clear();
-            },
-        );
+        dfs.execute(graph);
 
         self.ccs
     }
@@ -51,8 +51,8 @@ impl ConnectedComponents {
 mod tests {
     use super::*;
     use crate::graph::MatGraph;
-    use crate::storage::Mat;
     use crate::provide::*;
+    use crate::storage::Mat;
 
     #[test]
     fn cc_test() {
@@ -87,7 +87,12 @@ mod tests {
         let ccs = ConnectedComponents::init(&graph).execute(&graph);
 
         for cc in ccs {
-            println!("{:?}", cc.iter().map(|v_id| tags.get(v_id).unwrap().to_string()).collect::<String>())
+            println!(
+                "{:?}",
+                cc.iter()
+                    .map(|v_id| tags.get(v_id).unwrap().to_string())
+                    .collect::<String>()
+            )
         }
     }
 }
