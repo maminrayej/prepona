@@ -1,6 +1,8 @@
 mod adj_matrix;
+mod adj_list;
 
 pub use adj_matrix::{AdjMatrix, FlowMat, Mat};
+pub use adj_list::{AdjList, FlowList, List};
 
 use crate::graph::Edge;
 
