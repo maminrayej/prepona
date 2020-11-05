@@ -1,3 +1,7 @@
+mod listener;
+
+pub use listener::DfsListener;
+
 use magnitude::Magnitude;
 use std::cell::{Ref, RefCell};
 
@@ -47,7 +51,7 @@ use crate::traversal::Color;
 /// # Execution:
 /// As stated above you can register functions as callbacks. but defining all callbacks is cumbersome. So there are different variants of `execution` method.
 /// Their names indicates which callbacks should be provided for the method. Use the one that suits you the most.
-pub struct Dfs {
+pub struct Dfs<'a, L: DfsListener> {
     stack: RefCell<Vec<usize>>,
     colors: RefCell<Vec<Color>>,
     discovered: RefCell<Vec<Magnitude<usize>>>,
@@ -55,17 +59,18 @@ pub struct Dfs {
     time: RefCell<usize>,
     id_map: RefCell<provide::IdMap>,
     start_ids: RefCell<Vec<usize>>,
+    listener: RefCell<&'a mut L>,
 }
 
-impl Dfs {
-    pub fn init<G>(graph: &G) -> Self
+impl<'a, L: DfsListener> Dfs<'a, L> {
+    pub fn init<G>(graph: &G, listener: &'a mut L) -> Self
     where
         G: provide::Vertices + provide::Neighbors,
     {
-        Dfs::init_with_starts(graph, vec![])
+        Dfs::init_with_starts(graph, listener, vec![])
     }
 
-    pub fn init_with_starts<G>(graph: &G, start_ids: Vec<usize>) -> Self
+    pub fn init_with_starts<G>(graph: &G, listener: &'a mut L, start_ids: Vec<usize>) -> Self
     where
         G: provide::Vertices + provide::Neighbors,
     {
@@ -79,6 +84,7 @@ impl Dfs {
             time: RefCell::new(0),
             id_map: RefCell::new(graph.continuos_id_map()),
             start_ids: RefCell::new(start_ids),
+            listener: RefCell::new(listener),
         }
     }
 
@@ -100,112 +106,8 @@ impl Dfs {
         self.stack.borrow_mut().pop()
     }
 
-    // Single callbacks.
-
-    pub fn execute_with_start_callback<G>(&self, graph: &G, on_start: impl FnMut(usize))
+    pub fn execute<G>(&self, graph: &G)
     where
-        G: provide::Vertices + provide::Neighbors,
-    {
-        self.execute(graph, on_start, |_| (), |_| (), |_| (), || ())
-    }
-
-    pub fn execute_with_white_callback<G>(&self, graph: &G, on_white: impl FnMut(usize))
-    where
-        G: provide::Vertices + provide::Neighbors,
-    {
-        self.execute(graph, |_| (), on_white, |_| (), |_| (), || ())
-    }
-
-    pub fn execute_with_gray_callback<G>(&self, graph: &G, on_gray: impl FnMut(usize))
-    where
-        G: provide::Vertices + provide::Neighbors,
-    {
-        self.execute(graph, |_| (), |_| (), on_gray, |_| (), || ())
-    }
-
-    pub fn execute_with_black_callback<G>(&self, graph: &G, on_black: impl FnMut(usize))
-    where
-        G: provide::Vertices + provide::Neighbors,
-    {
-        self.execute(graph, |_| (), |_| (), |_| (), on_black, || ())
-    }
-
-    // Double callbacks.
-    pub fn execute_with_start_white_callback<G>(
-        &self,
-        graph: &G,
-        on_start: impl FnMut(usize),
-        on_white: impl FnMut(usize),
-    ) where
-        G: provide::Vertices + provide::Neighbors,
-    {
-        self.execute(graph, on_start, on_white, |_| (), |_| (), || ())
-    }
-
-    pub fn execute_with_start_gray_callback<G>(
-        &self,
-        graph: &G,
-        on_start: impl FnMut(usize),
-        on_gray: impl FnMut(usize),
-    ) where
-        G: provide::Vertices + provide::Neighbors,
-    {
-        self.execute(graph, on_start, |_| (), on_gray, |_| (), || ())
-    }
-
-    pub fn execute_with_start_black_callback<G>(
-        &self,
-        graph: &G,
-        on_start: impl FnMut(usize),
-        on_black: impl FnMut(usize),
-    ) where
-        G: provide::Vertices + provide::Neighbors,
-    {
-        self.execute(graph, on_start, |_| (), |_| (), on_black, || ())
-    }
-
-    pub fn execute_with_white_gray_callback<G>(
-        &self,
-        graph: &G,
-        on_white: impl FnMut(usize),
-        on_gray: impl FnMut(usize),
-    ) where
-        G: provide::Vertices + provide::Neighbors,
-    {
-        self.execute(graph, |_| (), on_white, on_gray, |_| (), || ())
-    }
-
-    pub fn execute_with_white_black_callback<G>(
-        &self,
-        graph: &G,
-        on_white: impl FnMut(usize),
-        on_black: impl FnMut(usize),
-    ) where
-        G: provide::Vertices + provide::Neighbors,
-    {
-        self.execute(graph, |_| (), on_white, |_| (), on_black, || ())
-    }
-
-    pub fn execute_with_gray_black_callback<G>(
-        &self,
-        graph: &G,
-        on_gray: impl FnMut(usize),
-        on_black: impl FnMut(usize),
-    ) where
-        G: provide::Vertices + provide::Neighbors,
-    {
-        self.execute(graph, |_| (), |_| (), on_gray, on_black, || ())
-    }
-
-    pub fn execute<G>(
-        &self,
-        graph: &G,
-        mut on_start: impl FnMut(usize),
-        mut on_white: impl FnMut(usize),
-        mut on_gray: impl FnMut(usize),
-        mut on_black: impl FnMut(usize),
-        mut on_finish: impl FnMut()
-    ) where
         G: provide::Vertices + provide::Neighbors,
     {
         while let Some(virt_start_id) = self.next_start_id() {
@@ -216,7 +118,7 @@ impl Dfs {
             // On start.
             *self.time.borrow_mut() = 0;
             self.stack.borrow_mut().push(virt_start_id);
-            on_start(virt_start_id);
+            self.listener.borrow_mut().on_start(&self, virt_start_id);
 
             while let Some(virt_id) = self.next_virt_id() {
                 let color = self.colors.borrow()[virt_id];
@@ -226,7 +128,7 @@ impl Dfs {
                         self.discovered.borrow_mut()[virt_id] = (*self.time.borrow()).into();
 
                         // On white.
-                        on_white(virt_id);
+                        self.listener.borrow_mut().on_white(&self, virt_id);
 
                         self.colors.borrow_mut()[virt_id] = Color::Gray;
 
@@ -244,19 +146,19 @@ impl Dfs {
                     }
                     Color::Gray => {
                         // On gray.
-                        on_gray(virt_id);
+                        self.listener.borrow_mut().on_gray(&self, virt_id);
 
                         // On black.
                         self.colors.borrow_mut()[virt_id] = Color::Black;
                         *self.time.borrow_mut() += 1;
                         self.finished.borrow_mut()[virt_id] = (*self.time.borrow()).into();
-                        on_black(virt_id);
+                        self.listener.borrow_mut().on_black(&self, virt_id);
                     }
                     Color::Black => {}
                 };
             }
 
-            on_finish();
+            self.listener.borrow_mut().on_finish(&self);
         }
     }
 
@@ -283,6 +185,10 @@ impl Dfs {
     pub fn get_time(&self) -> usize {
         *self.time.borrow()
     }
+
+    pub fn id_map(self) -> provide::IdMap {
+        self.id_map.into_inner()
+    }
 }
 
 #[cfg(test)]
@@ -292,33 +198,64 @@ mod tests {
     use crate::provide::*;
     use crate::storage::Mat;
 
+    struct DefaultListener {
+        pub on_start_called: usize,
+        pub on_white_called: usize,
+        pub on_gray_called: usize,
+        pub on_black_called: usize,
+        pub on_finish_called: usize,
+    }
+
+    impl DefaultListener {
+        fn init() -> Self {
+            DefaultListener {
+                on_start_called: 0,
+                on_white_called: 0,
+                on_gray_called: 0,
+                on_black_called: 0,
+                on_finish_called: 0,
+            }
+        }
+    }
+
+    impl DfsListener for DefaultListener {
+        fn on_start(&mut self, _: &Dfs<Self>, _: usize) {
+            self.on_start_called += 1;
+        }
+
+        fn on_white(&mut self, _: &Dfs<Self>, _: usize) {
+            self.on_white_called += 1;
+        }
+
+        fn on_gray(&mut self, _: &Dfs<Self>, _: usize) {
+            self.on_gray_called += 1;
+        }
+
+        fn on_black(&mut self, _: &Dfs<Self>, _: usize) {
+            self.on_black_called += 1;
+        }
+
+        fn on_finish(&mut self, _: &Dfs<Self>) {
+            self.on_finish_called += 1;
+        }
+    }
+
     #[test]
     fn empty_directed_graph() {
         // Given: An empty directed graph.
         let graph = MatGraph::init(Mat::<usize>::init(true));
 
         // When: traversing the graph.
-        let dfs = Dfs::init(&graph);
+        let mut listener = DefaultListener::init();
+        let dfs = Dfs::init(&graph, &mut listener);
 
-        let mut on_start_called = 0;
-        let mut on_white_called = 0;
-        let mut on_gray_called = 0;
-        let mut on_black_called = 0;
-
-        dfs.execute(
-            &graph,
-            |_| on_start_called += 1,
-            |_| on_white_called += 1,
-            |_| on_gray_called += 1,
-            |_| on_black_called += 1,
-            || ()
-        );
+        dfs.execute(&graph);
 
         // Then:
-        assert_eq!(on_start_called, 0);
-        assert_eq!(on_white_called, 0);
-        assert_eq!(on_gray_called, 0);
-        assert_eq!(on_black_called, 0);
+        assert_eq!(listener.on_start_called, 0);
+        assert_eq!(listener.on_white_called, 0);
+        assert_eq!(listener.on_gray_called, 0);
+        assert_eq!(listener.on_black_called, 0);
     }
 
     #[test]
@@ -327,27 +264,16 @@ mod tests {
         let graph = MatGraph::init(Mat::<usize>::init(false));
 
         // When: traversing the graph.
-        let dfs = Dfs::init(&graph);
+        let mut listener = DefaultListener::init();
+        let dfs = Dfs::init(&graph, &mut listener);
 
-        let mut on_start_called = 0;
-        let mut on_white_called = 0;
-        let mut on_gray_called = 0;
-        let mut on_black_called = 0;
-
-        dfs.execute(
-            &graph,
-            |_| on_start_called += 1,
-            |_| on_white_called += 1,
-            |_| on_gray_called += 1,
-            |_| on_black_called += 1,
-            || ()
-        );
+        dfs.execute(&graph);
 
         // Then:
-        assert_eq!(on_start_called, 0);
-        assert_eq!(on_white_called, 0);
-        assert_eq!(on_gray_called, 0);
-        assert_eq!(on_black_called, 0);
+        assert_eq!(listener.on_start_called, 0);
+        assert_eq!(listener.on_white_called, 0);
+        assert_eq!(listener.on_gray_called, 0);
+        assert_eq!(listener.on_black_called, 0);
     }
 
     #[test]
@@ -357,30 +283,16 @@ mod tests {
         let _ = graph.add_vertex();
 
         // When: traversing graph.
-        let dfs = Dfs::init(&graph);
+        let mut listener = DefaultListener::init();
+        let dfs = Dfs::init(&graph, &mut listener);
 
-        let mut on_start_called = 0;
-        let mut on_white_called = 0;
-        let mut on_gray_called = 0;
-        let mut on_black_called = 0;
-
-        dfs.execute(
-            &graph,
-            |_| {
-                on_start_called += 1;
-                assert!(dfs.get_time() == 0);
-            },
-            |_| on_white_called += 1,
-            |_| on_gray_called += 1,
-            |_| on_black_called += 1,
-            || ()
-        );
+        dfs.execute(&graph);
 
         // Then:
-        assert_eq!(on_start_called, 1);
-        assert_eq!(on_white_called, 1);
-        assert_eq!(on_gray_called, 1);
-        assert_eq!(on_black_called, 1);
+        assert_eq!(listener.on_start_called, 1);
+        assert_eq!(listener.on_white_called, 1);
+        assert_eq!(listener.on_gray_called, 1);
+        assert_eq!(listener.on_black_called, 1);
     }
 
     #[test]
@@ -390,30 +302,16 @@ mod tests {
         let _ = graph.add_vertex();
 
         // When: traversing graph.
-        let dfs = Dfs::init(&graph);
+        let mut listener = DefaultListener::init();
+        let dfs = Dfs::init(&graph, &mut listener);
 
-        let mut on_start_called = 0;
-        let mut on_white_called = 0;
-        let mut on_gray_called = 0;
-        let mut on_black_called = 0;
-
-        dfs.execute(
-            &graph,
-            |_| {
-                on_start_called += 1;
-                assert!(dfs.get_time() == 0);
-            },
-            |_| on_white_called += 1,
-            |_| on_gray_called += 1,
-            |_| on_black_called += 1,
-            || ()
-        );
+        dfs.execute(&graph);
 
         // Then:
-        assert_eq!(on_start_called, 1);
-        assert_eq!(on_white_called, 1);
-        assert_eq!(on_gray_called, 1);
-        assert_eq!(on_black_called, 1);
+        assert_eq!(listener.on_start_called, 1);
+        assert_eq!(listener.on_white_called, 1);
+        assert_eq!(listener.on_gray_called, 1);
+        assert_eq!(listener.on_black_called, 1);
     }
 
     #[test]
@@ -424,30 +322,16 @@ mod tests {
         let _ = graph.add_vertex();
 
         // When: traversing graph.
-        let dfs = Dfs::init(&graph);
+        let mut listener = DefaultListener::init();
+        let dfs = Dfs::init(&graph, &mut listener);
 
-        let mut on_start_called = 0;
-        let mut on_white_called = 0;
-        let mut on_gray_called = 0;
-        let mut on_black_called = 0;
-
-        dfs.execute(
-            &graph,
-            |_| {
-                on_start_called += 1;
-                assert!(dfs.get_time() == 0);
-            },
-            |_| on_white_called += 1,
-            |_| on_gray_called += 1,
-            |_| on_black_called += 1,
-            || ()
-        );
+        dfs.execute(&graph);
 
         // Then:
-        assert_eq!(on_start_called, 2);
-        assert_eq!(on_white_called, 2);
-        assert_eq!(on_gray_called, 2);
-        assert_eq!(on_black_called, 2);
+        assert_eq!(listener.on_start_called, 2);
+        assert_eq!(listener.on_white_called, 2);
+        assert_eq!(listener.on_gray_called, 2);
+        assert_eq!(listener.on_black_called, 2);
     }
     #[test]
     fn undirected_graph_with_two_separate_vertices() {
@@ -457,30 +341,16 @@ mod tests {
         let _ = graph.add_vertex();
 
         // When: traversing graph.
-        let dfs = Dfs::init(&graph);
+        let mut listener = DefaultListener::init();
+        let dfs = Dfs::init(&graph, &mut listener);
 
-        let mut on_start_called = 0;
-        let mut on_white_called = 0;
-        let mut on_gray_called = 0;
-        let mut on_black_called = 0;
-
-        dfs.execute(
-            &graph,
-            |_| {
-                on_start_called += 1;
-                assert!(dfs.get_time() == 0);
-            },
-            |_| on_white_called += 1,
-            |_| on_gray_called += 1,
-            |_| on_black_called += 1,
-            || ()
-        );
+        dfs.execute(&graph);
 
         // Then:
-        assert_eq!(on_start_called, 2);
-        assert_eq!(on_white_called, 2);
-        assert_eq!(on_gray_called, 2);
-        assert_eq!(on_black_called, 2);
+        assert_eq!(listener.on_start_called, 2);
+        assert_eq!(listener.on_white_called, 2);
+        assert_eq!(listener.on_gray_called, 2);
+        assert_eq!(listener.on_black_called, 2);
     }
 
     #[test]
@@ -494,30 +364,16 @@ mod tests {
         graph.add_edge(b, c, 1.into());
 
         // When: traversing graph.
-        let dfs = Dfs::init_with_starts(&graph, vec![a]);
+        let mut listener = DefaultListener::init();
+        let dfs = Dfs::init_with_starts(&graph, &mut listener, vec![a]);
 
-        let mut on_start_called = 0;
-        let mut on_white_called = 0;
-        let mut on_gray_called = 0;
-        let mut on_black_called = 0;
-
-        dfs.execute(
-            &graph,
-            |_| {
-                on_start_called += 1;
-                assert!(dfs.get_time() == 0);
-            },
-            |_| on_white_called += 1,
-            |_| on_gray_called += 1,
-            |_| on_black_called += 1,
-            || ()
-        );
+        dfs.execute(&graph);
 
         // Then:
-        assert_eq!(on_start_called, 1);
-        assert_eq!(on_white_called, 3);
-        assert_eq!(on_gray_called, 3);
-        assert_eq!(on_black_called, 3);
+        assert_eq!(listener.on_start_called, 1);
+        assert_eq!(listener.on_white_called, 3);
+        assert_eq!(listener.on_gray_called, 3);
+        assert_eq!(listener.on_black_called, 3);
     }
 
     #[test]
@@ -531,30 +387,16 @@ mod tests {
         graph.add_edge(b, c, 1.into());
 
         // When: traversing graph.
-        let dfs = Dfs::init_with_starts(&graph, vec![c]);
+        let mut listener = DefaultListener::init();
+        let dfs = Dfs::init_with_starts(&graph, &mut listener, vec![c]);
 
-        let mut on_start_called = 0;
-        let mut on_white_called = 0;
-        let mut on_gray_called = 0;
-        let mut on_black_called = 0;
-
-        dfs.execute(
-            &graph,
-            |_| {
-                on_start_called += 1;
-                assert!(dfs.get_time() == 0);
-            },
-            |_| on_white_called += 1,
-            |_| on_gray_called += 1,
-            |_| on_black_called += 1,
-            || ()
-        );
+        dfs.execute(&graph);
 
         // Then:
-        assert_eq!(on_start_called, 1);
-        assert_eq!(on_white_called, 3);
-        assert_eq!(on_gray_called, 3);
-        assert_eq!(on_black_called, 3);
+        assert_eq!(listener.on_start_called, 1);
+        assert_eq!(listener.on_white_called, 3);
+        assert_eq!(listener.on_gray_called, 3);
+        assert_eq!(listener.on_black_called, 3);
     }
 
     #[test]
@@ -571,30 +413,16 @@ mod tests {
         graph.add_edge(c, a, 1.into());
 
         // When: traversing graph.
-        let dfs = Dfs::init_with_starts(&graph, vec![a]);
+        let mut listener = DefaultListener::init();
+        let dfs = Dfs::init_with_starts(&graph, &mut listener, vec![a]);
 
-        let mut on_start_called = 0;
-        let mut on_white_called = 0;
-        let mut on_gray_called = 0;
-        let mut on_black_called = 0;
-
-        dfs.execute(
-            &graph,
-            |_| {
-                on_start_called += 1;
-                assert!(dfs.get_time() == 0);
-            },
-            |_| on_white_called += 1,
-            |_| on_gray_called += 1,
-            |_| on_black_called += 1,
-            || ()
-        );
+        dfs.execute(&graph);
 
         // Then:
-        assert_eq!(on_start_called, 1);
-        assert_eq!(on_white_called, 3);
-        assert_eq!(on_gray_called, 3);
-        assert_eq!(on_black_called, 3);
+        assert_eq!(listener.on_start_called, 1);
+        assert_eq!(listener.on_white_called, 3);
+        assert_eq!(listener.on_gray_called, 3);
+        assert_eq!(listener.on_black_called, 3);
     }
 
     #[test]
@@ -611,30 +439,16 @@ mod tests {
         graph.add_edge(c, a, 1.into());
 
         // When: traversing graph.
-        let dfs = Dfs::init_with_starts(&graph, vec![a]);
+        let mut listener = DefaultListener::init();
+        let dfs = Dfs::init_with_starts(&graph, &mut listener, vec![a]);
 
-        let mut on_start_called = 0;
-        let mut on_white_called = 0;
-        let mut on_gray_called = 0;
-        let mut on_black_called = 0;
-
-        dfs.execute(
-            &graph,
-            |_| {
-                on_start_called += 1;
-                assert!(dfs.get_time() == 0);
-            },
-            |_| on_white_called += 1,
-            |_| on_gray_called += 1,
-            |_| on_black_called += 1,
-            || ()
-        );
+        dfs.execute(&graph);
 
         // Then:
-        assert_eq!(on_start_called, 1);
-        assert_eq!(on_white_called, 3);
-        assert_eq!(on_gray_called, 3);
-        assert_eq!(on_black_called, 3);
+        assert_eq!(listener.on_start_called, 1);
+        assert_eq!(listener.on_white_called, 3);
+        assert_eq!(listener.on_gray_called, 3);
+        assert_eq!(listener.on_black_called, 3);
     }
 
     #[test]
@@ -663,30 +477,16 @@ mod tests {
         graph.add_edge(d, f, 1.into());
 
         // When: traversing graph.
-        let dfs = Dfs::init_with_starts(&graph, vec![a]);
+        let mut listener = DefaultListener::init();
+        let dfs = Dfs::init_with_starts(&graph, &mut listener, vec![a]);
 
-        let mut on_start_called = 0;
-        let mut on_white_called = 0;
-        let mut on_gray_called = 0;
-        let mut on_black_called = 0;
-
-        dfs.execute(
-            &graph,
-            |_| {
-                on_start_called += 1;
-                assert!(dfs.get_time() == 0);
-            },
-            |_| on_white_called += 1,
-            |_| on_gray_called += 1,
-            |_| on_black_called += 1,
-            || ()
-        );
+        dfs.execute(&graph);
 
         // Then:
-        assert_eq!(on_start_called, 1);
-        assert_eq!(on_white_called, 6);
-        assert_eq!(on_gray_called, 6);
-        assert_eq!(on_black_called, 6);
+        assert_eq!(listener.on_start_called, 1);
+        assert_eq!(listener.on_white_called, 6);
+        assert_eq!(listener.on_gray_called, 6);
+        assert_eq!(listener.on_black_called, 6);
     }
 
     #[test]
@@ -713,30 +513,16 @@ mod tests {
         graph.add_edge(d, f, 1.into());
 
         // When: traversing graph.
-        let dfs = Dfs::init_with_starts(&graph, vec![a]);
+        let mut listener = DefaultListener::init();
+        let dfs = Dfs::init_with_starts(&graph, &mut listener, vec![a]);
 
-        let mut on_start_called = 0;
-        let mut on_white_called = 0;
-        let mut on_gray_called = 0;
-        let mut on_black_called = 0;
-
-        dfs.execute(
-            &graph,
-            |_| {
-                on_start_called += 1;
-                assert!(dfs.get_time() == 0);
-            },
-            |_| on_white_called += 1,
-            |_| on_gray_called += 1,
-            |_| on_black_called += 1,
-            || ()
-        );
+        dfs.execute(&graph);
 
         // Then:
-        assert_eq!(on_start_called, 1);
-        assert_eq!(on_white_called, 6);
-        assert_eq!(on_gray_called, 6);
-        assert_eq!(on_black_called, 6);
+        assert_eq!(listener.on_start_called, 1);
+        assert_eq!(listener.on_white_called, 6);
+        assert_eq!(listener.on_gray_called, 6);
+        assert_eq!(listener.on_black_called, 6);
     }
 
     #[test]
@@ -761,30 +547,16 @@ mod tests {
         graph.add_edge(d, f, 1.into());
 
         // When: traversing graph.
-        let dfs = Dfs::init_with_starts(&graph, vec![a, d]);
+        let mut listener = DefaultListener::init();
+        let dfs = Dfs::init_with_starts(&graph, &mut listener, vec![a, d]);
 
-        let mut on_start_called = 0;
-        let mut on_white_called = 0;
-        let mut on_gray_called = 0;
-        let mut on_black_called = 0;
-
-        dfs.execute(
-            &graph,
-            |_| {
-                on_start_called += 1;
-                assert!(dfs.get_time() == 0);
-            },
-            |_| on_white_called += 1,
-            |_| on_gray_called += 1,
-            |_| on_black_called += 1,
-            || ()
-        );
+        dfs.execute(&graph);
 
         // Then:
-        assert_eq!(on_start_called, 2);
-        assert_eq!(on_white_called, 6);
-        assert_eq!(on_gray_called, 6);
-        assert_eq!(on_black_called, 6);
+        assert_eq!(listener.on_start_called, 2);
+        assert_eq!(listener.on_white_called, 6);
+        assert_eq!(listener.on_gray_called, 6);
+        assert_eq!(listener.on_black_called, 6);
     }
 
     #[test]
@@ -808,30 +580,15 @@ mod tests {
         graph.add_edge(d, f, 1.into());
 
         // When: traversing graph.
-        let dfs = Dfs::init_with_starts(&graph, vec![a, d]);
+        let mut listener = DefaultListener::init();
+        let dfs = Dfs::init_with_starts(&graph, &mut listener, vec![a, d]);
 
-        let mut on_start_called = 0;
-        let mut on_white_called = 0;
-        let mut on_gray_called = 0;
-        let mut on_black_called = 0;
-
-        dfs.execute(
-            &graph,
-            |_| {
-                println!("start");
-                on_start_called += 1;
-                assert!(dfs.get_time() == 0);
-            },
-            |_| on_white_called += 1,
-            |_| on_gray_called += 1,
-            |_| on_black_called += 1,
-            || ()
-        );
+        dfs.execute(&graph);
 
         // Then:
-        assert_eq!(on_start_called, 2);
-        assert_eq!(on_white_called, 6);
-        assert_eq!(on_gray_called, 6);
-        assert_eq!(on_black_called, 6);
+        assert_eq!(listener.on_start_called, 2);
+        assert_eq!(listener.on_white_called, 6);
+        assert_eq!(listener.on_gray_called, 6);
+        assert_eq!(listener.on_black_called, 6);
     }
 }
