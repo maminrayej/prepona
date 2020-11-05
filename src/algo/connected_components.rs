@@ -8,7 +8,7 @@ pub struct ConnectedComponents {
 }
 
 impl DfsListener for ConnectedComponents {
-    fn on_gray(&mut self, dfs: &Dfs<Self>, virt_id: usize) {
+    fn on_white(&mut self, dfs: &Dfs<Self>, virt_id: usize) {
         let real_id = dfs.get_id_map().get_virt_to_real(virt_id).unwrap();
 
         self.current_component.push(real_id);
