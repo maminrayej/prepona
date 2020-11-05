@@ -1,22 +1,40 @@
 use crate::provide;
-use crate::traversal::Dfs;
+use crate::traversal::{Dfs, DfsListener};
 
-pub fn topological_sort<G>(graph: &G) -> Vec<usize>
-where
-    G: provide::Vertices + provide::Neighbors,
-{
-    let mut sorted_vertex_ids = vec![];
+pub struct TopologicalSort {
+    sorted_vertex_ids: Vec<usize>,
+}
 
-    let dfs = Dfs::init(graph);
+impl DfsListener for TopologicalSort {
+    fn on_black(&mut self, _: &Dfs<Self>, virt_id: usize) {
+        self.sorted_vertex_ids.push(virt_id);
+    }
+}
 
-    dfs.execute_with_black_callback(graph, |virt_id| sorted_vertex_ids.push(virt_id));
-    
-    sorted_vertex_ids.reverse();
+impl TopologicalSort {
+    pub fn init() -> Self {
+        TopologicalSort {
+            sorted_vertex_ids: vec![],
+        }
+    }
 
-    sorted_vertex_ids
-        .into_iter()
-        .map(|virt_id| dfs.get_id_map().get_virt_to_real(virt_id).unwrap())
-        .collect()
+    pub fn execute<G>(mut self, graph: &G) -> Vec<usize>
+    where
+        G: provide::Vertices + provide::Neighbors,
+    {
+        let dfs = Dfs::init(graph, &mut self);
+
+        dfs.execute(graph);
+
+        let id_map = dfs.id_map();
+
+        self.sorted_vertex_ids.reverse();
+
+        self.sorted_vertex_ids
+            .into_iter()
+            .map(|virt_id| id_map.get_virt_to_real(virt_id).unwrap())
+            .collect()
+    }
 }
 
 #[cfg(test)]
@@ -36,7 +54,7 @@ mod tests {
         graph.add_edge(a, b, 1.into());
         graph.add_edge(a, c, 1.into());
 
-        let sorted_ids = topological_sort(&graph);
+        let sorted_ids = TopologicalSort::init().execute(&graph);
 
         println!("{:?}", sorted_ids);
     }
