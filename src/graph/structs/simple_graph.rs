@@ -81,6 +81,10 @@ impl<W, E: Edge<W>, S: GraphStorage<W, E>> provide::Vertices for SimpleGraph<W, 
 }
 
 impl<W, E: Edge<W>, S: GraphStorage<W, E>> provide::Edges<W, E> for SimpleGraph<W, E, S> {
+    fn edge(&self, src_id: usize, dst_id: usize) -> &E {
+        self.storage.edge(src_id, dst_id)
+    }
+
     /// # Returns:
     /// Vector of edges in the format of (`src_id`, `dst_id`, `edge`).
     ///

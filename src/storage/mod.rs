@@ -50,6 +50,8 @@ pub trait GraphStorage<W, E: Edge<W>> {
     /// Vector of vertex ids that are present in the graph.
     fn vertices(&self) -> Vec<usize>;
 
+    fn edge(&self, src_id: usize, dst_id: usize) -> &E;
+
     /// # Returns:
     /// Vector of edges in the format of (`src_id`, `dst_id`, `edge`).
     fn edges(&self) -> Vec<&E>;

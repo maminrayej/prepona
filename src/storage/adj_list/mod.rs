@@ -125,6 +125,13 @@ impl<W: Copy, E: Edge<W> + Copy> GraphStorage<W, E> for AdjList<W, E> {
             .collect()
     }
 
+    fn edge(&self, src_id: usize, dst_id: usize) -> &E {
+        self.validate_id(src_id);
+        self.validate_id(dst_id);
+
+        self.edges_of[src_id].iter().find(|edge| edge.get_dst_id() == dst_id).unwrap()
+    }
+
     fn edges(&self) -> Vec<&E> {
         self.vertices()
             .into_iter()

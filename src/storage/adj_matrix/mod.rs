@@ -219,6 +219,10 @@ impl<W: Any, E: Edge<W>> GraphStorage<W, E> for AdjMatrix<W, E> {
             .collect()
     }
 
+    fn edge(&self, src_id: usize, dst_id: usize) -> &E {
+        &self[(src_id, dst_id)]
+    }
+
     /// # Returns:
     /// Vector of edges in the format of (`src_id`, `dst_id`, `edge`).
     ///
