@@ -124,13 +124,17 @@ impl<W, E: Edge<W> + Copy> GraphStorage<W, E> for AdjList<W, E> {
             .collect()
     }
 
-    fn edges(&self, _: bool) -> Vec<(usize, usize, &E)> {
-        (0..self.vertex_count)
+    fn edges(&self, doubles: bool) -> Vec<(usize, usize, &E)> {
+        self.vertices()
+            .into_iter()
             .flat_map(|src_id| {
                 self.edges_from(src_id)
                     .into_iter()
                     .map(|(dst_id, edge)| (src_id, dst_id, edge))
                     .collect::<Vec<(usize, usize, &E)>>()
+            })
+            .filter(|(v1, v2, edge)| {
+                edge.get_weight().is_finite() && if self.is_undirected() && !doubles { v1 <= v2 } else { true }
             })
             .collect()
     }
