@@ -98,7 +98,6 @@ impl TarjanSCC {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -111,7 +110,7 @@ mod tests {
         //      a  -->  b  <--  f  -->  g
         //     ^ |      |     __^   /```^
         //     | v      v   /   v```    |
-        //      d  -->  c -'--> h  -->  i 
+        //      d  -->  c -'--> h  -->  i
         let mut graph = MatGraph::init(Mat::<usize>::init(true));
         let a = graph.add_vertex();
         let b = graph.add_vertex();
@@ -122,20 +121,20 @@ mod tests {
         let h = graph.add_vertex();
         let i = graph.add_vertex();
 
-        graph.add_edge(a, d, 1.into());
-        graph.add_edge(d, a, 1.into());
-        graph.add_edge(a, b, 1.into());
-        graph.add_edge(d, c, 1.into());
-        graph.add_edge(b, c, 1.into());
+        graph.add_edge((a, d, 1).into());
+        graph.add_edge((d, a, 1).into());
+        graph.add_edge((a, b, 1).into());
+        graph.add_edge((d, c, 1).into());
+        graph.add_edge((b, c, 1).into());
 
-        graph.add_edge(f, b, 1.into());
-        graph.add_edge(f, h, 1.into());
-        graph.add_edge(c, h, 1.into());
-        graph.add_edge(c, f, 1.into());
-        graph.add_edge(f, g, 1.into());
-        graph.add_edge(h, i, 1.into());
-        graph.add_edge(g, h, 1.into());
-        graph.add_edge(i, g, 1.into());
+        graph.add_edge((f, b, 1).into());
+        graph.add_edge((f, h, 1).into());
+        graph.add_edge((c, h, 1).into());
+        graph.add_edge((c, f, 1).into());
+        graph.add_edge((f, g, 1).into());
+        graph.add_edge((h, i, 1).into());
+        graph.add_edge((g, h, 1).into());
+        graph.add_edge((i, g, 1).into());
 
         let mut tags = std::collections::HashMap::<usize, &'static str>::new();
         tags.insert(a, "a");
@@ -146,14 +145,18 @@ mod tests {
         tags.insert(g, "g");
         tags.insert(h, "h");
         tags.insert(i, "i");
-        
 
         let tarjan = TarjanSCC::init(&graph);
 
         let sccs = tarjan.execute(&graph);
 
         for scc in sccs {
-            println!("{:?}", scc.iter().map(|v_id| tags.get(v_id).unwrap().to_string()).collect::<String>())
+            println!(
+                "{:?}",
+                scc.iter()
+                    .map(|v_id| tags.get(v_id).unwrap().to_string())
+                    .collect::<String>()
+            )
         }
     }
 }

@@ -1,8 +1,8 @@
-mod adj_matrix;
 mod adj_list;
+mod adj_matrix;
 
-pub use adj_matrix::{AdjMatrix, FlowMat, Mat};
 pub use adj_list::{AdjList, FlowList, List};
+pub use adj_matrix::{AdjMatrix, FlowMat, Mat};
 
 use crate::graph::Edge;
 
@@ -30,7 +30,7 @@ pub trait GraphStorage<W, E: Edge<W>> {
     /// * `src_id`: Id of the vertex at the start of the edge.
     /// * `dst_id`: Id of the vertex at the end of the edge.
     /// * `edge`: The edge between `src_id` and `dst_id`.
-    fn add_edge(&mut self, src_id: usize, dst_id: usize, edge: E);
+    fn add_edge(&mut self, edge: E);
 
     /// Removes the edge from vertex with `src_id` to vertex with `dst_id`.
     ///
@@ -52,14 +52,14 @@ pub trait GraphStorage<W, E: Edge<W>> {
 
     /// # Returns:
     /// Vector of edges in the format of (`src_id`, `dst_id`, `edge`).
-    fn edges(&self, doubles: bool) -> Vec<(usize, usize, &E)>;
+    fn edges(&self) -> Vec<&E>;
 
     /// # Returns:
     /// Vector of edges from vertex with `src_id` in the format of (`dst_id`, `edge`).
     ///
     /// # Arguments:
     /// * `src_id`: Id of the source vertex.
-    fn edges_from(&self, src_id: usize) -> Vec<(usize, &E)>;
+    fn edges_from(&self, src_id: usize) -> Vec<&E>;
 
     /// # Returns:
     /// Id of neighbors of the vertex with `src_id`.

@@ -32,10 +32,13 @@ pub trait Vertices {
     fn continuos_id_map(&self) -> IdMap {
         let mut id_map = IdMap::init();
 
-        self.vertices().iter().enumerate().for_each(|(virt_id, &real_id)| {
-            id_map.put_virt_to_real(virt_id, real_id);
-            id_map.put_real_to_virt(real_id, virt_id);
-        });
+        self.vertices()
+            .iter()
+            .enumerate()
+            .for_each(|(virt_id, &real_id)| {
+                id_map.put_virt_to_real(virt_id, real_id);
+                id_map.put_real_to_virt(real_id, virt_id);
+            });
 
         id_map
     }
@@ -49,7 +52,7 @@ pub trait Vertices {
 pub trait Edges<W, E: Edge<W>> {
     /// # Returns:
     /// Vector of edges in the format of (`src_id`, `dst_id`, `edge`).
-    fn edges(&self, doubles: bool) -> Vec<(usize, usize, &E)>;
+    fn edges(&self) -> Vec<&E>;
 
     /// # Returns:
     /// Vector of edges from vertex with `src_id` in the format of (`dst_id`, `edge`).
@@ -59,13 +62,12 @@ pub trait Edges<W, E: Edge<W>> {
     ///
     /// # Note:
     /// This function has a default implementation but for better performance its usually better to implement it manually.
-    fn edges_from(&self, src_id: usize) -> Vec<(usize, &E)> {
+    fn edges_from(&self, src_id: usize) -> Vec<&E> {
         // 1. From triplets produced by `edges` function, only keep those that their source vertex id is `src_id`.
         // 2. Map each triplet to a pair by discarding the source vertex id
-        self.edges(true)
+        self.edges()
             .into_iter()
-            .filter(|(v1, _, _)| *v1 == src_id)
-            .map(|(_, v2, edge)| (v2, edge))
+            .filter(|edge| edge.get_src_id() == src_id)
             .collect()
     }
 
@@ -75,7 +77,7 @@ pub trait Edges<W, E: Edge<W>> {
     /// # Note:
     /// This function has a default implementation but for better performance its usually better to implement it manually.
     fn edges_count(&self) -> usize {
-        self.edges(false).len()
+        self.edges().len()
     }
 }
 
@@ -103,7 +105,7 @@ pub trait Graph<W, E: Edge<W>> {
     /// * `src_id`: Id of the vertex at the start of the edge.
     /// * `dst_id`: Id of the vertex at the end of the edge.
     /// * `edge`: Edge between `src_id` and `dst_id`.
-    fn add_edge(&mut self, src_id: usize, dst_id: usize, edge: E);
+    fn add_edge(&mut self, edge: E);
 
     /// Removes the edge from vertex with `src_id` to vertex with `dst_id`.
     ///

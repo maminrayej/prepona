@@ -360,8 +360,8 @@ mod tests {
         let a = graph.add_vertex();
         let b = graph.add_vertex();
         let c = graph.add_vertex();
-        graph.add_edge(a, b, 1.into());
-        graph.add_edge(b, c, 1.into());
+        graph.add_edge((a, b, 1).into());
+        graph.add_edge((b, c, 1).into());
 
         // When: traversing graph.
         let mut listener = DefaultListener::init();
@@ -383,8 +383,8 @@ mod tests {
         let a = graph.add_vertex();
         let b = graph.add_vertex();
         let c = graph.add_vertex();
-        graph.add_edge(a, b, 1.into());
-        graph.add_edge(b, c, 1.into());
+        graph.add_edge((a, b, 1).into());
+        graph.add_edge((b, c, 1).into());
 
         // When: traversing graph.
         let mut listener = DefaultListener::init();
@@ -408,9 +408,9 @@ mod tests {
         let a = graph.add_vertex();
         let b = graph.add_vertex();
         let c = graph.add_vertex();
-        graph.add_edge(a, b, 1.into());
-        graph.add_edge(b, c, 1.into());
-        graph.add_edge(c, a, 1.into());
+        graph.add_edge((a, b, 1).into());
+        graph.add_edge((b, c, 1).into());
+        graph.add_edge((c, a, 1).into());
 
         // When: traversing graph.
         let mut listener = DefaultListener::init();
@@ -434,9 +434,9 @@ mod tests {
         let a = graph.add_vertex();
         let b = graph.add_vertex();
         let c = graph.add_vertex();
-        graph.add_edge(a, b, 1.into());
-        graph.add_edge(b, c, 1.into());
-        graph.add_edge(c, a, 1.into());
+        graph.add_edge((a, b, 1).into());
+        graph.add_edge((b, c, 1).into());
+        graph.add_edge((c, a, 1).into());
 
         // When: traversing graph.
         let mut listener = DefaultListener::init();
@@ -468,13 +468,13 @@ mod tests {
         let d = graph.add_vertex();
         let e = graph.add_vertex();
         let f = graph.add_vertex();
-        graph.add_edge(a, b, 1.into());
-        graph.add_edge(a, f, 1.into());
-        graph.add_edge(b, c, 1.into());
-        graph.add_edge(c, a, 1.into());
-        graph.add_edge(c, d, 1.into());
-        graph.add_edge(d, e, 1.into());
-        graph.add_edge(d, f, 1.into());
+        graph.add_edge((a, b, 1).into());
+        graph.add_edge((a, f, 1).into());
+        graph.add_edge((b, c, 1).into());
+        graph.add_edge((c, a, 1).into());
+        graph.add_edge((c, d, 1).into());
+        graph.add_edge((d, e, 1).into());
+        graph.add_edge((d, f, 1).into());
 
         // When: traversing graph.
         let mut listener = DefaultListener::init();
@@ -504,13 +504,13 @@ mod tests {
         let d = graph.add_vertex();
         let e = graph.add_vertex();
         let f = graph.add_vertex();
-        graph.add_edge(a, b, 1.into());
-        graph.add_edge(a, f, 1.into());
-        graph.add_edge(b, c, 1.into());
-        graph.add_edge(c, a, 1.into());
-        graph.add_edge(c, d, 1.into());
-        graph.add_edge(d, e, 1.into());
-        graph.add_edge(d, f, 1.into());
+        graph.add_edge((a, b, 1).into());
+        graph.add_edge((a, f, 1).into());
+        graph.add_edge((b, c, 1).into());
+        graph.add_edge((c, a, 1).into());
+        graph.add_edge((c, d, 1).into());
+        graph.add_edge((d, e, 1).into());
+        graph.add_edge((d, f, 1).into());
 
         // When: traversing graph.
         let mut listener = DefaultListener::init();
@@ -539,12 +539,12 @@ mod tests {
         let d = graph.add_vertex();
         let e = graph.add_vertex();
         let f = graph.add_vertex();
-        graph.add_edge(a, b, 1.into());
-        graph.add_edge(b, c, 1.into());
-        graph.add_edge(c, a, 1.into());
+        graph.add_edge((a, b, 1).into());
+        graph.add_edge((b, c, 1).into());
+        graph.add_edge((c, a, 1).into());
 
-        graph.add_edge(d, e, 1.into());
-        graph.add_edge(d, f, 1.into());
+        graph.add_edge((d, e, 1).into());
+        graph.add_edge((d, f, 1).into());
 
         // When: traversing graph.
         let mut listener = DefaultListener::init();
@@ -572,12 +572,12 @@ mod tests {
         let d = graph.add_vertex();
         let e = graph.add_vertex();
         let f = graph.add_vertex();
-        graph.add_edge(a, b, 1.into());
-        graph.add_edge(b, c, 1.into());
-        graph.add_edge(c, a, 1.into());
+        graph.add_edge((a, b, 1).into());
+        graph.add_edge((b, c, 1).into());
+        graph.add_edge((c, a, 1).into());
 
-        graph.add_edge(d, e, 1.into());
-        graph.add_edge(d, f, 1.into());
+        graph.add_edge((d, e, 1).into());
+        graph.add_edge((d, f, 1).into());
 
         // When: traversing graph.
         let mut listener = DefaultListener::init();

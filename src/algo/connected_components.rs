@@ -68,12 +68,12 @@ mod tests {
         let f = graph.add_vertex();
         let g = graph.add_vertex();
 
-        graph.add_edge(a, b, 1.into());
-        graph.add_edge(a, c, 1.into());
-        graph.add_edge(c, b, 1.into());
+        graph.add_edge((a, b, 1).into());
+        graph.add_edge((a, c, 1).into());
+        graph.add_edge((c, b, 1).into());
 
-        graph.add_edge(d, e, 1.into());
-        graph.add_edge(e, f, 1.into());
+        graph.add_edge((d, e, 1).into());
+        graph.add_edge((e, f, 1).into());
 
         let mut tags = std::collections::HashMap::<usize, &'static str>::new();
         tags.insert(a, "a");

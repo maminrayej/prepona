@@ -69,7 +69,8 @@ impl<'a, G: provide::Neighbors + provide::Vertices> HasCycle<'a, G> {
 
         let id_map = dfs.id_map();
 
-        let a = self.cycle
+        let a = self
+            .cycle
             .iter()
             .map(|virt_id| id_map.get_virt_to_real(*virt_id).unwrap())
             .collect();
@@ -94,9 +95,9 @@ mod tests {
         let a = graph.add_vertex();
         let b = graph.add_vertex();
         let c = graph.add_vertex();
-        graph.add_edge(a, b, 1.into());
-        graph.add_edge(b, c, 1.into());
-        graph.add_edge(c, a, 1.into());
+        graph.add_edge((a, b, 1).into());
+        graph.add_edge((b, c, 1).into());
+        graph.add_edge((c, a, 1).into());
 
         let has_cycle = HasCycle::init(&graph);
 
@@ -115,9 +116,9 @@ mod tests {
         let a = graph.add_vertex();
         let b = graph.add_vertex();
         let c = graph.add_vertex();
-        graph.add_edge(a, b, 1.into());
-        graph.add_edge(b, c, 1.into());
-        graph.add_edge(c, a, 1.into());
+        graph.add_edge((a, b, 1).into());
+        graph.add_edge((b, c, 1).into());
+        graph.add_edge((c, a, 1).into());
 
         let has_cycle = HasCycle::init(&graph);
 
@@ -133,7 +134,7 @@ mod tests {
         let mut graph = MatGraph::init(Mat::<usize>::init(false));
         let a = graph.add_vertex();
         let b = graph.add_vertex();
-        graph.add_edge(a, b, 1.into());
+        graph.add_edge((a, b, 1).into());
 
         let has_cycle = HasCycle::init(&graph);
 
@@ -149,7 +150,7 @@ mod tests {
         let mut graph = MatGraph::init(Mat::<usize>::init(true));
         let a = graph.add_vertex();
         let b = graph.add_vertex();
-        graph.add_edge(a, b, 1.into());
+        graph.add_edge((a, b, 1).into());
 
         let has_cycle = HasCycle::init(&graph);
 

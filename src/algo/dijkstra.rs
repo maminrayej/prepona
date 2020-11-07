@@ -60,12 +60,12 @@ impl<W: Clone + Ord + Zero + Any> Dijkstra<W> {
         self.dist[src_virt_id.unwrap()] = W::zero().into();
 
         while let Some(virt_id) = self.next_id() {
-
             self.visited[virt_id] = true;
 
             let real_id = id_map.get_virt_to_real(virt_id).unwrap();
 
-            for (n_id, edge) in graph.edges_from(real_id) {
+            for edge in graph.edges_from(real_id) {
+                let n_id = edge.get_dst_id();
                 let n_virt_id = id_map.get_real_to_virt(n_id).unwrap();
 
                 let alt = self.dist[virt_id].clone() + edge.get_weight().clone();
@@ -102,16 +102,16 @@ mod tests {
         let d = graph.add_vertex(); // 3
         let e = graph.add_vertex(); // 4
 
-        graph.add_edge(a, b, 6.into());
-        graph.add_edge(a, d, 1.into());
+        graph.add_edge((a, b, 6).into());
+        graph.add_edge((a, d, 1).into());
 
-        graph.add_edge(b, d, 2.into());
-        graph.add_edge(b, c, 5.into());
-        graph.add_edge(b, e, 2.into());
+        graph.add_edge((b, d, 2).into());
+        graph.add_edge((b, c, 5).into());
+        graph.add_edge((b, e, 2).into());
 
-        graph.add_edge(c, e, 5.into());
+        graph.add_edge((c, e, 5).into());
 
-        graph.add_edge(d, e, 1.into());
+        graph.add_edge((d, e, 1).into());
 
         let dijkstra = Dijkstra::init(&graph).execute(&graph, a);
 
@@ -124,9 +124,10 @@ mod tests {
 
         println!(
             "{:?}",
-            dijkstra.into_iter()
-            .map(|((v1, v2), dist)| (tags.get(&v1).unwrap(), tags.get(&v2).unwrap(), dist))
-            .collect::<Vec<(&&str, &&str, Magnitude<usize>)>>()
+            dijkstra
+                .into_iter()
+                .map(|((v1, v2), dist)| (tags.get(&v1).unwrap(), tags.get(&v2).unwrap(), dist))
+                .collect::<Vec<(&&str, &&str, Magnitude<usize>)>>()
         );
     }
 }

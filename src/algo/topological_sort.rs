@@ -51,8 +51,8 @@ mod tests {
         let a = graph.add_vertex();
         let b = graph.add_vertex();
         let c = graph.add_vertex();
-        graph.add_edge(a, b, 1.into());
-        graph.add_edge(a, c, 1.into());
+        graph.add_edge((a, b, 1).into());
+        graph.add_edge((a, c, 1).into());
 
         let sorted_ids = TopologicalSort::init().execute(&graph);
 

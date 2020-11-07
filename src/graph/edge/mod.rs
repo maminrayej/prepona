@@ -17,7 +17,7 @@ pub trait Edge<W> {
     ///
     /// # Returns:
     /// * Initialized edge.
-    fn init(weight: Magnitude<W>) -> Self;
+    fn init(src_id: usize, dst_id: usize, weight: Magnitude<W>) -> Self;
 
     /// # Returns:
     /// Weight of the edge.
@@ -28,4 +28,8 @@ pub trait Edge<W> {
     /// # Arguments:
     /// * `weight`: New weight.
     fn set_weight(&mut self, weight: Magnitude<W>);
+
+    fn get_src_id(&self) -> usize;
+
+    fn get_dst_id(&self) -> usize;
 }

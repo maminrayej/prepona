@@ -86,8 +86,8 @@ impl<W, E: Edge<W>, S: GraphStorage<W, E>> provide::Edges<W, E> for SimpleGraph<
     ///
     /// # Complexity:
     /// Depends on the storage type.
-    fn edges(&self, doubles: bool) -> Vec<(usize, usize, &E)> {
-        self.storage.edges(doubles)
+    fn edges(&self) -> Vec<&E> {
+        self.storage.edges()
     }
 
     /// # Returns:
@@ -98,7 +98,7 @@ impl<W, E: Edge<W>, S: GraphStorage<W, E>> provide::Edges<W, E> for SimpleGraph<
     ///
     /// # Complexity:
     /// Depends on the storage type.
-    fn edges_from(&self, src_id: usize) -> Vec<(usize, &E)> {
+    fn edges_from(&self, src_id: usize) -> Vec<&E> {
         self.storage.edges_from(src_id)
     }
 }
@@ -138,12 +138,12 @@ impl<W, E: Edge<W>, S: GraphStorage<W, E>> provide::Graph<W, E> for SimpleGraph<
     ///
     /// # Complexity:
     /// Depends on the storage type.
-    fn add_edge(&mut self, src_id: usize, dst_id: usize, edge: E) {
-        if src_id == dst_id {
+    fn add_edge(&mut self, edge: E) {
+        if edge.get_src_id() == edge.get_dst_id() {
             panic!("Can not create loop in simple graph")
         }
 
-        self.storage.add_edge(src_id, dst_id, edge);
+        self.storage.add_edge(edge);
     }
 
     /// Removes the edge from vertex with `src_id` to vertex with `dst_id`.

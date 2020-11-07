@@ -7,6 +7,8 @@ use crate::graph::edge::Edge;
 /// # Generic Parameters:
 /// * `W`: Weight of the edge.
 pub struct DefaultEdge<W> {
+    src_id: usize,
+    dst_id: usize,
     weight: Magnitude<W>,
 }
 
@@ -18,8 +20,12 @@ impl<W> Edge<W> for DefaultEdge<W> {
     ///
     /// # Returns:
     /// * Initialized edge.
-    fn init(weight: Magnitude<W>) -> Self {
-        DefaultEdge { weight }
+    fn init(src_id: usize, dst_id: usize, weight: Magnitude<W>) -> Self {
+        DefaultEdge {
+            src_id,
+            dst_id,
+            weight,
+        }
     }
 
     /// # Returns:
@@ -35,18 +41,26 @@ impl<W> Edge<W> for DefaultEdge<W> {
     fn set_weight(&mut self, weight: Magnitude<W>) {
         self.weight = weight
     }
+
+    fn get_src_id(&self) -> usize {
+        self.src_id
+    }
+
+    fn get_dst_id(&self) -> usize {
+        self.dst_id
+    }
 }
 
 use std::any::Any;
 use std::convert::From;
 /// Construct a default edge from any value.
-impl<W: Any> From<W> for DefaultEdge<W> {
+impl<W: Any> From<(usize, usize, W)> for DefaultEdge<W> {
     /// # Arguments:
     /// * `weight`: Weight of the edge.
     ///
     /// # Returns:
     /// An initialized default edge with the specified `weight`.
-    fn from(weight: W) -> Self {
-        DefaultEdge::init(weight.into())
+    fn from((src_id, dst_id, weight): (usize, usize, W)) -> Self {
+        DefaultEdge::init(src_id, dst_id, weight.into())
     }
 }

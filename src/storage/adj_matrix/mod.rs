@@ -112,12 +112,20 @@ impl<W: Any, E: Edge<W>> GraphStorage<W, E> for AdjMatrix<W, E> {
             };
 
             // Populate these new allocated slots with positive infinity.
-            self.vec
-                .resize_with(new_size, || Edge::init(Magnitude::PosInfinite));
+            let vertex_id = self.vertex_count();
+
+            self.vec.resize_with(new_size, || {
+                Edge::init(vertex_id, vertex_id, Magnitude::PosInfinite)
+            });
+
+            (0..self.total_vertex_count()).for_each(|v_id| {
+                self[(vertex_id, v_id)] = Edge::init(vertex_id, vertex_id, Magnitude::PosInfinite);
+                self[(v_id, vertex_id)] = Edge::init(vertex_id, vertex_id, Magnitude::PosInfinite);
+            });
 
             self.vertex_count += 1;
 
-            self.vertex_count - 1
+            vertex_id
         }
     }
 
@@ -137,8 +145,8 @@ impl<W: Any, E: Edge<W>> GraphStorage<W, E> for AdjMatrix<W, E> {
         // |   | ∞ |   |
         //  -----------
         for other_id in self.vertices() {
-            self[(vertex_id, other_id)] = Edge::init(Magnitude::PosInfinite);
-            self[(other_id, vertex_id)] = Edge::init(Magnitude::PosInfinite);
+            self[(vertex_id, other_id)] = Edge::init(vertex_id, other_id, Magnitude::PosInfinite);
+            self[(other_id, vertex_id)] = Edge::init(vertex_id, other_id, Magnitude::PosInfinite);
         }
 
         // Removed vertex id is now reusable.
@@ -160,7 +168,9 @@ impl<W: Any, E: Edge<W>> GraphStorage<W, E> for AdjMatrix<W, E> {
     ///
     /// # Complexity:
     /// O(1).
-    fn add_edge(&mut self, src_id: usize, dst_id: usize, edge: E) {
+    fn add_edge(&mut self, edge: E) {
+        let (src_id, dst_id) = (edge.get_src_id(), edge.get_dst_id());
+
         self[(src_id, dst_id)] = edge;
     }
 
@@ -180,7 +190,7 @@ impl<W: Any, E: Edge<W>> GraphStorage<W, E> for AdjMatrix<W, E> {
     /// # Complexity:
     /// O(1).
     fn remove_edge(&mut self, src_id: usize, dst_id: usize) -> E {
-        let mut edge = E::init(Magnitude::PosInfinite);
+        let mut edge = E::init(src_id, dst_id, Magnitude::PosInfinite);
 
         std::mem::swap(&mut self[(src_id, dst_id)], &mut edge);
 
@@ -214,7 +224,7 @@ impl<W: Any, E: Edge<W>> GraphStorage<W, E> for AdjMatrix<W, E> {
     ///
     /// # Complexity:
     /// O(|V|<sup>2</sup>).
-    fn edges(&self, doubles: bool) -> Vec<(usize, usize, &E)> {
+    fn edges(&self) -> Vec<&E> {
         let vertices = self.vertices();
 
         // 1. Produce cartesian product: { vertices } x { vertices }:
@@ -223,16 +233,8 @@ impl<W: Any, E: Edge<W>> GraphStorage<W, E> for AdjMatrix<W, E> {
         // 2. Map each tuple (v1, v2) to (v1, v2, edge between v1 and v2).
         vertices
             .iter()
-            .flat_map(|v1| {
-                vertices
-                    .iter()
-                    .map(|v2| (*v1, *v2))
-                    .collect::<Vec<(usize, usize)>>()
-            })
-            .map(|(v1, v2)| (v1, v2, &self[(v1, v2)]))
-            .filter(|(v1, v2, edge)| {
-                edge.get_weight().is_finite() && if self.is_undirected() && !doubles { v1 <= v2 } else { true }
-            })
+            .flat_map(|v1| self.edges_from(*v1))
+            .filter(|edge| edge.get_weight().is_finite())
             .collect()
     }
 
@@ -244,13 +246,13 @@ impl<W: Any, E: Edge<W>> GraphStorage<W, E> for AdjMatrix<W, E> {
     ///
     /// Complexity:
     /// O(|V|).
-    fn edges_from(&self, src_id: usize) -> Vec<(usize, &E)> {
+    fn edges_from(&self, src_id: usize) -> Vec<&E> {
         // 1. Produce tuple (v, edge between src and v): ∀v ∈ { vertices }.
         // 2. Only keep those tuples that weight of their edge is finite(weight with infinite value indicates absence of edge between src and v).
         self.vertices()
             .into_iter()
-            .map(|v_id| (v_id, &self[(src_id, v_id)]))
-            .filter(|(_, edge)| edge.get_weight().is_finite())
+            .map(|v_id| &self[(src_id, v_id)])
+            .filter(|edge| edge.get_weight().is_finite())
             .collect()
     }
 
@@ -364,7 +366,6 @@ impl<W: Any, E: Edge<W>> IndexMut<(usize, usize)> for AdjMatrix<W, E> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::graph::DefaultEdge;
 
     #[test]
     fn directed_add_vertex() {
@@ -440,7 +441,7 @@ mod tests {
 
         for v1 in adj_matrix.vertices() {
             for v2 in adj_matrix.vertices() {
-                adj_matrix[(v1, v2)] = DefaultEdge::init((v1 * 2 + v2).into());
+                adj_matrix[(v1, v2)] = (v1, v2, v1 * 2 + v2).into();
             }
         }
 
@@ -461,7 +462,7 @@ mod tests {
 
         for v1 in adj_matrix.vertices() {
             for v2 in 0..=v1 {
-                adj_matrix[(v1, v2)] = Edge::init((v1 * 2 + v2).into());
+                adj_matrix[(v1, v2)] = (v1, v2, v1 * 2 + v2).into();
             }
         }
 
@@ -483,7 +484,7 @@ mod tests {
 
         for v1 in adj_matrix.vertices() {
             for v2 in adj_matrix.vertices() {
-                adj_matrix[(v1, v2)] = Edge::init((v1 * 2 + v2).into());
+                adj_matrix[(v1, v2)] = (v1, v2, v1 * 2 + v2).into();
             }
         }
 
@@ -505,7 +506,7 @@ mod tests {
 
         for v1 in adj_matrix.vertices() {
             for v2 in 0..=v1 {
-                adj_matrix[(v1, v2)] = Edge::init((v1 * 2 + v2).into());
+                adj_matrix[(v1, v2)] = (v1, v2, v1 * 2 + v2).into();
             }
         }
 
@@ -551,11 +552,11 @@ mod tests {
             adj_matrix.remove_vertex(i);
         }
 
-        adj_matrix[(1, 3)] = Edge::init(3.into());
-        adj_matrix[(3, 1)] = Edge::init(4.into());
+        adj_matrix[(1, 3)] = Edge::init(1, 3, 3.into());
+        adj_matrix[(3, 1)] = Edge::init(3, 1, 4.into());
 
-        for (v1, v2, edge) in adj_matrix.edges(true) {
-            match (v1, v2) {
+        for edge in adj_matrix.edges() {
+            match (edge.get_src_id(), edge.get_dst_id()) {
                 (1, 1) => assert!(edge.get_weight().is_pos_infinite()),
                 (1, 3) => assert_eq!(edge.get_weight(), &3.into()),
                 (3, 1) => assert_eq!(edge.get_weight(), &4.into()),
@@ -577,10 +578,10 @@ mod tests {
             adj_matrix.remove_vertex(i);
         }
 
-        adj_matrix[(1, 3)] = Edge::init(3.into());
+        adj_matrix[(1, 3)] = Edge::init(1, 3, 3.into());
 
-        for (v1, v2, edge) in adj_matrix.edges(true) {
-            match (v1, v2) {
+        for edge in adj_matrix.edges() {
+            match (edge.get_src_id(), edge.get_dst_id()) {
                 (1, 1) => assert!(edge.get_weight().is_pos_infinite()),
                 (1, 3) => assert_eq!(edge.get_weight(), &3.into()),
                 (3, 1) => assert_eq!(edge.get_weight(), &3.into()),
@@ -598,9 +599,9 @@ mod tests {
             let _ = adj_matrix.add_vertex();
         }
 
-        adj_matrix[(1, 3)] = Edge::init(3.into());
-        adj_matrix[(1, 2)] = Edge::init(2.into());
-        adj_matrix[(4, 0)] = Edge::init(1.into());
+        adj_matrix[(1, 3)] = Edge::init(1, 3, 3.into());
+        adj_matrix[(1, 2)] = Edge::init(1, 2, 2.into());
+        adj_matrix[(4, 0)] = Edge::init(4, 0, 1.into());
 
         let one_neighbors = adj_matrix.neighbors(1);
 
@@ -625,8 +626,8 @@ mod tests {
             let _ = adj_matrix.add_vertex();
         }
 
-        adj_matrix[(1, 3)] = Edge::init(3.into());
-        adj_matrix[(4, 0)] = Edge::init(1.into());
+        adj_matrix[(1, 3)] = Edge::init(1, 3, 3.into());
+        adj_matrix[(4, 0)] = Edge::init(4, 0, 1.into());
 
         let one_neighbors = adj_matrix.neighbors(1);
         assert_eq!(one_neighbors.len(), 1);

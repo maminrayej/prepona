@@ -11,7 +11,7 @@ pub type List<W> = AdjList<W, DefaultEdge<W>>;
 pub type FlowList<W> = AdjList<W, FlowEdge<W>>;
 
 pub struct AdjList<W, E: Edge<W>> {
-    edges_of: Vec<Vec<(usize, E)>>,
+    edges_of: Vec<Vec<E>>,
     reusable_ids: HashSet<usize>,
 
     vertex_count: usize,
@@ -20,7 +20,7 @@ pub struct AdjList<W, E: Edge<W>> {
     phantom_w: PhantomData<W>,
 }
 
-impl<W, E: Edge<W> + Copy> AdjList<W, E> {
+impl<W: Copy, E: Edge<W> + Copy> AdjList<W, E> {
     pub fn init(is_directed: bool) -> Self {
         AdjList {
             edges_of: vec![],
@@ -53,7 +53,7 @@ impl<W, E: Edge<W> + Copy> AdjList<W, E> {
     }
 }
 
-impl<W, E: Edge<W> + Copy> GraphStorage<W, E> for AdjList<W, E> {
+impl<W: Copy, E: Edge<W> + Copy> GraphStorage<W, E> for AdjList<W, E> {
     fn add_vertex(&mut self) -> usize {
         self.vertex_count += 1;
 
@@ -72,7 +72,7 @@ impl<W, E: Edge<W> + Copy> GraphStorage<W, E> for AdjList<W, E> {
         self.edges_of[vertex_id].clear();
 
         for src_id in 0..self.vertex_count() {
-            self.edges_of[src_id].retain(|(dst_id, _)| *dst_id != vertex_id)
+            self.edges_of[src_id].retain(|edge| edge.get_dst_id() != vertex_id)
         }
 
         self.vertex_count -= 1;
@@ -80,14 +80,16 @@ impl<W, E: Edge<W> + Copy> GraphStorage<W, E> for AdjList<W, E> {
         self.reusable_ids.insert(vertex_id);
     }
 
-    fn add_edge(&mut self, src_id: usize, dst_id: usize, edge: E) {
+    fn add_edge(&mut self, edge: E) {
+        let (src_id, dst_id) = (edge.get_src_id(), edge.get_dst_id());
+
         self.validate_id(src_id);
         self.validate_id(dst_id);
 
-        self.edges_of[src_id].push((dst_id, edge));
+        self.edges_of[src_id].push(edge);
 
         if self.is_undirected() {
-            self.edges_of[dst_id].push((src_id, edge))
+            self.edges_of[dst_id].push(E::init(dst_id, src_id, *edge.get_weight()));
         }
     }
 
@@ -97,15 +99,14 @@ impl<W, E: Edge<W> + Copy> GraphStorage<W, E> for AdjList<W, E> {
 
         if let Some((index, _)) = self.edges_of[src_id]
             .iter()
-            .find(|(d_id, _)| *d_id == dst_id)
+            .enumerate()
+            .find(|(_, edge)| edge.get_dst_id() == dst_id)
         {
-            let index = *index;
-
             if self.is_undirected() {
-                self.edges_of[dst_id].retain(|(d_id, _)| *d_id != src_id);
+                self.edges_of[dst_id].retain(|edge| edge.get_dst_id() != src_id);
             }
 
-            self.edges_of[src_id].remove(index).1
+            self.edges_of[src_id].remove(index)
         } else {
             panic!(
                 "There is no edge from vertex: {} to vertex: {}",
@@ -124,27 +125,19 @@ impl<W, E: Edge<W> + Copy> GraphStorage<W, E> for AdjList<W, E> {
             .collect()
     }
 
-    fn edges(&self, doubles: bool) -> Vec<(usize, usize, &E)> {
+    fn edges(&self) -> Vec<&E> {
         self.vertices()
             .into_iter()
-            .flat_map(|src_id| {
-                self.edges_from(src_id)
-                    .into_iter()
-                    .map(|(dst_id, edge)| (src_id, dst_id, edge))
-                    .collect::<Vec<(usize, usize, &E)>>()
-            })
-            .filter(|(v1, v2, edge)| {
-                edge.get_weight().is_finite() && if self.is_undirected() && !doubles { v1 <= v2 } else { true }
-            })
+            .flat_map(|src_id| self.edges_from(src_id).into_iter())
             .collect()
     }
 
-    fn edges_from(&self, src_id: usize) -> Vec<(usize, &E)> {
+    fn edges_from(&self, src_id: usize) -> Vec<&E> {
         self.validate_id(src_id);
 
         self.edges_of[src_id]
             .iter()
-            .map(|(dst_id, edge)| (*dst_id, edge))
+            .filter(|edge| edge.get_weight().is_finite())
             .collect()
     }
 
@@ -153,7 +146,7 @@ impl<W, E: Edge<W> + Copy> GraphStorage<W, E> for AdjList<W, E> {
 
         self.edges_of[src_id]
             .iter()
-            .map(|(dst_id, _)| *dst_id)
+            .map(|edge| edge.get_dst_id())
             .collect()
     }
 

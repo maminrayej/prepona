@@ -7,6 +7,8 @@ use crate::graph::edge::Edge;
 /// # Generic Parameters:
 /// `W`: Weight of the edge.
 pub struct FlowEdge<W> {
+    src_id: usize,
+    dst_id: usize,
     weight: Magnitude<W>,
     capacity: usize,
     flow: isize,
@@ -25,7 +27,13 @@ impl<W> FlowEdge<W> {
     ///
     /// # Returns:
     /// * Initialized edge.
-    pub fn init_with(weight: Magnitude<W>, capacity: usize, flow: isize) -> Self {
+    pub fn init_with(
+        src_id: usize,
+        dst_id: usize,
+        weight: Magnitude<W>,
+        capacity: usize,
+        flow: isize,
+    ) -> Self {
         if flow > capacity as isize {
             panic!(
                 "Flow of the edge can not be greater than the capacity: {} > {}",
@@ -34,6 +42,8 @@ impl<W> FlowEdge<W> {
         }
 
         FlowEdge {
+            src_id,
+            dst_id,
             weight,
             capacity,
             flow,
@@ -90,8 +100,8 @@ impl<W> Edge<W> for FlowEdge<W> {
     ///
     /// # Returns:
     /// * Initialized edge.
-    fn init(weight: Magnitude<W>) -> Self {
-        FlowEdge::init_with(weight, 0, 0)
+    fn init(src_id: usize, dst_id: usize, weight: Magnitude<W>) -> Self {
+        FlowEdge::init_with(src_id, dst_id, weight, 0, 0)
     }
 
     /// # Returns:
@@ -107,24 +117,32 @@ impl<W> Edge<W> for FlowEdge<W> {
     fn set_weight(&mut self, weight: Magnitude<W>) {
         self.weight = weight
     }
+
+    fn get_src_id(&self) -> usize {
+        self.src_id
+    }
+
+    fn get_dst_id(&self) -> usize {
+        self.dst_id
+    }
 }
 
 use std::any::Any;
 use std::convert::{From, TryFrom};
 /// Construct flow edge with capacity and flow of 0 and the specified `weight`.
-impl<W: Any> From<W> for FlowEdge<W> {
+impl<W: Any> From<(usize, usize, W)> for FlowEdge<W> {
     /// # Arguments:
     /// * `weight`: Weight of the edge.
     ///
     /// # Returns:
     /// Initialized flow edge.
-    fn from(weight: W) -> Self {
-        FlowEdge::init(weight.into())
+    fn from((src_id, dst_id, weight): (usize, usize, W)) -> Self {
+        FlowEdge::init(src_id, dst_id, weight.into())
     }
 }
 
 /// Construct flow edge with specified `weight`, `capacity` and `flow`.
-impl<W: Any> TryFrom<(W, usize, isize)> for FlowEdge<W> {
+impl<W: Any> TryFrom<(usize, usize, W, usize, isize)> for FlowEdge<W> {
     type Error = String;
 
     /// # Arguments:
@@ -135,14 +153,22 @@ impl<W: Any> TryFrom<(W, usize, isize)> for FlowEdge<W> {
     /// # Returns
     /// * Ok: If `flow` <= `capacity`.
     /// * Err: If `flow` > `capacity`.
-    fn try_from((weight, capacity, flow): (W, usize, isize)) -> Result<Self, Self::Error> {
+    fn try_from(
+        (src_id, dst_id, weight, capacity, flow): (usize, usize, W, usize, isize),
+    ) -> Result<Self, Self::Error> {
         if flow > capacity as isize {
             Err(format!(
                 "Flow of the edge can not be greater than the capacity: {} > {}",
                 flow, capacity
             ))
         } else {
-            Ok(FlowEdge::init_with(weight.into(), capacity, flow))
+            Ok(FlowEdge::init_with(
+                src_id,
+                dst_id,
+                weight.into(),
+                capacity,
+                flow,
+            ))
         }
     }
 }
