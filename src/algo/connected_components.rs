@@ -59,7 +59,7 @@ mod tests {
         //      a  ---  b   d           g
         //      |      /    |
         //      c ___/      e  --- f
-        let mut graph = MatGraph::init(Mat::<usize>::init(false));
+        let mut graph = MatGraph::init(Mat::<usize>::init());
         let a = graph.add_vertex();
         let b = graph.add_vertex();
         let c = graph.add_vertex();

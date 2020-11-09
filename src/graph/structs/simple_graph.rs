@@ -1,15 +1,17 @@
 use std::any::Any;
 use std::marker::PhantomData;
 
-use crate::graph::{DefaultEdge, Edge, FlowEdge};
+use crate::graph::{DefaultEdge, Edge, EdgeType, FlowEdge};
 use crate::provide;
 use crate::storage::{FlowMat, GraphStorage, Mat};
 
 /// A `SimpleGraph` with a `DefaultEdge` that uses `AdjMatrix` as its storage.
-pub type MatGraph<W> = SimpleGraph<W, DefaultEdge<W>, Mat<W>>;
+pub type MatGraph<W, Ty> = SimpleGraph<W, DefaultEdge<W>, Ty, Mat<W, Ty>>;
+// pub type DiMatGraph<W> = SimpleGraph<W, DefaultEdge<W>, DirectedEdge, DiMat<W>>;
 
 /// A `SimpleGraph` with a `FlowEdge` that uses `AdjMatrix` as its storage.
-pub type FlowMatGraph<W> = SimpleGraph<W, FlowEdge<W>, FlowMat<W>>;
+pub type FlowMatGraph<W, Ty> = SimpleGraph<W, FlowEdge<W>, Ty, FlowMat<W>>;
+// pub type DiFlowMatGraph<W> = SimpleGraph<W, FlowEdge<W>, DirectedEdge, DiFlowMat<W>>;
 
 /// By simple graph we mean a graph without loops and multiple edges.
 ///
@@ -20,15 +22,16 @@ pub type FlowMatGraph<W> = SimpleGraph<W, FlowEdge<W>, FlowMat<W>>;
 /// `W`: Weight of the edge.
 /// `E`: Edge of the graph.
 /// `S`: Storage that graph uses.
-pub struct SimpleGraph<W, E: Edge<W>, S: GraphStorage<W, E>> {
+pub struct SimpleGraph<W, E: Edge<W>, Ty: EdgeType, S: GraphStorage<W, E, Ty>> {
     // Backend storage to store graph data
     storage: S,
 
     phantom_w: PhantomData<W>,
     phantom_e: PhantomData<E>,
+    phantom_ty: PhantomData<Ty>,
 }
 
-impl<W: Any + Copy, E: Edge<W>, S: GraphStorage<W, E>> SimpleGraph<W, E, S> {
+impl<W: Any + Copy, E: Edge<W>, Ty: EdgeType, S: GraphStorage<W, E, Ty>> SimpleGraph<W, E, Ty, S> {
     /// Initialize the graph with specified `storage`.
     ///
     /// # Arguments:
@@ -42,11 +45,14 @@ impl<W: Any + Copy, E: Edge<W>, S: GraphStorage<W, E>> SimpleGraph<W, E, S> {
 
             phantom_e: PhantomData,
             phantom_w: PhantomData,
+            phantom_ty: PhantomData,
         }
     }
 }
 
-impl<W, E: Edge<W>, S: GraphStorage<W, E>> provide::Neighbors for SimpleGraph<W, E, S> {
+impl<W, E: Edge<W>, Ty: EdgeType, S: GraphStorage<W, E, Ty>> provide::Neighbors
+    for SimpleGraph<W, E, Ty, S>
+{
     /// # Returns:
     /// Id of neighbors of the vertex with `src_id`.
     ///
@@ -60,7 +66,9 @@ impl<W, E: Edge<W>, S: GraphStorage<W, E>> provide::Neighbors for SimpleGraph<W,
     }
 }
 
-impl<W, E: Edge<W>, S: GraphStorage<W, E>> provide::Vertices for SimpleGraph<W, E, S> {
+impl<W, E: Edge<W>, Ty: EdgeType, S: GraphStorage<W, E, Ty>> provide::Vertices
+    for SimpleGraph<W, E, Ty, S>
+{
     /// # Returns:
     /// Vector of vertex ids that are present in the graph.
     ///
@@ -80,7 +88,9 @@ impl<W, E: Edge<W>, S: GraphStorage<W, E>> provide::Vertices for SimpleGraph<W, 
     }
 }
 
-impl<W, E: Edge<W>, S: GraphStorage<W, E>> provide::Edges<W, E> for SimpleGraph<W, E, S> {
+impl<W, E: Edge<W>, Ty: EdgeType, S: GraphStorage<W, E, Ty>> provide::Edges<W, E>
+    for SimpleGraph<W, E, Ty, S>
+{
     fn edge(&self, src_id: usize, dst_id: usize) -> &E {
         self.storage.edge(src_id, dst_id)
     }
@@ -107,7 +117,9 @@ impl<W, E: Edge<W>, S: GraphStorage<W, E>> provide::Edges<W, E> for SimpleGraph<
     }
 }
 
-impl<W, E: Edge<W>, S: GraphStorage<W, E>> provide::Graph<W, E> for SimpleGraph<W, E, S> {
+impl<W, E: Edge<W>, Ty: EdgeType, S: GraphStorage<W, E, Ty>> provide::Graph<W, E>
+    for SimpleGraph<W, E, Ty, S>
+{
     /// Adds a vertex into the graph.
     ///
     /// # Returns:

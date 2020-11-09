@@ -103,7 +103,7 @@ mod tests {
     use super::*;
     use crate::graph::MatGraph;
     use crate::provide::*;
-    use crate::storage::Mat;
+    use crate::storage::DiMat;
 
     #[test]
     fn tarjan_test() {
@@ -111,7 +111,7 @@ mod tests {
         //     ^ |      |     __^   /```^
         //     | v      v   /   v```    |
         //      d  -->  c -'--> h  -->  i
-        let mut graph = MatGraph::init(Mat::<usize>::init(true));
+        let mut graph = MatGraph::init(DiMat::<usize>::init());
         let a = graph.add_vertex();
         let b = graph.add_vertex();
         let c = graph.add_vertex();

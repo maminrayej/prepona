@@ -42,12 +42,12 @@ mod tests {
     use super::*;
     use crate::graph::MatGraph;
     use crate::provide::*;
-    use crate::storage::Mat;
+    use crate::storage::DiMat;
 
     #[test]
     fn topological_sort_test() {
         // a  -->  b.
-        let mut graph = MatGraph::init(Mat::<usize>::init(true));
+        let mut graph = MatGraph::init(DiMat::<usize>::init());
         let a = graph.add_vertex();
         let b = graph.add_vertex();
         let c = graph.add_vertex();

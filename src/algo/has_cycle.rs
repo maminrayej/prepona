@@ -84,14 +84,14 @@ mod tests {
     use super::*;
     use crate::graph::MatGraph;
     use crate::provide::*;
-    use crate::storage::Mat;
+    use crate::storage::{DiMat, Mat};
     #[test]
     fn directed_simple_cycle() {
         // Give: A directed graph:
         //      a --> b --> c
         //      ^           |
         //      '-----------'
-        let mut graph = MatGraph::init(Mat::<usize>::init(true));
+        let mut graph = MatGraph::init(DiMat::<usize>::init());
         let a = graph.add_vertex();
         let b = graph.add_vertex();
         let c = graph.add_vertex();
@@ -112,7 +112,7 @@ mod tests {
         //      a -- b -- c
         //      |         |
         //      '---------'
-        let mut graph = MatGraph::init(Mat::<usize>::init(false));
+        let mut graph = MatGraph::init(Mat::<usize>::init());
         let a = graph.add_vertex();
         let b = graph.add_vertex();
         let c = graph.add_vertex();
@@ -131,7 +131,7 @@ mod tests {
     fn undirected_single_edge() {
         // Give: An undirected graph:
         //      a -- b
-        let mut graph = MatGraph::init(Mat::<usize>::init(false));
+        let mut graph = MatGraph::init(Mat::<usize>::init());
         let a = graph.add_vertex();
         let b = graph.add_vertex();
         graph.add_edge((a, b, 1).into());
@@ -147,7 +147,7 @@ mod tests {
     fn directed_single_edge() {
         // Give: An undirected graph:
         //      a --> b
-        let mut graph = MatGraph::init(Mat::<usize>::init(true));
+        let mut graph = MatGraph::init(DiMat::<usize>::init());
         let a = graph.add_vertex();
         let b = graph.add_vertex();
         graph.add_edge((a, b, 1).into());

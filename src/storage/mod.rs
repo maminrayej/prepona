@@ -1,17 +1,17 @@
 mod adj_list;
 mod adj_matrix;
 
-pub use adj_list::{AdjList, FlowList, List};
-pub use adj_matrix::{AdjMatrix, FlowMat, Mat};
+pub use adj_list::{AdjList, DiFlowList, DiList, FlowList, List};
+pub use adj_matrix::{AdjMatrix, DiFlowMat, DiMat, FlowMat, Mat};
 
-use crate::graph::Edge;
+use crate::graph::{Edge, EdgeType};
 
 /// Trait that describes a struct that can act as a storage for graph data.
 ///
 /// # Generic Parameters:
 /// * `W`: Weight of the edge.
 /// * `E`: Edge of the graph.
-pub trait GraphStorage<W, E: Edge<W>> {
+pub trait GraphStorage<W, E: Edge<W>, D: EdgeType> {
     /// Adds a vertex to the storage.
     ///
     /// # Returns:

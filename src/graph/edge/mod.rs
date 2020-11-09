@@ -6,6 +6,33 @@ use magnitude::Magnitude;
 pub use default_edge::DefaultEdge;
 pub use flow_edge::FlowEdge;
 
+pub trait EdgeType {
+    fn is_directed() -> bool;
+    fn is_undirected() -> bool;
+}
+
+pub struct DirectedEdge;
+impl EdgeType for DirectedEdge {
+    fn is_directed() -> bool {
+        true
+    }
+
+    fn is_undirected() -> bool {
+        false
+    }
+}
+
+pub struct UndirectedEdge;
+impl EdgeType for UndirectedEdge {
+    fn is_directed() -> bool {
+        false
+    }
+
+    fn is_undirected() -> bool {
+        true
+    }
+}
+
 /// Trait to guarantee a struct can act as edge of a graph.
 ///
 /// `W`: Weight of the edge.

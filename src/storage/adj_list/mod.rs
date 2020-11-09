@@ -1,16 +1,18 @@
 use std::collections::HashSet;
 use std::marker::PhantomData;
 
-use crate::graph::{DefaultEdge, Edge, FlowEdge};
+use crate::graph::{DefaultEdge, DirectedEdge, Edge, EdgeType, FlowEdge, UndirectedEdge};
 use crate::storage::GraphStorage;
 
 /// An `AdjList` that stores edges of type `DefaultEdge`.
-pub type List<W> = AdjList<W, DefaultEdge<W>>;
+pub type List<W> = AdjList<W, DefaultEdge<W>, UndirectedEdge>;
+pub type DiList<W> = AdjList<W, DefaultEdge<W>, DirectedEdge>;
 
 /// An `AdjList` that stores edges of type `FlowEdge`.
-pub type FlowList<W> = AdjList<W, FlowEdge<W>>;
+pub type FlowList<W> = AdjList<W, FlowEdge<W>, UndirectedEdge>;
+pub type DiFlowList<W> = AdjList<W, FlowEdge<W>, DirectedEdge>;
 
-pub struct AdjList<W, E: Edge<W>> {
+pub struct AdjList<W, E: Edge<W>, Ty: EdgeType> {
     edges_of: Vec<Vec<E>>,
     reusable_ids: HashSet<usize>,
 
@@ -18,18 +20,20 @@ pub struct AdjList<W, E: Edge<W>> {
     is_directed: bool,
 
     phantom_w: PhantomData<W>,
+    phantom_ty: PhantomData<Ty>,
 }
 
-impl<W: Copy, E: Edge<W> + Copy> AdjList<W, E> {
-    pub fn init(is_directed: bool) -> Self {
+impl<W: Copy, E: Edge<W> + Copy, Ty: EdgeType> AdjList<W, E, Ty> {
+    pub fn init() -> Self {
         AdjList {
             edges_of: vec![],
             reusable_ids: HashSet::new(),
 
             vertex_count: 0,
-            is_directed,
+            is_directed: Ty::is_directed(),
 
             phantom_w: PhantomData,
+            phantom_ty: PhantomData,
         }
     }
 
@@ -53,7 +57,7 @@ impl<W: Copy, E: Edge<W> + Copy> AdjList<W, E> {
     }
 }
 
-impl<W: Copy, E: Edge<W> + Copy> GraphStorage<W, E> for AdjList<W, E> {
+impl<W: Copy, E: Edge<W> + Copy, Ty: EdgeType> GraphStorage<W, E, Ty> for AdjList<W, E, Ty> {
     fn add_vertex(&mut self) -> usize {
         self.vertex_count += 1;
 
@@ -129,7 +133,10 @@ impl<W: Copy, E: Edge<W> + Copy> GraphStorage<W, E> for AdjList<W, E> {
         self.validate_id(src_id);
         self.validate_id(dst_id);
 
-        self.edges_of[src_id].iter().find(|edge| edge.get_dst_id() == dst_id).unwrap()
+        self.edges_of[src_id]
+            .iter()
+            .find(|edge| edge.get_dst_id() == dst_id)
+            .unwrap()
     }
 
     fn edges(&self) -> Vec<&E> {

@@ -95,7 +95,7 @@ mod tests {
 
     #[test]
     fn dijkstra_test() {
-        let mut graph = MatGraph::init(Mat::<usize>::init(false));
+        let mut graph = MatGraph::init(Mat::<usize>::init());
         let a = graph.add_vertex(); // 0
         let b = graph.add_vertex(); // 1
         let c = graph.add_vertex(); // 2
