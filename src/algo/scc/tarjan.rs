@@ -1,6 +1,6 @@
 use magnitude::Magnitude;
 
-use crate::graph::Edge;
+use crate::graph::{DirectedEdge, Edge};
 use crate::provide;
 
 pub struct TarjanSCC {
@@ -16,12 +16,8 @@ pub struct TarjanSCC {
 impl TarjanSCC {
     pub fn init<W, E: Edge<W>, G>(graph: &G) -> Self
     where
-        G: provide::Graph<W, E> + provide::Vertices + provide::Neighbors,
+        G: provide::Graph<W, E, DirectedEdge> + provide::Vertices + provide::Neighbors,
     {
-        if graph.is_undirected() {
-            panic!("Can not run SCC algorithm on undirected graph.")
-        }
-
         let vertex_count = graph.vertex_count();
 
         TarjanSCC {
@@ -37,12 +33,8 @@ impl TarjanSCC {
 
     pub fn execute<W, E: Edge<W>, G>(mut self, graph: &G) -> Vec<Vec<usize>>
     where
-        G: provide::Graph<W, E> + provide::Vertices + provide::Neighbors,
+        G: provide::Graph<W, E, DirectedEdge> + provide::Vertices + provide::Neighbors,
     {
-        if graph.is_undirected() {
-            panic!("Can not run SCC algorithm on undirected graph.")
-        }
-
         for virt_id in 0..graph.vertex_count() {
             if self.index_of[virt_id].is_pos_infinite() {
                 self._execute(graph, virt_id);
@@ -54,7 +46,7 @@ impl TarjanSCC {
 
     pub fn _execute<W, E: Edge<W>, G>(&mut self, graph: &G, virt_id: usize)
     where
-        G: provide::Graph<W, E> + provide::Vertices + provide::Neighbors,
+        G: provide::Graph<W, E, DirectedEdge> + provide::Vertices + provide::Neighbors,
     {
         self.index_of[virt_id] = self.index.into();
         self.low_link_of[virt_id] = self.index.into();

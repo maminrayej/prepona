@@ -117,7 +117,7 @@ impl<W, E: Edge<W>, Ty: EdgeType, S: GraphStorage<W, E, Ty>> provide::Edges<W, E
     }
 }
 
-impl<W, E: Edge<W>, Ty: EdgeType, S: GraphStorage<W, E, Ty>> provide::Graph<W, E>
+impl<W, E: Edge<W>, Ty: EdgeType, S: GraphStorage<W, E, Ty>> provide::Graph<W, E, Ty>
     for SimpleGraph<W, E, Ty, S>
 {
     /// Adds a vertex into the graph.

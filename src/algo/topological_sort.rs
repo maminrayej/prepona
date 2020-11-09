@@ -1,3 +1,4 @@
+use crate::graph::{DirectedEdge, Edge};
 use crate::provide;
 use crate::traversal::{Dfs, DfsListener};
 
@@ -18,9 +19,9 @@ impl TopologicalSort {
         }
     }
 
-    pub fn execute<G>(mut self, graph: &G) -> Vec<usize>
+    pub fn execute<W, E: Edge<W>, G>(mut self, graph: &G) -> Vec<usize>
     where
-        G: provide::Vertices + provide::Neighbors,
+        G: provide::Graph<W, E, DirectedEdge> + provide::Vertices + provide::Neighbors,
     {
         let dfs = Dfs::init(graph, &mut self);
 

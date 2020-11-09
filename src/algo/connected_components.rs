@@ -1,4 +1,4 @@
-use crate::graph::Edge;
+use crate::graph::{Edge, UndirectedEdge};
 use crate::provide;
 use crate::traversal::{Dfs, DfsListener};
 
@@ -23,12 +23,8 @@ impl DfsListener for ConnectedComponents {
 impl ConnectedComponents {
     pub fn init<G, W, E: Edge<W>>(graph: &G) -> Self
     where
-        G: provide::Graph<W, E> + provide::Vertices + provide::Neighbors,
+        G: provide::Graph<W, E, UndirectedEdge> + provide::Vertices + provide::Neighbors,
     {
-        if graph.is_directed() {
-            panic!("Can not execute this algorithm on an undirected graph. Use one of the algorithms in scc module.")
-        }
-
         ConnectedComponents {
             ccs: vec![],
             current_component: vec![],
@@ -37,7 +33,7 @@ impl ConnectedComponents {
 
     pub fn execute<G, W, E: Edge<W>>(mut self, graph: &G) -> Vec<Vec<usize>>
     where
-        G: provide::Graph<W, E> + provide::Vertices + provide::Neighbors,
+        G: provide::Graph<W, E, UndirectedEdge> + provide::Vertices + provide::Neighbors,
     {
         let dfs = Dfs::init(graph, &mut self);
 

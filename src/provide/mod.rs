@@ -2,7 +2,7 @@ mod id_map;
 
 pub use id_map::IdMap;
 
-use crate::graph::Edge;
+use crate::graph::{Edge, EdgeType};
 
 /// Trait to guarantee that graph can provide access to neighbors of a vertex.
 pub trait Neighbors {
@@ -88,7 +88,7 @@ pub trait Edges<W, E: Edge<W>> {
 /// # Generic Parameters:
 /// * `W`: Weight of the edge.
 /// * `E`: Edge of the graph.
-pub trait Graph<W, E: Edge<W>> {
+pub trait Graph<W, E: Edge<W>, Ty: EdgeType> {
     /// Adds a vertex into the graph.
     ///
     /// # Returns:
