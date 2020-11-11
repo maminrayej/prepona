@@ -1,6 +1,6 @@
 use crate::graph::{DirectedEdge, Edge};
 use crate::provide;
-use crate::traversal::{Dfs, DfsListener};
+use crate::algo::{Dfs, DfsListener};
 
 pub struct TopologicalSort {
     sorted_vertex_ids: Vec<usize>,

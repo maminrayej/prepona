@@ -1,17 +1,17 @@
-mod bellman_ford;
+mod shortest_path;
 mod connected_components;
-mod dijkstra;
-mod floyd_warshall;
 mod has_cycle;
-mod kruskal;
+mod mst;
 mod scc;
 mod topological_sort;
+mod traversal;
 
-pub use bellman_ford::BellmanFord;
+pub use shortest_path::BellmanFord;
 pub use connected_components::ConnectedComponents;
-pub use dijkstra::Dijkstra;
-pub use floyd_warshall::FloydWarshall;
+pub use shortest_path::Dijkstra;
+pub use shortest_path::FloydWarshall;
 pub use has_cycle::HasCycle;
-pub use kruskal::Kruskal;
+pub use mst::Kruskal;
 pub use scc::TarjanSCC;
 pub use topological_sort::TopologicalSort;
+pub use traversal::{Dfs, DfsListener, Bfs, Color};

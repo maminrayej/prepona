@@ -6,7 +6,7 @@ use magnitude::Magnitude;
 use std::cell::{Ref, RefCell};
 
 use crate::provide;
-use crate::traversal::Color;
+use super::Color;
 
 /// Traverses the graph using DFS algorithm.
 ///

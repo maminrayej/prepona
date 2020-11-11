@@ -1,6 +1,6 @@
 use crate::graph::{Edge, UndirectedEdge};
 use crate::provide;
-use crate::traversal::{Dfs, DfsListener};
+use crate::algo::{Dfs, DfsListener};
 
 pub struct ConnectedComponents {
     current_component: Vec<usize>,
@@ -21,7 +21,7 @@ impl DfsListener for ConnectedComponents {
 }
 
 impl ConnectedComponents {
-    pub fn init<G, W, E: Edge<W>>(graph: &G) -> Self
+    pub fn init<G, W, E: Edge<W>>(_: &G) -> Self
     where
         G: provide::Graph<W, E, UndirectedEdge> + provide::Vertices + provide::Neighbors,
     {

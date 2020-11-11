@@ -1,5 +1,5 @@
 use crate::provide;
-use crate::traversal::{Color, Dfs, DfsListener};
+use crate::algo::{Color, Dfs, DfsListener};
 
 use magnitude::Magnitude;
 
