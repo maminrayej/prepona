@@ -92,6 +92,40 @@ impl<W, E: Edge<W>, Ty: EdgeType> AdjMatrix<W, E, Ty> {
     pub fn total_vertex_count(&self) -> usize {
         self.vertex_count + self.reusable_ids.len()
     }
+
+    fn index_of(&self, src_id: usize, dst_id: usize) -> Result<usize, String> {
+        // Make sure both src and dst vertices are present in the graph.
+        match (
+            self.reusable_ids.contains(&src_id),
+            self.reusable_ids.contains(&dst_id),
+        ) {
+            (true, true) => Err(format!(
+                "Vertices with id: {} and {} are not present in the graph",
+                src_id, dst_id
+            )),
+            (true, false) => Err(format!(
+                "Vertex with id: {} is not present in the graph",
+                src_id
+            )),
+            (false, true) => Err(format!(
+                "Vertex with id: {} is not present in the graph",
+                dst_id
+            )),
+            (false, false) => {
+                let index = utils::from_ij(src_id, dst_id, self.is_directed);
+
+                if index < self.vec.len() {
+                    Ok(index)
+                } else {
+                    Err(format!(
+                        "Index out of bounds: ({src_id},{dst_id}) does not exist",
+                        src_id = src_id,
+                        dst_id = dst_id
+                    ))
+                }
+            }
+        }
+    }
 }
 
 impl<W: Any, E: Edge<W>, Ty: EdgeType> GraphStorage<W, E, Ty> for AdjMatrix<W, E, Ty> {
@@ -105,6 +139,8 @@ impl<W: Any, E: Edge<W>, Ty: EdgeType> GraphStorage<W, E, Ty> for AdjMatrix<W, E
     /// * Else: O(|V|).
     fn add_vertex(&mut self) -> usize {
         if let Some(reusable_id) = self.next_reusable_id() {
+            self.vertex_count += 1;
+
             reusable_id
         } else {
             let new_size = if self.is_directed() {
@@ -123,8 +159,8 @@ impl<W: Any, E: Edge<W>, Ty: EdgeType> GraphStorage<W, E, Ty> for AdjMatrix<W, E
             });
 
             (0..self.total_vertex_count()).for_each(|v_id| {
-                self[(vertex_id, v_id)] = Edge::init(vertex_id, vertex_id, Magnitude::PosInfinite);
-                self[(v_id, vertex_id)] = Edge::init(vertex_id, vertex_id, Magnitude::PosInfinite);
+                self[(vertex_id, v_id)] = Edge::init(vertex_id, v_id, Magnitude::PosInfinite);
+                self[(v_id, vertex_id)] = Edge::init(v_id, vertex_id, Magnitude::PosInfinite);
             });
 
             self.vertex_count += 1;
@@ -150,7 +186,7 @@ impl<W: Any, E: Edge<W>, Ty: EdgeType> GraphStorage<W, E, Ty> for AdjMatrix<W, E
         //  -----------
         for other_id in self.vertices() {
             self[(vertex_id, other_id)] = Edge::init(vertex_id, other_id, Magnitude::PosInfinite);
-            self[(other_id, vertex_id)] = Edge::init(vertex_id, other_id, Magnitude::PosInfinite);
+            self[(other_id, vertex_id)] = Edge::init(other_id, vertex_id, Magnitude::PosInfinite);
         }
 
         // Removed vertex id is now reusable.
@@ -294,80 +330,24 @@ use std::ops::{Index, IndexMut};
 impl<W: Any, E: Edge<W>, Ty: EdgeType> Index<(usize, usize)> for AdjMatrix<W, E, Ty> {
     type Output = E;
 
-    fn index(&self, index: (usize, usize)) -> &Self::Output {
-        let (src_id, dst_id) = index;
+    fn index(&self, src_dst: (usize, usize)) -> &Self::Output {
+        let (src_id, dst_id) = src_dst;
 
-        // Make sure both src and dst vertices are present in the graph.
-        match (
-            self.reusable_ids.contains(&src_id),
-            self.reusable_ids.contains(&dst_id),
-        ) {
-            (true, true) => panic!(
-                "Vertices with id: {} and {} are not present in the graph",
-                src_id, dst_id
-            ),
-            (true, false) => panic!(format!(
-                "Vertex with id: {} is not present in the graph",
-                src_id
-            )),
-            (false, true) => panic!(format!(
-                "Vertex with id: {} is not present in the graph",
-                dst_id
-            )),
-            (false, false) => (),
-        }
+        let index_result = self.index_of(src_id, dst_id);
 
-        // Map (src_id, dst_id) to the corresponding index in the flat vector.
-        let index = utils::from_ij(src_id, dst_id, self.is_directed());
-
-        if index < self.vec.len() {
-            &self.vec[index]
-        } else {
-            panic!(format!(
-                "Index out of bounds: ({src_id},{dst_id}) does not exist",
-                src_id = src_id,
-                dst_id = dst_id
-            ))
-        }
+        // The error message is already in the Err, no need to specify a message.
+        &self.vec[index_result.expect("")]
     }
 }
 
 impl<W: Any, E: Edge<W>, Ty: EdgeType> IndexMut<(usize, usize)> for AdjMatrix<W, E, Ty> {
-    fn index_mut(&mut self, index: (usize, usize)) -> &mut Self::Output {
-        let (src_id, dst_id) = index;
+    fn index_mut(&mut self, src_dst: (usize, usize)) -> &mut Self::Output {
+        let (src_id, dst_id) = src_dst;
 
-        // Make sure both src and dst vertices are present in the graph.
-        match (
-            self.reusable_ids.contains(&src_id),
-            self.reusable_ids.contains(&dst_id),
-        ) {
-            (true, true) => panic!(
-                "Vertices with id: {} and {} are not present in the graph",
-                src_id, dst_id
-            ),
-            (true, false) => panic!(format!(
-                "Vertex with id: {} is not present in the graph",
-                src_id
-            )),
-            (false, true) => panic!(format!(
-                "Vertex with id: {} is not present in the graph",
-                dst_id
-            )),
-            (false, false) => (),
-        }
+        let index_result = self.index_of(src_id, dst_id);
 
-        // Map (src_id, dst_id) to the corresponding index in the flat vector.
-        let index = utils::from_ij(src_id, dst_id, self.is_directed());
-
-        if index < self.vec.len() {
-            &mut self.vec[index]
-        } else {
-            panic!(format!(
-                "Index out of bounds: ({src_id},{dst_id}) does not exist",
-                src_id = src_id,
-                dst_id = dst_id
-            ))
-        }
+        // The error message is already in the Err, no need to specify a message.
+        &mut self.vec[index_result.expect("")]
     }
 }
 
@@ -376,283 +356,549 @@ mod tests {
     use super::*;
 
     #[test]
+    fn directed_empty_matrix() {
+        // Given: An empty directed matrix.
+        let matrix = DiMat::<usize>::init();
+
+        // When: Doing nothing.
+
+        // Then:
+        assert_eq!(matrix.edges().len(), 0);
+        assert_eq!(matrix.vertex_count(), 0);
+        assert_eq!(matrix.total_vertex_count(), 0);
+        assert_eq!(matrix.vec.len(), 0);
+        assert_eq!(matrix.reusable_ids.len(), 0);
+        assert_eq!(matrix.is_directed(), true);
+    }
+
+    #[test]
+    fn undirected_empty_matrix() {
+        // Given: An empty undirected matrix.
+        let matrix = Mat::<usize>::init();
+
+        // When: Doing nothing.
+
+        // Then:
+        assert_eq!(matrix.edges().len(), 0);
+        assert_eq!(matrix.vertex_count(), 0);
+        assert_eq!(matrix.total_vertex_count(), 0);
+        assert_eq!(matrix.vec.len(), 0);
+        assert_eq!(matrix.reusable_ids.len(), 0);
+        assert_eq!(matrix.is_directed(), false);
+    }
+
+    #[test]
     fn directed_add_vertex() {
-        let mut adj_matrix = DiMat::<usize>::init();
+        // Given: An empty directed matrix.
+        let mut matrix = DiMat::<usize>::init();
 
-        for i in 0..10 {
-            let v_id = adj_matrix.add_vertex();
-            assert!(v_id == i);
-        }
+        // When: Adding 3 vertices.
+        let a = matrix.add_vertex();
+        let b = matrix.add_vertex();
+        let c = matrix.add_vertex();
 
-        assert!(adj_matrix.vertex_count == 10);
-        assert!(adj_matrix.vec.len() == 100);
+        // Then:
+        assert_eq!(matrix.edges().len(), 0);
+        assert_eq!(matrix.vertex_count(), 3);
+        assert_eq!(matrix.total_vertex_count(), 3);
+        assert_eq!(matrix.vec.len(), 9);
+        assert_eq!(matrix.reusable_ids.len(), 0);
+
+        assert_eq!(matrix.vertices().len(), 3);
+        assert!(vec![a, b, c]
+            .iter()
+            .all(|vertex_id| matrix.vertices().contains(vertex_id)));
+
+        // Edge weight between any two vertices must be positive infinity.
+        // Also edge src and dst must be set correctly.
+        assert!(vec![a, b, c]
+            .into_iter()
+            .flat_map(|vertex_id| vec![(vertex_id, a), (vertex_id, b), (vertex_id, c)])
+            .all(|(src_id, dst_id)| {
+                let edge = matrix.edge(src_id, dst_id);
+
+                edge.get_src_id() == src_id
+                    && edge.get_dst_id() == dst_id
+                    && edge.get_weight().is_pos_infinite()
+            }));
     }
 
     #[test]
     fn undirected_add_vertex() {
-        let mut adj_matrix = Mat::<usize>::init();
+        // Given: An empty undirected matrix.
+        let mut matrix = Mat::<usize>::init();
 
-        for i in 0..10 {
-            let v_id = adj_matrix.add_vertex();
-            assert!(v_id == i);
-        }
+        // When: Adding 3 vertices.
+        let a = matrix.add_vertex();
+        let b = matrix.add_vertex();
+        let c = matrix.add_vertex();
 
-        assert!(adj_matrix.vertex_count == 10);
-        assert!(adj_matrix.vec.len() == 55);
+        // Then:
+        assert_eq!(matrix.edges().len(), 0);
+        assert_eq!(matrix.vertex_count(), 3);
+        assert_eq!(matrix.total_vertex_count(), 3);
+        assert_eq!(matrix.vec.len(), 6);
+        assert_eq!(matrix.reusable_ids.len(), 0);
+
+        assert_eq!(matrix.vertices().len(), 3);
+        assert!(vec![a, b, c]
+            .iter()
+            .all(|vertex_id| matrix.vertices().contains(vertex_id)));
+
+        // Edge weight between any two vertices must be positive infinity.
+        // Also edge src and dst must be set correctly.
+        assert!(vec![a, b, c]
+            .into_iter()
+            .flat_map(|vertex_id| vec![(vertex_id, a), (vertex_id, b), (vertex_id, c)])
+            .all(|(src_id, dst_id)| {
+                let edge = matrix.edge(src_id, dst_id);
+
+                ((edge.get_src_id(), edge.get_dst_id()) == (src_id, dst_id)
+                    || (edge.get_src_id(), edge.get_dst_id()) == (dst_id, src_id))
+                    && edge.get_weight().is_pos_infinite()
+            }));
     }
 
     #[test]
-    fn directed_remove_vertex() {
-        let mut adj_matrix = DiMat::<usize>::init();
+    fn directed_delete_vertex() {
+        // Given: Directed graph
+        //
+        //      a   b   c
+        //
+        let mut matrix = DiMat::<usize>::init();
+        let a = matrix.add_vertex();
+        let b = matrix.add_vertex();
+        let c = matrix.add_vertex();
 
-        for _ in 0..10 {
-            let _ = adj_matrix.add_vertex();
-        }
+        // When: Removing vertices a and b.
+        matrix.remove_vertex(a);
+        matrix.remove_vertex(b);
 
-        for i in 0..10 {
-            adj_matrix.remove_vertex(i);
-            assert!(adj_matrix.vertex_count() == 10 - (i + 1))
-        }
+        // Then:
+        assert_eq!(matrix.edges().len(), 0);
+        assert_eq!(matrix.vertex_count(), 1);
+        assert_eq!(matrix.total_vertex_count(), 3);
+        assert_eq!(matrix.vec.len(), 9);
 
-        assert!(adj_matrix
-            .vec
+        // Vertices a and b must be reusable.
+        assert_eq!(matrix.reusable_ids.len(), 2);
+        assert!(vec![a, b]
             .iter()
-            .all(|edge| edge.get_weight().is_pos_infinite()));
+            .all(|vertex_id| matrix.reusable_ids.contains(vertex_id)));
+
+        // Matrix must only contain c.
+        assert_eq!(matrix.vertices().len(), 1);
+        assert!(matrix.vertices().contains(&c));
+
+        assert!(matrix.edge(c, c).get_weight().is_pos_infinite());
     }
 
     #[test]
-    fn undirected_remove_vertex() {
-        let mut adj_matrix = Mat::<usize>::init();
+    fn undirected_delete_vertex() {
+        // Given: Undirected graph
+        //
+        //      a   b   c
+        //
+        let mut matrix = Mat::<usize>::init();
+        let a = matrix.add_vertex();
+        let b = matrix.add_vertex();
+        let c = matrix.add_vertex();
 
-        for _ in 0..10 {
-            let _ = adj_matrix.add_vertex();
-        }
+        // When: Removing vertices a and b.
+        matrix.remove_vertex(a);
+        matrix.remove_vertex(b);
 
-        for i in 0..10 {
-            adj_matrix.remove_vertex(i);
-            assert!(adj_matrix.vertex_count() == 10 - (i + 1))
-        }
+        // Then:
+        assert_eq!(matrix.edges().len(), 0);
+        assert_eq!(matrix.vertex_count(), 1);
+        assert_eq!(matrix.total_vertex_count(), 3);
+        assert_eq!(matrix.vec.len(), 6);
 
-        assert!(adj_matrix
-            .vec
+        // Vertices a and b must be reusable.
+        assert_eq!(matrix.reusable_ids.len(), 2);
+        assert!(vec![a, b]
             .iter()
-            .all(|edge| edge.get_weight().is_pos_infinite()));
+            .all(|vertex_id| matrix.reusable_ids.contains(vertex_id)));
+
+        // Matrix must only contain c.
+        assert_eq!(matrix.vertices().len(), 1);
+        assert!(matrix.vertices().contains(&c));
+
+        assert!(matrix.edge(c, c).get_weight().is_pos_infinite());
+    }
+
+    #[test]
+    fn directed_add_vertex_after_vertex_deletion() {
+        // Given: Directed graph
+        //
+        //      a   b   c
+        //
+        let mut matrix = DiMat::<usize>::init();
+        let a = matrix.add_vertex();
+        let b = matrix.add_vertex();
+        let c = matrix.add_vertex();
+
+        // When: Removing vertices a and b and afterwards adding two new vertices.
+        matrix.remove_vertex(a);
+        matrix.remove_vertex(b);
+        let _ = matrix.add_vertex();
+        let _ = matrix.add_vertex();
+
+        // Then:
+        assert_eq!(matrix.edges().len(), 0);
+        assert_eq!(matrix.vertex_count(), 3);
+        assert_eq!(matrix.total_vertex_count(), 3);
+        assert_eq!(matrix.vec.len(), 9);
+
+        // There must be no reusable id.
+        assert_eq!(matrix.reusable_ids.len(), 0);
+
+        // Vertex ids a and b must be reused.
+        assert_eq!(matrix.vertices().len(), 3);
+        assert!(vec![a, b, c]
+            .iter()
+            .all(|vertex_id| matrix.vertices().contains(vertex_id)));
+
+        // Edge weight between any two vertices must be positive infinity.
+        // Also edge src and dst must be set correctly.
+        assert!(vec![a, b, c]
+            .into_iter()
+            .flat_map(|vertex_id| vec![(vertex_id, a), (vertex_id, b), (vertex_id, c)])
+            .all(|(src_id, dst_id)| {
+                let edge = matrix.edge(src_id, dst_id);
+
+                edge.get_src_id() == src_id
+                    && edge.get_dst_id() == dst_id
+                    && edge.get_weight().is_pos_infinite()
+            }));
+    }
+
+    #[test]
+    fn undirected_add_vertex_after_vertex_deletion() {
+        // Given: Undirected graph
+        //
+        //      a   b   c
+        //
+        let mut matrix = Mat::<usize>::init();
+        let a = matrix.add_vertex();
+        let b = matrix.add_vertex();
+        let c = matrix.add_vertex();
+
+        // When: Removing vertices a and b and afterwards adding two new vertices.
+        matrix.remove_vertex(a);
+        matrix.remove_vertex(b);
+        let _ = matrix.add_vertex();
+        let _ = matrix.add_vertex();
+
+        // Then:
+        assert_eq!(matrix.edges().len(), 0);
+        assert_eq!(matrix.vertex_count(), 3);
+        assert_eq!(matrix.total_vertex_count(), 3);
+        assert_eq!(matrix.vec.len(), 6);
+
+        // There must be no reusable id.
+        assert_eq!(matrix.reusable_ids.len(), 0);
+
+        // Vertex ids a and b must be reused.
+        assert_eq!(matrix.vertices().len(), 3);
+        assert!(vec![a, b, c]
+            .iter()
+            .all(|vertex_id| matrix.vertices().contains(vertex_id)));
+
+        // Edge weight between any two vertices must be positive infinity.
+        // Also edge src and dst must be set correctly.
+        assert!(vec![a, b, c]
+            .into_iter()
+            .flat_map(|vertex_id| vec![(vertex_id, a), (vertex_id, b), (vertex_id, c)])
+            .all(|(src_id, dst_id)| {
+                let edge = matrix.edge(src_id, dst_id);
+
+                ((edge.get_src_id(), edge.get_dst_id()) == (src_id, dst_id)
+                    || (edge.get_src_id(), edge.get_dst_id()) == (dst_id, src_id))
+                    && edge.get_weight().is_pos_infinite()
+            }));
     }
 
     #[test]
     fn directed_add_edge() {
-        let mut adj_matrix = DiMat::<usize>::init();
+        // Given: Directed matrix
+        //
+        //      a   b   c
+        //
+        let mut matrix = DiMat::<usize>::init();
+        let a = matrix.add_vertex();
+        let b = matrix.add_vertex();
+        let c = matrix.add_vertex();
 
-        for _ in 0..10 {
-            let _ = adj_matrix.add_vertex();
-        }
+        // When: Adding edges
+        //
+        //      a  -->  b  -->  c
+        //      ^               |
+        //      '----------------
+        //
+        matrix.add_edge((a, b, 1).into());
+        matrix.add_edge((b, c, 2).into());
+        matrix.add_edge((c, a, 3).into());
 
-        for v1 in adj_matrix.vertices() {
-            for v2 in adj_matrix.vertices() {
-                adj_matrix[(v1, v2)] = (v1, v2, v1 * 2 + v2).into();
-            }
-        }
+        // Then:
+        assert_eq!(matrix.vertex_count(), 3);
+        assert_eq!(matrix.total_vertex_count(), 3);
+        assert_eq!(matrix.vec.len(), 9);
 
-        for v1 in adj_matrix.vertices() {
-            for v2 in adj_matrix.vertices() {
-                assert_eq!(adj_matrix[(v1, v2)].get_weight(), &(v1 * 2 + v2).into());
+        assert_eq!(matrix.edges().len(), 3);
+        for edge in matrix.edges() {
+            match (edge.get_src_id(), edge.get_dst_id()) {
+                (0, 1) => assert_eq!(edge.get_weight().unwrap(), 1),
+                (1, 2) => assert_eq!(edge.get_weight().unwrap(), 2),
+                (2, 0) => assert_eq!(edge.get_weight().unwrap(), 3),
+                _ => panic!("Unknown vertex id"),
             }
         }
     }
 
     #[test]
     fn undirected_add_edge() {
-        let mut adj_matrix = Mat::<usize>::init();
+        // Given: Undirected matrix
+        //
+        //      a   b   c
+        //
+        let mut matrix = Mat::<usize>::init();
+        let a = matrix.add_vertex();
+        let b = matrix.add_vertex();
+        let c = matrix.add_vertex();
 
-        for _ in 0..10 {
-            let _ = adj_matrix.add_vertex();
-        }
+        // When: Adding edges
+        //
+        //      a  ---  b  ---  c
+        //      |               |
+        //      '----------------
+        //
+        matrix.add_edge((a, b, 1).into());
+        matrix.add_edge((b, c, 2).into());
+        matrix.add_edge((c, a, 3).into());
 
-        for v1 in adj_matrix.vertices() {
-            for v2 in 0..=v1 {
-                adj_matrix[(v1, v2)] = (v1, v2, v1 * 2 + v2).into();
-            }
-        }
+        // Then:
+        assert_eq!(matrix.vertex_count(), 3);
+        assert_eq!(matrix.total_vertex_count(), 3);
+        assert_eq!(matrix.vec.len(), 6);
 
-        for v1 in adj_matrix.vertices() {
-            for v2 in 0..=v1 {
-                assert_eq!(adj_matrix[(v1, v2)].get_weight(), &(v1 * 2 + v2).into());
-                assert_eq!(adj_matrix[(v2, v1)].get_weight(), &(v1 * 2 + v2).into());
+        assert_eq!(matrix.edges().len(), 6);
+        for edge in matrix.edges() {
+            match (edge.get_src_id(), edge.get_dst_id()) {
+                (0, 1) | (1, 0) => assert_eq!(edge.get_weight().unwrap(), 1),
+                (1, 2) | (2, 1) => assert_eq!(edge.get_weight().unwrap(), 2),
+                (2, 0) | (0, 2) => assert_eq!(edge.get_weight().unwrap(), 3),
+                _ => panic!("Unknown vertex id"),
             }
         }
     }
 
     #[test]
     fn directed_remove_edge() {
-        let mut adj_matrix = DiMat::<usize>::init();
+        // Given: Directed matrix
+        //
+        //      a  -->  b  -->  c
+        //      ^               |
+        //      '----------------
+        //
+        let mut matrix = DiMat::<usize>::init();
+        let a = matrix.add_vertex();
+        let b = matrix.add_vertex();
+        let c = matrix.add_vertex();
+        matrix.add_edge((a, b, 1).into());
+        matrix.add_edge((b, c, 2).into());
+        matrix.add_edge((c, a, 3).into());
 
-        for _ in 0..10 {
-            let _ = adj_matrix.add_vertex();
-        }
+        // When: Removing edges a --> b and b --> c
+        //
+        //      a   b   c
+        //      ^       |
+        //      '--------
+        //
+        matrix.remove_edge(a, b);
+        matrix.remove_edge(b, c);
 
-        for v1 in adj_matrix.vertices() {
-            for v2 in adj_matrix.vertices() {
-                adj_matrix[(v1, v2)] = (v1, v2, v1 * 2 + v2).into();
-            }
-        }
+        // Then:
+        assert_eq!(matrix.vertex_count(), 3);
+        assert_eq!(matrix.total_vertex_count(), 3);
+        assert_eq!(matrix.vec.len(), 9);
 
-        for v1 in adj_matrix.vertices() {
-            for v2 in adj_matrix.vertices() {
-                adj_matrix.remove_edge(v1, v2);
-                assert!(adj_matrix[(v1, v2)].get_weight().is_pos_infinite());
-            }
-        }
+        assert_eq!(matrix.edges().len(), 1);
+        assert_eq!(matrix.edge(c, a).get_weight().unwrap(), 3);
     }
 
     #[test]
     fn undirected_remove_edge() {
-        let mut adj_matrix = Mat::<usize>::init();
+        // Given: Undirected matrix
+        //
+        //      a  ---  b  ---  c
+        //      |               |
+        //      '----------------
+        //
+        let mut matrix = Mat::<usize>::init();
+        let a = matrix.add_vertex();
+        let b = matrix.add_vertex();
+        let c = matrix.add_vertex();
+        matrix.add_edge((a, b, 1).into());
+        matrix.add_edge((b, c, 2).into());
+        matrix.add_edge((c, a, 3).into());
 
-        for _ in 0..10 {
-            let _ = adj_matrix.add_vertex();
-        }
+        // When: Removing edges a --- b and b --- c
+        //
+        //      a   b   c
+        //      |       |
+        //      '--------
+        //
+        matrix.remove_edge(a, b);
+        matrix.remove_edge(b, c);
 
-        for v1 in adj_matrix.vertices() {
-            for v2 in 0..=v1 {
-                adj_matrix[(v1, v2)] = (v1, v2, v1 * 2 + v2).into();
-            }
-        }
+        // Then:
+        assert_eq!(matrix.vertex_count(), 3);
+        assert_eq!(matrix.total_vertex_count(), 3);
+        assert_eq!(matrix.vec.len(), 6);
 
-        for v1 in adj_matrix.vertices() {
-            for v2 in 0..=v1 {
-                adj_matrix.remove_edge(v1, v2);
-                assert!(adj_matrix[(v1, v2)].get_weight().is_pos_infinite());
-                assert!(adj_matrix[(v2, v1)].get_weight().is_pos_infinite());
-            }
-        }
+        assert_eq!(matrix.edges().len(), 2);
+        assert_eq!(matrix.edge(a, c).get_weight().unwrap(), 3);
     }
 
     #[test]
-    fn vertices() {
-        let mut adj_matrix = DiMat::<usize>::init();
+    fn directed_neighbors() {
+        // Given: Directed matrix
+        //
+        //      a  -->  b  -->  c
+        //      ^               |
+        //      '----------------
+        //
+        let mut matrix = DiMat::<usize>::init();
+        let a = matrix.add_vertex();
+        let b = matrix.add_vertex();
+        let c = matrix.add_vertex();
+        matrix.add_edge((a, b, 1).into());
+        matrix.add_edge((b, c, 2).into());
+        matrix.add_edge((c, a, 3).into());
 
-        for _ in 0..10 {
-            let _ = adj_matrix.add_vertex();
-        }
+        // When: Doing nothing.
 
-        for i in (0..10).step_by(2) {
-            adj_matrix.remove_vertex(i);
-        }
+        // Then:
+        assert_eq!(matrix.vertex_count(), 3);
+        assert_eq!(matrix.total_vertex_count(), 3);
+        assert_eq!(matrix.vec.len(), 9);
 
-        let vertices = adj_matrix.vertices();
-        assert_eq!(vertices.len(), 5);
-        assert!(vec![1, 3, 5, 7, 9].iter().all(|v| vertices.contains(v)));
+        assert_eq!(matrix.neighbors(a).len(), 1);
+        assert_eq!(*matrix.neighbors(a).get(0).unwrap(), b);
 
-        let reusable_ids = &adj_matrix.reusable_ids;
-        assert_eq!(reusable_ids.len(), 5);
-        assert!(vec![0, 2, 4, 6, 8].iter().all(|v| reusable_ids.contains(v)));
+        assert_eq!(matrix.neighbors(b).len(), 1);
+        assert_eq!(*matrix.neighbors(b).get(0).unwrap(), c);
+
+        assert_eq!(matrix.neighbors(c).len(), 1);
+        assert_eq!(*matrix.neighbors(c).get(0).unwrap(), a);
     }
 
     #[test]
-    fn edges_directed() {
-        let mut adj_matrix = DiMat::<usize>::init();
+    fn undirected_neighbors() {
+        // Given: Undirected matrix
+        //
+        //      a  ---  b  ---  c
+        //      |               |
+        //      '----------------
+        //
+        let mut matrix = Mat::<usize>::init();
+        let a = matrix.add_vertex();
+        let b = matrix.add_vertex();
+        let c = matrix.add_vertex();
+        matrix.add_edge((a, b, 1).into());
+        matrix.add_edge((b, c, 2).into());
+        matrix.add_edge((c, a, 3).into());
 
-        for _ in 0..5 {
-            let _ = adj_matrix.add_vertex();
-        }
+        // When: Doing nothing.
 
-        for i in (0..5).step_by(2) {
-            adj_matrix.remove_vertex(i);
-        }
+        // Then:
+        assert_eq!(matrix.vertex_count(), 3);
+        assert_eq!(matrix.total_vertex_count(), 3);
+        assert_eq!(matrix.vec.len(), 6);
 
-        adj_matrix[(1, 3)] = Edge::init(1, 3, 3.into());
-        adj_matrix[(3, 1)] = Edge::init(3, 1, 4.into());
+        assert_eq!(matrix.neighbors(a).len(), 2);
+        assert!(vec![b, c]
+            .iter()
+            .all(|vertex_id| matrix.neighbors(a).contains(vertex_id)));
 
-        for edge in adj_matrix.edges() {
-            match (edge.get_src_id(), edge.get_dst_id()) {
-                (1, 1) => assert!(edge.get_weight().is_pos_infinite()),
-                (1, 3) => assert_eq!(edge.get_weight(), &3.into()),
-                (3, 1) => assert_eq!(edge.get_weight(), &4.into()),
-                (3, 3) => assert!(edge.get_weight().is_pos_infinite()),
-                _ => panic!("not valid vertices"),
-            }
-        }
+        assert_eq!(matrix.neighbors(b).len(), 2);
+        assert!(vec![a, c]
+            .iter()
+            .all(|vertex_id| matrix.neighbors(b).contains(vertex_id)));
+
+        assert_eq!(matrix.neighbors(c).len(), 2);
+        assert!(vec![a, b]
+            .iter()
+            .all(|vertex_id| matrix.neighbors(c).contains(vertex_id)));
     }
 
     #[test]
-    fn edges_undirected() {
-        let mut adj_matrix = Mat::<usize>::init();
+    #[should_panic(expected = "Vertex with id: 0 is not present in the graph")]
+    fn first_vertex_not_present() {
+        // Given: Matrix
+        //
+        //      a
+        //
+        let mut matrix = Mat::<usize>::init();
+        let a = matrix.add_vertex();
+        let b = matrix.add_vertex();
 
-        for _ in 0..5 {
-            let _ = adj_matrix.add_vertex();
-        }
+        // When: Removing vertex a and try to pass it as valid vertex id.
+        matrix.remove_vertex(a);
+        matrix.edge(a, b);
 
-        for i in (0..5).step_by(2) {
-            adj_matrix.remove_vertex(i);
-        }
-
-        adj_matrix[(1, 3)] = Edge::init(1, 3, 3.into());
-
-        for edge in adj_matrix.edges() {
-            match (edge.get_src_id(), edge.get_dst_id()) {
-                (1, 1) => assert!(edge.get_weight().is_pos_infinite()),
-                (1, 3) => assert_eq!(edge.get_weight(), &3.into()),
-                (3, 1) => assert_eq!(edge.get_weight(), &3.into()),
-                (3, 3) => assert!(edge.get_weight().is_pos_infinite()),
-                _ => panic!("not valid vertices"),
-            }
-        }
+        // Then: Code should panic.
     }
 
     #[test]
-    fn neighbors_directed() {
-        let mut adj_matrix = DiMat::<usize>::init();
+    #[should_panic(expected = "Vertex with id: 1 is not present in the graph")]
+    fn second_vertex_not_present() {
+        // Given: Matrix
+        //
+        //      a
+        //
+        let mut matrix = Mat::<usize>::init();
+        let a = matrix.add_vertex();
+        let b = matrix.add_vertex();
 
-        for _ in 0..5 {
-            let _ = adj_matrix.add_vertex();
-        }
+        // When: Removing vertex b and try to pass it as valid vertex id.
+        matrix.remove_vertex(b);
+        matrix.edge(a, b);
 
-        adj_matrix[(1, 3)] = Edge::init(1, 3, 3.into());
-        adj_matrix[(1, 2)] = Edge::init(1, 2, 2.into());
-        adj_matrix[(4, 0)] = Edge::init(4, 0, 1.into());
-
-        let one_neighbors = adj_matrix.neighbors(1);
-
-        assert_eq!(one_neighbors.len(), 2);
-        assert!(one_neighbors.contains(&3));
-        assert!(one_neighbors.contains(&2));
-
-        let four_neighbors = adj_matrix.neighbors(4);
-        assert_eq!(four_neighbors.len(), 1);
-        assert!(four_neighbors.contains(&0));
-
-        assert!(adj_matrix.neighbors(0).is_empty());
-        assert!(adj_matrix.neighbors(2).is_empty());
-        assert!(adj_matrix.neighbors(3).is_empty());
+        // Then: Code should panic.
     }
 
     #[test]
-    fn neighbors_undirected() {
-        let mut adj_matrix = Mat::<usize>::init();
+    #[should_panic(expected = "Vertices with id: 0 and 1 are not present in the graph")]
+    fn both_vertices_are_not_present() {
+        // Given: An empty matrix.
+        let mut matrix = Mat::<usize>::init();
+        let a = matrix.add_vertex();
+        let b = matrix.add_vertex();
 
-        for _ in 0..5 {
-            let _ = adj_matrix.add_vertex();
-        }
+        // When: Removing both vertices a and b and trying to pass them as valid ids.
+        matrix.remove_vertex(a);
+        matrix.remove_vertex(b);
+        matrix.edge(a, b);
 
-        adj_matrix[(1, 3)] = Edge::init(1, 3, 3.into());
-        adj_matrix[(4, 0)] = Edge::init(4, 0, 1.into());
+        // Then: Code should panic.
+    }
 
-        let one_neighbors = adj_matrix.neighbors(1);
-        assert_eq!(one_neighbors.len(), 1);
-        assert!(one_neighbors.contains(&3));
+    #[test]
+    #[should_panic(expected = "Index out of bounds: (0,1) does not exist")]
+    fn index_out_of_bounds() {
+        // Given: Matrix
+        //
+        //      a
+        //
+        let mut matrix = Mat::<usize>::init();
+        let a = matrix.add_vertex();
+        let b = 1;
 
-        let three_neighbors = adj_matrix.neighbors(3);
-        assert_eq!(three_neighbors.len(), 1);
-        assert!(three_neighbors.contains(&1));
+        // When: Trying to access b which is never add to graph.
+        matrix.edge(a, b);
 
-        let four_neighbors = adj_matrix.neighbors(4);
-        assert_eq!(four_neighbors.len(), 1);
-        assert!(four_neighbors.contains(&0));
-
-        let zero_neighbors = adj_matrix.neighbors(0);
-        assert_eq!(zero_neighbors.len(), 1);
-        assert!(zero_neighbors.contains(&4));
-
-        assert!(adj_matrix.neighbors(2).is_empty());
+        // Then: Code should panic.
     }
 }
