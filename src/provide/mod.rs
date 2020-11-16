@@ -50,7 +50,7 @@ pub trait Vertices {
 /// * `W`: Weight of the edge.
 /// * `E`: Edge of the graph.
 pub trait Edges<W, E: Edge<W>> {
-    fn edge(&self, src_id: usize, dst_id: usize) -> &E;
+    fn edge(&self, src_id: usize, dst_id: usize) -> Option<&E>;
 
     /// # Returns:
     /// Vector of edges in the format of (`src_id`, `dst_id`, `edge`).

@@ -11,7 +11,7 @@ use crate::graph::{Edge, EdgeType};
 /// # Generic Parameters:
 /// * `W`: Weight of the edge.
 /// * `E`: Edge of the graph.
-pub trait GraphStorage<W, E: Edge<W>, D: EdgeType> {
+pub trait GraphStorage<W, E: Edge<W>, Ty: EdgeType> {
     /// Adds a vertex to the storage.
     ///
     /// # Returns:
@@ -50,7 +50,7 @@ pub trait GraphStorage<W, E: Edge<W>, D: EdgeType> {
     /// Vector of vertex ids that are present in the graph.
     fn vertices(&self) -> Vec<usize>;
 
-    fn edge(&self, src_id: usize, dst_id: usize) -> &E;
+    fn edge(&self, src_id: usize, dst_id: usize) -> Option<&E>;
 
     /// # Returns:
     /// Vector of edges in the format of (`src_id`, `dst_id`, `edge`).

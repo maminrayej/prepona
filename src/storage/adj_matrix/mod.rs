@@ -259,8 +259,14 @@ impl<W: Any, E: Edge<W>, Ty: EdgeType> GraphStorage<W, E, Ty> for AdjMatrix<W, E
             .collect()
     }
 
-    fn edge(&self, src_id: usize, dst_id: usize) -> &E {
-        &self[(src_id, dst_id)]
+    fn edge(&self, src_id: usize, dst_id: usize) -> Option<&E> {
+        let edge = &self[(src_id, dst_id)];
+
+        if edge.get_weight().is_finite() {
+            Some(edge)
+        } else {
+            None
+        }
     }
 
     /// # Returns:
@@ -414,13 +420,7 @@ mod tests {
         assert!(vec![a, b, c]
             .into_iter()
             .flat_map(|vertex_id| vec![(vertex_id, a), (vertex_id, b), (vertex_id, c)])
-            .all(|(src_id, dst_id)| {
-                let edge = matrix.edge(src_id, dst_id);
-
-                edge.get_src_id() == src_id
-                    && edge.get_dst_id() == dst_id
-                    && edge.get_weight().is_pos_infinite()
-            }));
+            .all(|(src_id, dst_id)| matrix.edge(src_id, dst_id).is_none()));
     }
 
     #[test]
@@ -450,13 +450,7 @@ mod tests {
         assert!(vec![a, b, c]
             .into_iter()
             .flat_map(|vertex_id| vec![(vertex_id, a), (vertex_id, b), (vertex_id, c)])
-            .all(|(src_id, dst_id)| {
-                let edge = matrix.edge(src_id, dst_id);
-
-                ((edge.get_src_id(), edge.get_dst_id()) == (src_id, dst_id)
-                    || (edge.get_src_id(), edge.get_dst_id()) == (dst_id, src_id))
-                    && edge.get_weight().is_pos_infinite()
-            }));
+            .all(|(src_id, dst_id)| matrix.edge(src_id, dst_id).is_none()));
     }
 
     #[test]
@@ -490,7 +484,7 @@ mod tests {
         assert_eq!(matrix.vertices().len(), 1);
         assert!(matrix.vertices().contains(&c));
 
-        assert!(matrix.edge(c, c).get_weight().is_pos_infinite());
+        assert!(matrix.edge(c, c).is_none());
     }
 
     #[test]
@@ -524,7 +518,7 @@ mod tests {
         assert_eq!(matrix.vertices().len(), 1);
         assert!(matrix.vertices().contains(&c));
 
-        assert!(matrix.edge(c, c).get_weight().is_pos_infinite());
+        assert!(matrix.edge(c, c).is_none());
     }
 
     #[test]
@@ -564,13 +558,7 @@ mod tests {
         assert!(vec![a, b, c]
             .into_iter()
             .flat_map(|vertex_id| vec![(vertex_id, a), (vertex_id, b), (vertex_id, c)])
-            .all(|(src_id, dst_id)| {
-                let edge = matrix.edge(src_id, dst_id);
-
-                edge.get_src_id() == src_id
-                    && edge.get_dst_id() == dst_id
-                    && edge.get_weight().is_pos_infinite()
-            }));
+            .all(|(src_id, dst_id)| matrix.edge(src_id, dst_id).is_none()));
     }
 
     #[test]
@@ -610,13 +598,7 @@ mod tests {
         assert!(vec![a, b, c]
             .into_iter()
             .flat_map(|vertex_id| vec![(vertex_id, a), (vertex_id, b), (vertex_id, c)])
-            .all(|(src_id, dst_id)| {
-                let edge = matrix.edge(src_id, dst_id);
-
-                ((edge.get_src_id(), edge.get_dst_id()) == (src_id, dst_id)
-                    || (edge.get_src_id(), edge.get_dst_id()) == (dst_id, src_id))
-                    && edge.get_weight().is_pos_infinite()
-            }));
+            .all(|(src_id, dst_id)| matrix.edge(src_id, dst_id).is_none()));
     }
 
     #[test]
@@ -724,7 +706,7 @@ mod tests {
         assert_eq!(matrix.vec.len(), 9);
 
         assert_eq!(matrix.edges().len(), 1);
-        assert_eq!(matrix.edge(c, a).get_weight().unwrap(), 3);
+        assert_eq!(matrix.edge(c, a).unwrap().get_weight().unwrap(), 3);
     }
 
     #[test]
@@ -758,7 +740,7 @@ mod tests {
         assert_eq!(matrix.vec.len(), 6);
 
         assert_eq!(matrix.edges().len(), 2);
-        assert_eq!(matrix.edge(a, c).get_weight().unwrap(), 3);
+        assert_eq!(matrix.edge(a, c).unwrap().get_weight().unwrap(), 3);
     }
 
     #[test]
