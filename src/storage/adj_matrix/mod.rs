@@ -214,6 +214,10 @@ impl<W: Any, E: Edge<W>, Ty: EdgeType> GraphStorage<W, E, Ty> for AdjMatrix<W, E
         self[(src_id, dst_id)] = edge;
     }
 
+    fn update_edge(&mut self, edge: E) {
+        self.add_edge(edge);
+    }
+
     /// Removes the edge from vertex with `src_id` to vertex with `dst_id`.
     ///
     /// # Arguments:

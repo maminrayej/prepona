@@ -99,6 +99,14 @@ impl<W: Copy, E: Edge<W>, Ty: EdgeType> GraphStorage<W, E, Ty> for AdjList<W, E,
         }
     }
 
+    fn update_edge(&mut self, edge: E) {
+        let (src_id, dst_id) = (edge.get_src_id(), edge.get_dst_id());
+
+        self.remove_edge(src_id, dst_id);
+
+        self.add_edge(edge);
+    }
+
     fn remove_edge(&mut self, src_id: usize, dst_id: usize) -> E {
         self.validate_id(src_id);
         self.validate_id(dst_id);

@@ -32,6 +32,8 @@ pub trait GraphStorage<W, E: Edge<W>, Ty: EdgeType> {
     /// * `edge`: The edge between `src_id` and `dst_id`.
     fn add_edge(&mut self, edge: E);
 
+    fn update_edge(&mut self, edge: E);
+
     /// Removes the edge from vertex with `src_id` to vertex with `dst_id`.
     ///
     /// # Arguments:
@@ -51,6 +53,10 @@ pub trait GraphStorage<W, E: Edge<W>, Ty: EdgeType> {
     fn vertices(&self) -> Vec<usize>;
 
     fn edge(&self, src_id: usize, dst_id: usize) -> Option<&E>;
+
+    fn has_edge(&self, src_id: usize, dst_id: usize) -> bool {
+        self.edge(src_id, dst_id).is_some()
+    }
 
     /// # Returns:
     /// Vector of edges in the format of (`src_id`, `dst_id`, `edge`).
