@@ -490,6 +490,134 @@ mod tests {
     }
 
     #[test]
+    fn directed_has_edge() {
+        // Given: Directed list
+        //
+        //      a  -->  b  -->  c
+        //      ^               |
+        //      '----------------
+        //
+        let mut list = DiList::<usize>::init();
+        let a = list.add_vertex();
+        let b = list.add_vertex();
+        let c = list.add_vertex();
+        list.add_edge((a, b, 1).into());
+        list.add_edge((b, c, 2).into());
+        list.add_edge((c, a, 3).into());
+
+        // When: Doing nothing.
+
+        // Then:
+        assert!(list.has_edge(a, b));
+        assert!(list.has_edge(b, c));
+        assert!(list.has_edge(c, a));
+    }
+
+    #[test]
+    fn undirected_has_edge() {
+        // Given: Undirected list
+        //
+        //      a  ---  b  ---  c
+        //      |               |
+        //      '----------------
+        //
+        let mut list = List::<usize>::init();
+        let a = list.add_vertex();
+        let b = list.add_vertex();
+        let c = list.add_vertex();
+        list.add_edge((a, b, 1).into());
+        list.add_edge((b, c, 2).into());
+        list.add_edge((c, a, 3).into());
+
+        // When: Doing nothing.
+
+        // Then:
+        assert!(list.has_edge(a, b));
+        assert!(list.has_edge(b, a));
+
+        assert!(list.has_edge(b, c));
+        assert!(list.has_edge(c, b));
+        
+        assert!(list.has_edge(c, a));
+        assert!(list.has_edge(a, c));
+    }
+
+    #[test]
+    fn directed_update_edge() {
+        // Given: Directed list
+        //
+        //      a  -->  b  -->  c
+        //      ^               |
+        //      '----------------
+        //
+        let mut list = DiList::<usize>::init();
+        let a = list.add_vertex();
+        let b = list.add_vertex();
+        let c = list.add_vertex();
+        list.add_edge((a, b, 1).into());
+        list.add_edge((b, c, 2).into());
+        list.add_edge((c, a, 3).into());
+
+        // When: Incrementing edge of each edge by 1.
+        list.update_edge((a, b, 2).into());
+        list.update_edge((b, c, 3).into());
+        list.update_edge((c, a, 4).into());
+
+        // Then:
+        assert_eq!(list.vertex_count(), 3);
+        assert_eq!(list.edges_of.len(), 3);
+        assert!(list.edges_of.iter().all(|edges| edges.len() == 1));
+
+        assert_eq!(list.edges().len(), 3);
+        for edge in list.edges() {
+            match (edge.get_src_id(), edge.get_dst_id()) {
+                (0, 1) => assert_eq!(edge.get_weight().unwrap(), 2),
+                (1, 2) => assert_eq!(edge.get_weight().unwrap(), 3),
+                (2, 0) => assert_eq!(edge.get_weight().unwrap(), 4),
+                _ => panic!("Unknown vertex id"),
+            }
+        }
+    }
+
+    #[test]
+    fn undirected_update_edge() {
+        // Given: Undirected list
+        //
+        //      a  ---  b  ---  c
+        //      |               |
+        //      '----------------
+        //
+        let mut list = List::<usize>::init();
+        let a = list.add_vertex();
+        let b = list.add_vertex();
+        let c = list.add_vertex();
+        list.add_edge((a, b, 1).into());
+        list.add_edge((b, c, 2).into());
+        list.add_edge((c, a, 3).into());
+        
+        // When: Incrementing edge of each edge by 1.
+        list.update_edge((a, b, 2).into());
+        list.update_edge((b, c, 3).into());
+        list.update_edge((c, a, 4).into());
+    
+        // Then:
+        assert_eq!(list.vertex_count(), 3);
+        assert_eq!(list.edges_of.len(), 3);
+        assert!(list.edges_of.iter().all(|edges| edges.len() == 2));
+
+        assert_eq!(list.edges().len(), 6);
+        for edge in list.edges() {
+            match (edge.get_src_id(), edge.get_dst_id()) {
+                (0, 1) | (1, 0) => assert_eq!(edge.get_weight().unwrap(), 2),
+                (1, 2) | (2, 1) => assert_eq!(edge.get_weight().unwrap(), 3),
+                (2, 0) | (0, 2) => assert_eq!(edge.get_weight().unwrap(), 4),
+                _ => panic!("Unknown vertex id"),
+            }
+        }
+    
+    }
+
+    #[test]
     fn directed_remove_edge() {
         // Given: Directed list
         //
