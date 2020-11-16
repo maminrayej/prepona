@@ -680,6 +680,133 @@ mod tests {
     }
 
     #[test]
+    fn directed_has_edge() {
+        // Given: Directed list
+        //
+        //      a  -->  b  -->  c
+        //      ^               |
+        //      '----------------
+        //
+        let mut matrix = DiMat::<usize>::init();
+        let a = matrix.add_vertex();
+        let b = matrix.add_vertex();
+        let c = matrix.add_vertex();
+        matrix.add_edge((a, b, 1).into());
+        matrix.add_edge((b, c, 2).into());
+        matrix.add_edge((c, a, 3).into());
+
+        // When: Doing nothing.
+
+        // Then:
+        assert!(matrix.has_edge(a, b));
+        assert!(matrix.has_edge(b, c));
+        assert!(matrix.has_edge(c, a));
+    }
+
+    #[test]
+    fn undirected_has_edge() {
+        // Given: Undirected list
+        //
+        //      a  ---  b  ---  c
+        //      |               |
+        //      '----------------
+        //
+        let mut matrix = Mat::<usize>::init();
+        let a = matrix.add_vertex();
+        let b = matrix.add_vertex();
+        let c = matrix.add_vertex();
+        matrix.add_edge((a, b, 1).into());
+        matrix.add_edge((b, c, 2).into());
+        matrix.add_edge((c, a, 3).into());
+
+        // When: Doing nothing.
+
+        // Then:
+        assert!(matrix.has_edge(a, b));
+        assert!(matrix.has_edge(b, a));
+
+        assert!(matrix.has_edge(b, c));
+        assert!(matrix.has_edge(c, b));
+        
+        assert!(matrix.has_edge(c, a));
+        assert!(matrix.has_edge(a, c));
+    }
+
+    #[test]
+    fn directed_update_edge() {
+        // Given: Directed list
+        //
+        //      a  -->  b  -->  c
+        //      ^               |
+        //      '----------------
+        //
+        let mut matrix = DiMat::<usize>::init();
+        let a = matrix.add_vertex();
+        let b = matrix.add_vertex();
+        let c = matrix.add_vertex();
+        matrix.add_edge((a, b, 1).into());
+        matrix.add_edge((b, c, 2).into());
+        matrix.add_edge((c, a, 3).into());
+
+        // When: Incrementing edge of each edge by 1.
+        matrix.update_edge((a, b, 2).into());
+        matrix.update_edge((b, c, 3).into());
+        matrix.update_edge((c, a, 4).into());
+
+        // Then:
+        assert_eq!(matrix.vertex_count(), 3);
+        assert_eq!(matrix.total_vertex_count(), 3);
+        assert_eq!(matrix.vec.len(), 9);
+
+        assert_eq!(matrix.edges().len(), 3);
+        for edge in matrix.edges() {
+            match (edge.get_src_id(), edge.get_dst_id()) {
+                (0, 1) => assert_eq!(edge.get_weight().unwrap(), 2),
+                (1, 2) => assert_eq!(edge.get_weight().unwrap(), 3),
+                (2, 0) => assert_eq!(edge.get_weight().unwrap(), 4),
+                _ => panic!("Unknown vertex id"),
+            }
+        }
+    }
+
+    #[test]
+    fn undirected_update_edge() {
+        // Given: Undirected list
+        //
+        //      a  ---  b  ---  c
+        //      |               |
+        //      '----------------
+        //
+        let mut matrix = Mat::<usize>::init();
+        let a = matrix.add_vertex();
+        let b = matrix.add_vertex();
+        let c = matrix.add_vertex();
+        matrix.add_edge((a, b, 1).into());
+        matrix.add_edge((b, c, 2).into());
+        matrix.add_edge((c, a, 3).into());
+
+        // When: Incrementing edge of each edge by 1.
+        matrix.update_edge((a, b, 2).into());
+        matrix.update_edge((b, c, 3).into());
+        matrix.update_edge((c, a, 4).into());
+
+        // Then:
+        assert_eq!(matrix.vertex_count(), 3);
+        assert_eq!(matrix.total_vertex_count(), 3);
+        assert_eq!(matrix.vec.len(), 6);
+
+        assert_eq!(matrix.edges().len(), 6);
+        for edge in matrix.edges() {
+            match (edge.get_src_id(), edge.get_dst_id()) {
+                (0, 1) | (1, 0) => assert_eq!(edge.get_weight().unwrap(), 2),
+                (1, 2) | (2, 1) => assert_eq!(edge.get_weight().unwrap(), 3),
+                (2, 0) | (0, 2) => assert_eq!(edge.get_weight().unwrap(), 4),
+                _ => panic!("Unknown vertex id"),
+            }
+        }
+    }
+
+    #[test]
     fn directed_remove_edge() {
         // Given: Directed matrix
         //
