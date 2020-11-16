@@ -95,6 +95,10 @@ impl<W, E: Edge<W>, Ty: EdgeType, S: GraphStorage<W, E, Ty>> provide::Edges<W, E
         self.storage.edge(src_id, dst_id)
     }
 
+    fn has_edge(&self, src_id: usize, dst_id: usize) -> bool {
+        self.storage.has_edge(src_id, dst_id)
+    }
+
     /// # Returns:
     /// Vector of edges in the format of (`src_id`, `dst_id`, `edge`).
     ///
@@ -159,7 +163,15 @@ impl<W, E: Edge<W>, Ty: EdgeType, S: GraphStorage<W, E, Ty>> provide::Graph<W, E
             panic!("Can not create loop in simple graph")
         }
 
+        if self.storage.has_edge(edge.get_src_id(), edge.get_dst_id()) {
+            panic!("Can not add multiple edges between two vertices in simple graph");
+        }
+
         self.storage.add_edge(edge);
+    }
+
+    fn update_edge(&mut self, edge: E) {
+        self.storage.update_edge(edge);
     }
 
     /// Removes the edge from vertex with `src_id` to vertex with `dst_id`.

@@ -52,6 +52,8 @@ pub trait Vertices {
 pub trait Edges<W, E: Edge<W>> {
     fn edge(&self, src_id: usize, dst_id: usize) -> Option<&E>;
 
+    fn has_edge(&self, src_id: usize, dst_id: usize) -> bool;
+
     /// # Returns:
     /// Vector of edges in the format of (`src_id`, `dst_id`, `edge`).
     fn edges(&self) -> Vec<&E>;
@@ -108,6 +110,8 @@ pub trait Graph<W, E: Edge<W>, Ty: EdgeType> {
     /// * `dst_id`: Id of the vertex at the end of the edge.
     /// * `edge`: Edge between `src_id` and `dst_id`.
     fn add_edge(&mut self, edge: E);
+
+    fn update_edge(&mut self, edge: E);
 
     /// Removes the edge from vertex with `src_id` to vertex with `dst_id`.
     ///
