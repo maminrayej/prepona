@@ -6,6 +6,7 @@ use crate::graph::edge::Edge;
 ///
 /// # Generic Parameters:
 /// `W`: Weight of the edge.
+#[derive(Debug)]
 pub struct FlowEdge<W> {
     src_id: usize,
     dst_id: usize,
@@ -170,5 +171,120 @@ impl<W: Any> TryFrom<(usize, usize, W, usize, isize)> for FlowEdge<W> {
                 flow,
             ))
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::convert::TryInto;
+
+    #[test]
+    fn init() {
+        let edge = FlowEdge::init(0, 1, 2.into());
+
+        assert_eq!(edge.get_src_id(), 0);
+        assert_eq!(edge.get_dst_id(), 1);
+        assert_eq!(edge.get_weight(), &2.into());
+        assert_eq!(edge.get_capacity(), 0);
+        assert_eq!(edge.get_flow(), 0);
+    }
+
+    #[test]
+    fn init_with() {
+        let edge = FlowEdge::init_with(0, 1, 2.into(), 4, 3);
+
+        assert_eq!(edge.get_src_id(), 0);
+        assert_eq!(edge.get_dst_id(), 1);
+        assert_eq!(edge.get_weight(), &2.into());
+        assert_eq!(edge.get_capacity(), 4);
+        assert_eq!(edge.get_flow(), 3);
+    }
+
+    #[test]
+    fn set_weight() {
+        let mut edge = FlowEdge::init(0, 1, 2.into());
+
+        edge.set_weight(3.into());
+
+        assert_eq!(edge.get_weight(), &3.into());
+    }
+
+    #[test]
+    fn set_capacity() {
+        let mut edge = FlowEdge::init(0, 1, 2.into());
+
+        edge.set_capacity(5);
+
+        assert_eq!(edge.get_capacity(), 5);
+    }
+
+    #[test]
+    fn set_flow() {
+        let mut edge = FlowEdge::init(0, 1, 2.into());
+        edge.set_capacity(5);
+
+        edge.set_flow(4);
+
+        assert_eq!(edge.get_flow(), 4);
+    }
+
+    #[test]
+    fn from_triplet() {
+        let edge: FlowEdge<usize> = (0, 1, 2).into();
+
+        assert_eq!(edge.get_src_id(), 0);
+        assert_eq!(edge.get_dst_id(), 1);
+        assert_eq!(edge.get_weight(), &2.into());
+        assert_eq!(edge.get_capacity(), 0);
+        assert_eq!(edge.get_flow(), 0);
+    }
+
+    #[test]
+    fn from_quintuplet() {
+        let edge: FlowEdge<usize> = (0, 1, 2, 4, 3).try_into().unwrap();
+
+        assert_eq!(edge.get_src_id(), 0);
+        assert_eq!(edge.get_dst_id(), 1);
+        assert_eq!(edge.get_weight(), &2.into());
+        assert_eq!(edge.get_capacity(), 4);
+        assert_eq!(edge.get_flow(), 3);
+    }
+
+    #[test]
+    #[should_panic(expected = "Flow of the edge can not be greater than the capacity: 4 > 3")]
+    fn init_with_flow_larger_than_capacity() {
+        let _ = FlowEdge::init_with(0, 1, 2.into(), 3, 4);
+    }
+
+    #[test]
+    #[should_panic(
+        expected = "Flow of the edge can not be greater than the current capacity of the edge: 4 > 0"
+    )]
+    fn set_flow_larger_than_capacity() {
+        let mut edge = FlowEdge::init(0, 1, 2.into());
+
+        edge.set_flow(4);
+    }
+
+    #[test]
+    #[should_panic(
+        expected = "Capacity of the edge can not be smaller than the current flow of the edge: 0 < 4"
+    )]
+    fn set_capacity_smaller_than_flow() {
+        let mut edge = FlowEdge::init_with(0, 1, 2.into(), 5, 4);
+
+        edge.set_capacity(0);
+    }
+
+    #[test]
+    fn from_quintuplet_with_flow_larger_than_capacity() {
+        let edge_res: Result<FlowEdge<usize>, String> = (0, 1, 2, 0, 4).try_into();
+
+        assert!(edge_res.is_err());
+        assert_eq!(
+            edge_res.unwrap_err(),
+            "Flow of the edge can not be greater than the capacity: 4 > 0".to_string()
+        )
     }
 }

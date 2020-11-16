@@ -64,3 +64,35 @@ impl<W: Any> From<(usize, usize, W)> for DefaultEdge<W> {
         DefaultEdge::init(src_id, dst_id, weight.into())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn init() {
+        let edge = DefaultEdge::init(0, 1, 2.into());
+
+        assert_eq!(edge.get_src_id(), 0);
+        assert_eq!(edge.get_dst_id(), 1);
+        assert_eq!(edge.get_weight(), &2.into());
+    }
+
+    #[test]
+    fn set_weight() {
+        let mut edge = DefaultEdge::init(0, 1, 2.into());
+
+        edge.set_weight(3.into());
+
+        assert_eq!(edge.get_weight(), &3.into());
+    }
+
+    #[test]
+    fn from_triplet() {
+        let edge: DefaultEdge<usize> = (0, 1, 2).into();
+
+        assert_eq!(edge.get_src_id(), 0);
+        assert_eq!(edge.get_dst_id(), 1);
+        assert_eq!(edge.get_weight(), &2.into());
+    }
+}

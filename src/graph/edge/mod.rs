@@ -60,3 +60,20 @@ pub trait Edge<W> {
 
     fn get_dst_id(&self) -> usize;
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_directed_edge() {
+        assert!(DirectedEdge::is_directed());
+        assert!(!DirectedEdge::is_undirected());
+    }
+
+    #[test]
+    fn test_undirected_edge() {
+        assert!(UndirectedEdge::is_undirected());
+        assert!(!UndirectedEdge::is_directed());
+    }
+}
