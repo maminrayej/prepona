@@ -5,8 +5,8 @@ pub use listener::DfsListener;
 use magnitude::Magnitude;
 use std::cell::{Ref, RefCell};
 
-use crate::provide;
 use super::Color;
+use crate::provide;
 
 /// Traverses the graph using DFS algorithm.
 ///
@@ -195,7 +195,8 @@ impl<'a, L: DfsListener> Dfs<'a, L> {
 mod tests {
     use super::*;
     use crate::graph::MatGraph;
-    use crate::storage::DiMat;
+    use crate::provide::*;
+    use crate::storage::{DiMat, Mat};
 
     struct DefaultListener {
         pub on_start_called: usize,
@@ -244,10 +245,9 @@ mod tests {
         // Given: An empty directed graph.
         let graph = MatGraph::init(DiMat::<usize>::init());
 
-        // When: traversing the graph.
+        // When: Performing DFS algorithm.
         let mut listener = DefaultListener::init();
         let dfs = Dfs::init(&graph, &mut listener);
-
         dfs.execute(&graph);
 
         // Then:
@@ -255,339 +255,208 @@ mod tests {
         assert_eq!(listener.on_white_called, 0);
         assert_eq!(listener.on_gray_called, 0);
         assert_eq!(listener.on_black_called, 0);
+        assert_eq!(listener.on_finish_called, 0);
     }
 
-    // #[test]
-    // fn empty_undirected_graph() {
-    //     // Given: An empty undirected graph.
-    //     let graph = MatGraph::init(Mat::<usize>::init());
+    #[test]
+    fn empty_undirected_graph() {
+        // Given: An empty undirected graph.
+        let graph = MatGraph::init(Mat::<usize>::init());
 
-    //     // When: traversing the graph.
-    //     let mut listener = DefaultListener::init();
-    //     let dfs = Dfs::init(&graph, &mut listener);
+        // When: Performing DFS algorithm.
+        let mut listener = DefaultListener::init();
+        let dfs = Dfs::init(&graph, &mut listener);
+        dfs.execute(&graph);
 
-    //     dfs.execute(&graph);
+        // Then:
+        assert_eq!(listener.on_start_called, 0);
+        assert_eq!(listener.on_white_called, 0);
+        assert_eq!(listener.on_gray_called, 0);
+        assert_eq!(listener.on_black_called, 0);
+        assert_eq!(listener.on_finish_called, 0);
+    }
 
-    //     // Then:
-    //     assert_eq!(listener.on_start_called, 0);
-    //     assert_eq!(listener.on_white_called, 0);
-    //     assert_eq!(listener.on_gray_called, 0);
-    //     assert_eq!(listener.on_black_called, 0);
-    // }
+    #[test]
+    fn single_vertex_directed_graph() {
+        // Given: A graph with single vertex
+        //
+        //      a
+        //
+        let mut graph = MatGraph::init(DiMat::<usize>::init());
+        graph.add_vertex();
 
-    // #[test]
-    // fn directed_graph_with_one_vertex() {
-    //     // Given: A directed graph: a.
-    //     let mut graph = MatGraph::init(DiMat::<usize>::init());
-    //     let _ = graph.add_vertex();
+        // When: Performing DFS algorithm.
+        let mut listener = DefaultListener::init();
+        let dfs = Dfs::init(&graph, &mut listener);
+        dfs.execute(&graph);
 
-    //     // When: traversing graph.
-    //     let mut listener = DefaultListener::init();
-    //     let dfs = Dfs::init(&graph, &mut listener);
+        // Then:
+        assert_eq!(listener.on_start_called, 1);
+        assert_eq!(listener.on_white_called, 1);
+        assert_eq!(listener.on_gray_called, 1);
+        assert_eq!(listener.on_black_called, 1);
+        assert_eq!(listener.on_finish_called, 1);
+    }
 
-    //     dfs.execute(&graph);
+    #[test]
+    fn single_vertex_undirected_graph() {
+        // Given: A graph with single vertex
+        //
+        //      a
+        //
+        let mut graph = MatGraph::init(Mat::<usize>::init());
+        graph.add_vertex();
 
-    //     // Then:
-    //     assert_eq!(listener.on_start_called, 1);
-    //     assert_eq!(listener.on_white_called, 1);
-    //     assert_eq!(listener.on_gray_called, 1);
-    //     assert_eq!(listener.on_black_called, 1);
-    // }
+        // When: Performing DFS algorithm.
+        let mut listener = DefaultListener::init();
+        let dfs = Dfs::init(&graph, &mut listener);
+        dfs.execute(&graph);
 
-    // #[test]
-    // fn undirected_graph_with_one_vertex() {
-    //     // Given: An undirected graph: a.
-    //     let mut graph = MatGraph::init(Mat::<usize>::init());
-    //     let _ = graph.add_vertex();
+        // Then:
+        assert_eq!(listener.on_start_called, 1);
+        assert_eq!(listener.on_white_called, 1);
+        assert_eq!(listener.on_gray_called, 1);
+        assert_eq!(listener.on_black_called, 1);
+        assert_eq!(listener.on_finish_called, 1);
+    }
 
-    //     // When: traversing graph.
-    //     let mut listener = DefaultListener::init();
-    //     let dfs = Dfs::init(&graph, &mut listener);
+    #[test]
+    fn trivial_directed_graph() {
+        // Given: Graph
+        //
+        //      a  -->  b  -->  d  -->  e  
+        //      ^       |               |
+        //      |       v               v
+        //      '______ c               f
+        //
+        let mut graph = MatGraph::init(DiMat::<usize>::init());
+        let a = graph.add_vertex();
+        let b = graph.add_vertex();
+        let c = graph.add_vertex();
+        let d = graph.add_vertex();
+        let e = graph.add_vertex();
+        let f = graph.add_vertex();
 
-    //     dfs.execute(&graph);
+        graph.add_edge((a, b, 1).into());
+        graph.add_edge((b, c, 1).into());
+        graph.add_edge((c, a, 1).into());
+        graph.add_edge((b, d, 1).into());
+        graph.add_edge((d, e, 1).into());
+        graph.add_edge((e, f, 1).into());
 
-    //     // Then:
-    //     assert_eq!(listener.on_start_called, 1);
-    //     assert_eq!(listener.on_white_called, 1);
-    //     assert_eq!(listener.on_gray_called, 1);
-    //     assert_eq!(listener.on_black_called, 1);
-    // }
+        // When: Performing DFS algorithm.
+        let mut listener = DefaultListener::init();
+        let dfs = Dfs::init_with_starts(&graph, &mut listener, vec![a]);
+        dfs.execute(&graph);
 
-    // #[test]
-    // fn directed_graph_with_two_separate_vertices() {
-    //     // Given: A directed graph: a  b.
-    //     let mut graph = MatGraph::init(DiMat::<usize>::init());
-    //     let _ = graph.add_vertex();
-    //     let _ = graph.add_vertex();
+        // Then:
+        assert_eq!(listener.on_start_called, 1);
+        assert_eq!(listener.on_white_called, 6);
+        assert_eq!(listener.on_gray_called, 6);
+        assert_eq!(listener.on_black_called, 6);
+        assert_eq!(listener.on_finish_called, 1);
+    }
 
-    //     // When: traversing graph.
-    //     let mut listener = DefaultListener::init();
-    //     let dfs = Dfs::init(&graph, &mut listener);
+    #[test]
+    fn trivial_undirected_graph() {
+        // Given: Graph
+        //
+        //      a  ---  b  ---  d  ---  e  
+        //      |       |               |
+        //      '______ c               f
+        //
+        let mut graph = MatGraph::init(Mat::<usize>::init());
+        let a = graph.add_vertex();
+        let b = graph.add_vertex();
+        let c = graph.add_vertex();
+        let d = graph.add_vertex();
+        let e = graph.add_vertex();
+        let f = graph.add_vertex();
 
-    //     dfs.execute(&graph);
+        graph.add_edge((a, b, 1).into());
+        graph.add_edge((b, c, 1).into());
+        graph.add_edge((c, a, 1).into());
+        graph.add_edge((b, d, 1).into());
+        graph.add_edge((d, e, 1).into());
+        graph.add_edge((e, f, 1).into());
 
-    //     // Then:
-    //     assert_eq!(listener.on_start_called, 2);
-    //     assert_eq!(listener.on_white_called, 2);
-    //     assert_eq!(listener.on_gray_called, 2);
-    //     assert_eq!(listener.on_black_called, 2);
-    // }
-    // #[test]
-    // fn undirected_graph_with_two_separate_vertices() {
-    //     // Given: An undirected graph: a  b.
-    //     let mut graph = MatGraph::init(Mat::<usize>::init());
-    //     let _ = graph.add_vertex();
-    //     let _ = graph.add_vertex();
+        // When: Performing DFS algorithm.
+        let mut listener = DefaultListener::init();
+        let dfs = Dfs::init_with_starts(&graph, &mut listener,vec![a]);
+        dfs.execute(&graph);
 
-    //     // When: traversing graph.
-    //     let mut listener = DefaultListener::init();
-    //     let dfs = Dfs::init(&graph, &mut listener);
+        // Then:
+        assert_eq!(listener.on_start_called, 1);
+        assert_eq!(listener.on_white_called, 6);
+        assert_eq!(listener.on_gray_called, 6);
+        assert_eq!(listener.on_black_called, 6);
+        assert_eq!(listener.on_finish_called, 1);
+    }
 
-    //     dfs.execute(&graph);
+    #[test]
+    fn not_strongly_connected_directed_graph() {
+        // Given: Graph
+        //
+        //      a  -->  b       d  -->  e
+        //              |       |
+        //              v       v
+        //              c       f
+        let mut graph = MatGraph::init(DiMat::<usize>::init());
+        let a = graph.add_vertex();
+        let b = graph.add_vertex();
+        let c = graph.add_vertex();
+        let d = graph.add_vertex();
+        let e = graph.add_vertex();
+        let f = graph.add_vertex();
 
-    //     // Then:
-    //     assert_eq!(listener.on_start_called, 2);
-    //     assert_eq!(listener.on_white_called, 2);
-    //     assert_eq!(listener.on_gray_called, 2);
-    //     assert_eq!(listener.on_black_called, 2);
-    // }
+        graph.add_edge((a, b, 1).into());
+        graph.add_edge((b, c, 1).into());
+        graph.add_edge((d, f, 1).into());
+        graph.add_edge((d, e, 1).into());
 
-    // #[test]
-    // fn directed_graph_with_three_vertices_in_a_line() {
-    //     // Given: A directed graph: a -> b -> c.
-    //     let mut graph = MatGraph::init(DiMat::<usize>::init());
-    //     let a = graph.add_vertex();
-    //     let b = graph.add_vertex();
-    //     let c = graph.add_vertex();
-    //     graph.add_edge((a, b, 1).into());
-    //     graph.add_edge((b, c, 1).into());
+        // When: Performing DFS algorithm.
+        let mut listener = DefaultListener::init();
+        let dfs = Dfs::init_with_starts(&graph, &mut listener, vec![a, d]);
+        dfs.execute(&graph);
 
-    //     // When: traversing graph.
-    //     let mut listener = DefaultListener::init();
-    //     let dfs = Dfs::init_with_starts(&graph, &mut listener, vec![a]);
+        // Then:
+        assert_eq!(listener.on_start_called, 2);
+        assert_eq!(listener.on_white_called, 6);
+        assert_eq!(listener.on_gray_called, 6);
+        assert_eq!(listener.on_black_called, 6);
+        assert_eq!(listener.on_finish_called, 2);
+    }
 
-    //     dfs.execute(&graph);
+    #[test]
+    fn not_connected_undirected_graph() {
+        // Given: Graph
+        //
+        //      a  ---  b       d  ---  e
+        //              |       |
+        //              c       f
+        let mut graph = MatGraph::init(Mat::<usize>::init());
+        let a = graph.add_vertex();
+        let b = graph.add_vertex();
+        let c = graph.add_vertex();
+        let d = graph.add_vertex();
+        let e = graph.add_vertex();
+        let f = graph.add_vertex();
 
-    //     // Then:
-    //     assert_eq!(listener.on_start_called, 1);
-    //     assert_eq!(listener.on_white_called, 3);
-    //     assert_eq!(listener.on_gray_called, 3);
-    //     assert_eq!(listener.on_black_called, 3);
-    // }
+        graph.add_edge((a, b, 1).into());
+        graph.add_edge((b, c, 1).into());
+        graph.add_edge((d, f, 1).into());
+        graph.add_edge((d, e, 1).into());
 
-    // #[test]
-    // fn undirected_graph_with_three_vertices_in_a_line() {
-    //     // Given: An undirected graph: a -- b -- c.
-    //     let mut graph = MatGraph::init(Mat::<usize>::init());
-    //     let a = graph.add_vertex();
-    //     let b = graph.add_vertex();
-    //     let c = graph.add_vertex();
-    //     graph.add_edge((a, b, 1).into());
-    //     graph.add_edge((b, c, 1).into());
+        // When: Performing DFS algorithm.
+        let mut listener = DefaultListener::init();
+        let dfs = Dfs::init_with_starts(&graph, &mut listener, vec![a, d]);
+        dfs.execute(&graph);
 
-    //     // When: traversing graph.
-    //     let mut listener = DefaultListener::init();
-    //     let dfs = Dfs::init_with_starts(&graph, &mut listener, vec![c]);
-
-    //     dfs.execute(&graph);
-
-    //     // Then:
-    //     assert_eq!(listener.on_start_called, 1);
-    //     assert_eq!(listener.on_white_called, 3);
-    //     assert_eq!(listener.on_gray_called, 3);
-    //     assert_eq!(listener.on_black_called, 3);
-    // }
-
-    // #[test]
-    // fn directed_graph_with_cycle() {
-    //     // Given: A directed graph: a -> b -> c.
-    //     //                          ^         |
-    //     //                          '---------
-    //     let mut graph = MatGraph::init(DiMat::<usize>::init());
-    //     let a = graph.add_vertex();
-    //     let b = graph.add_vertex();
-    //     let c = graph.add_vertex();
-    //     graph.add_edge((a, b, 1).into());
-    //     graph.add_edge((b, c, 1).into());
-    //     graph.add_edge((c, a, 1).into());
-
-    //     // When: traversing graph.
-    //     let mut listener = DefaultListener::init();
-    //     let dfs = Dfs::init_with_starts(&graph, &mut listener, vec![a]);
-
-    //     dfs.execute(&graph);
-
-    //     // Then:
-    //     assert_eq!(listener.on_start_called, 1);
-    //     assert_eq!(listener.on_white_called, 3);
-    //     assert_eq!(listener.on_gray_called, 3);
-    //     assert_eq!(listener.on_black_called, 3);
-    // }
-
-    // #[test]
-    // fn undirected_graph_with_cycle() {
-    //     // Given: An undirected graph: a -- b -- c.
-    //     //                             |         |
-    //     //                             -----------
-    //     let mut graph = MatGraph::init(Mat::<usize>::init());
-    //     let a = graph.add_vertex();
-    //     let b = graph.add_vertex();
-    //     let c = graph.add_vertex();
-    //     graph.add_edge((a, b, 1).into());
-    //     graph.add_edge((b, c, 1).into());
-    //     graph.add_edge((c, a, 1).into());
-
-    //     // When: traversing graph.
-    //     let mut listener = DefaultListener::init();
-    //     let dfs = Dfs::init_with_starts(&graph, &mut listener, vec![a]);
-
-    //     dfs.execute(&graph);
-
-    //     // Then:
-    //     assert_eq!(listener.on_start_called, 1);
-    //     assert_eq!(listener.on_white_called, 3);
-    //     assert_eq!(listener.on_gray_called, 3);
-    //     assert_eq!(listener.on_black_called, 3);
-    // }
-
-    // #[test]
-    // fn trivial_directed_graph() {
-    //     // Given: A directed graph:
-    //     //                           _____________________
-    //     //                          |                    |
-    //     //                          |                    v
-    //     //                          a -> b -> c -> d -> f
-    //     //                          ^         |     |
-    //     //                          '---------      v
-    //     //                                          e
-    //     let mut graph = MatGraph::init(DiMat::<usize>::init());
-    //     let a = graph.add_vertex();
-    //     let b = graph.add_vertex();
-    //     let c = graph.add_vertex();
-    //     let d = graph.add_vertex();
-    //     let e = graph.add_vertex();
-    //     let f = graph.add_vertex();
-    //     graph.add_edge((a, b, 1).into());
-    //     graph.add_edge((a, f, 1).into());
-    //     graph.add_edge((b, c, 1).into());
-    //     graph.add_edge((c, a, 1).into());
-    //     graph.add_edge((c, d, 1).into());
-    //     graph.add_edge((d, e, 1).into());
-    //     graph.add_edge((d, f, 1).into());
-
-    //     // When: traversing graph.
-    //     let mut listener = DefaultListener::init();
-    //     let dfs = Dfs::init_with_starts(&graph, &mut listener, vec![a]);
-
-    //     dfs.execute(&graph);
-
-    //     // Then:
-    //     assert_eq!(listener.on_start_called, 1);
-    //     assert_eq!(listener.on_white_called, 6);
-    //     assert_eq!(listener.on_gray_called, 6);
-    //     assert_eq!(listener.on_black_called, 6);
-    // }
-
-    // #[test]
-    // fn trivial_undirected_graph() {
-    //     // Given: An undirected graph:
-    //     //                          ----------------------
-    //     //                          |                    |
-    //     //                          a -- b -- c -- d -- f
-    //     //                          |         |    |
-    //     //                          '---------     e
-    //     let mut graph = MatGraph::init(DiMat::<usize>::init());
-    //     let a = graph.add_vertex();
-    //     let b = graph.add_vertex();
-    //     let c = graph.add_vertex();
-    //     let d = graph.add_vertex();
-    //     let e = graph.add_vertex();
-    //     let f = graph.add_vertex();
-    //     graph.add_edge((a, b, 1).into());
-    //     graph.add_edge((a, f, 1).into());
-    //     graph.add_edge((b, c, 1).into());
-    //     graph.add_edge((c, a, 1).into());
-    //     graph.add_edge((c, d, 1).into());
-    //     graph.add_edge((d, e, 1).into());
-    //     graph.add_edge((d, f, 1).into());
-
-    //     // When: traversing graph.
-    //     let mut listener = DefaultListener::init();
-    //     let dfs = Dfs::init_with_starts(&graph, &mut listener, vec![a]);
-
-    //     dfs.execute(&graph);
-
-    //     // Then:
-    //     assert_eq!(listener.on_start_called, 1);
-    //     assert_eq!(listener.on_white_called, 6);
-    //     assert_eq!(listener.on_gray_called, 6);
-    //     assert_eq!(listener.on_black_called, 6);
-    // }
-
-    // #[test]
-    // fn directed_graph_of_two_forests() {
-    //     // Given: A directed graph:
-    //     //                          a -> b -> c     d -> f
-    //     //                          ^         |     |
-    //     //                          '---------      v
-    //     //                                          e
-    //     let mut graph = MatGraph::init(DiMat::<usize>::init());
-    //     let a = graph.add_vertex();
-    //     let b = graph.add_vertex();
-    //     let c = graph.add_vertex();
-    //     let d = graph.add_vertex();
-    //     let e = graph.add_vertex();
-    //     let f = graph.add_vertex();
-    //     graph.add_edge((a, b, 1).into());
-    //     graph.add_edge((b, c, 1).into());
-    //     graph.add_edge((c, a, 1).into());
-
-    //     graph.add_edge((d, e, 1).into());
-    //     graph.add_edge((d, f, 1).into());
-
-    //     // When: traversing graph.
-    //     let mut listener = DefaultListener::init();
-    //     let dfs = Dfs::init_with_starts(&graph, &mut listener, vec![a, d]);
-
-    //     dfs.execute(&graph);
-
-    //     // Then:
-    //     assert_eq!(listener.on_start_called, 2);
-    //     assert_eq!(listener.on_white_called, 6);
-    //     assert_eq!(listener.on_gray_called, 6);
-    //     assert_eq!(listener.on_black_called, 6);
-    // }
-
-    // #[test]
-    // fn undirected_graph_of_two_forests() {
-    //     // Given: An undirected graph:
-    //     //                          a -- b -- c    d -- f
-    //     //                          |         |    |
-    //     //                          '---------     e
-    //     let mut graph = MatGraph::init(Mat::<usize>::init());
-    //     let a = graph.add_vertex();
-    //     let b = graph.add_vertex();
-    //     let c = graph.add_vertex();
-    //     let d = graph.add_vertex();
-    //     let e = graph.add_vertex();
-    //     let f = graph.add_vertex();
-    //     graph.add_edge((a, b, 1).into());
-    //     graph.add_edge((b, c, 1).into());
-    //     graph.add_edge((c, a, 1).into());
-
-    //     graph.add_edge((d, e, 1).into());
-    //     graph.add_edge((d, f, 1).into());
-
-    //     // When: traversing graph.
-    //     let mut listener = DefaultListener::init();
-    //     let dfs = Dfs::init_with_starts(&graph, &mut listener, vec![a, d]);
-
-    //     dfs.execute(&graph);
-
-    //     // Then:
-    //     assert_eq!(listener.on_start_called, 2);
-    //     assert_eq!(listener.on_white_called, 6);
-    //     assert_eq!(listener.on_gray_called, 6);
-    //     assert_eq!(listener.on_black_called, 6);
-    // }
+        // Then:
+        assert_eq!(listener.on_start_called, 2);
+        assert_eq!(listener.on_white_called, 6);
+        assert_eq!(listener.on_gray_called, 6);
+        assert_eq!(listener.on_black_called, 6);
+        assert_eq!(listener.on_finish_called, 2);
+    }
 }
