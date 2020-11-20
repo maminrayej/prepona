@@ -1,5 +1,5 @@
 use magnitude::Magnitude;
-use num_traits::Zero;
+use num_traits::{Unsigned, Zero};
 use std::any::Any;
 use std::collections::HashMap;
 
@@ -12,7 +12,7 @@ pub struct Dijkstra<W> {
     prev: Vec<Magnitude<usize>>,
 }
 
-impl<W: Clone + Ord + Zero + Any + std::fmt::Debug> Dijkstra<W> {
+impl<W: Clone + Ord + Zero + Any + Unsigned> Dijkstra<W> {
     pub fn init<G, E: Edge<W>>(graph: &G) -> Self
     where
         G: provide::Edges<W, E> + provide::Vertices,
@@ -59,11 +59,6 @@ impl<W: Clone + Ord + Zero + Any + std::fmt::Debug> Dijkstra<W> {
             let real_id = id_map.get_virt_to_real(virt_id).unwrap();
 
             for (n_id, edge) in graph.edges_from(real_id) {
-                // let n_id = if real_id == edge.get_src_id() {
-                //     edge.get_dst_id()
-                // } else {
-                //     edge.get_src_id()
-                // };
 
                 let n_virt_id = id_map.get_real_to_virt(n_id).unwrap();
 
