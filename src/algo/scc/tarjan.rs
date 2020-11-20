@@ -98,16 +98,78 @@ mod tests {
     use crate::storage::DiMat;
 
     #[test]
-    fn tarjan_test() {
-        //      a  -->  b  <--  f  -->  g
-        //     ^ |      |     __^   /```^
-        //     | v      v   /   v```    |
-        //      d  -->  c -'--> h  -->  i
+    fn empty_graph() {
+        let graph = MatGraph::init(DiMat::<usize>::init());
+
+        let sccs = TarjanSCC::init(&graph).execute(&graph);
+
+        assert_eq!(sccs.len(), 0);
+    }
+
+    #[test]
+    fn single_component_graph() {
+        // Given: Graph
+        //
+        //     a ----> b
+        //     ^       |
+        //     |       |
+        //     c <-----'
+        let mut graph = MatGraph::init(DiMat::<usize>::init());
+        let a = graph.add_vertex();
+        let b = graph.add_vertex();
+        let c = graph.add_vertex();
+        graph.add_edge(a, b, 1.into());
+        graph.add_edge(b, c, 1.into());
+        graph.add_edge(c, a, 1.into());
+
+        // When: Performing Tarjan.
+        let sccs = TarjanSCC::init(&graph).execute(&graph);
+
+        // Then:
+        assert_eq!(sccs.len(), 1);
+        assert!(vec![a, b, c].iter().all(|v_id| sccs[0].contains(v_id)));
+    }
+
+    #[test]
+    fn graph_with_no_edge() {
+        // Given: Graph
+        //
+        //      a   b   c
+        //
+        let mut graph = MatGraph::init(DiMat::<usize>::init());
+        let a = graph.add_vertex();
+        let b = graph.add_vertex();
+        let c = graph.add_vertex();
+
+        // When: Preforming Tarjan.
+        let sccs = TarjanSCC::init(&graph).execute(&graph);
+
+        // Then:
+        assert_eq!(sccs.len(), 3);
+        assert_eq!(sccs.concat(), [a, b, c]);
+    }
+
+    #[test]
+    fn trivial_graph() {
+        //
+        //              .--- e <--.
+        //              |         |
+        //              v         |
+        //      a  -->  b    -->  f  -->  g <----.
+        //     ^ |      |   /     |      /       |
+        //     | |      |  /      |     /        |
+        //     | v      v /       v    /         |
+        //      d  -->  c  ---->  h <------- i --'
+        //                        |          ^
+        //                        |          |
+        //                        ````````````
+        //
         let mut graph = MatGraph::init(DiMat::<usize>::init());
         let a = graph.add_vertex();
         let b = graph.add_vertex();
         let c = graph.add_vertex();
         let d = graph.add_vertex();
+        let e = graph.add_vertex();
         let f = graph.add_vertex();
         let g = graph.add_vertex();
         let h = graph.add_vertex();
@@ -118,8 +180,8 @@ mod tests {
         graph.add_edge(a, b, 1.into());
         graph.add_edge(d, c, 1.into());
         graph.add_edge(b, c, 1.into());
-
-        graph.add_edge(f, b, 1.into());
+        graph.add_edge(f, e, 1.into());
+        graph.add_edge(e, b, 1.into());
         graph.add_edge(f, h, 1.into());
         graph.add_edge(c, h, 1.into());
         graph.add_edge(c, f, 1.into());
@@ -128,27 +190,15 @@ mod tests {
         graph.add_edge(g, h, 1.into());
         graph.add_edge(i, g, 1.into());
 
-        let mut tags = std::collections::HashMap::<usize, &'static str>::new();
-        tags.insert(a, "a");
-        tags.insert(b, "b");
-        tags.insert(c, "c");
-        tags.insert(d, "d");
-        tags.insert(f, "f");
-        tags.insert(g, "g");
-        tags.insert(h, "h");
-        tags.insert(i, "i");
-
-        let tarjan = TarjanSCC::init(&graph);
-
-        let sccs = tarjan.execute(&graph);
+        let sccs = TarjanSCC::init(&graph).execute(&graph);
 
         for scc in sccs {
-            println!(
-                "{:?}",
-                scc.iter()
-                    .map(|v_id| tags.get(v_id).unwrap().to_string())
-                    .collect::<String>()
-            )
+            match scc.len() {
+                2 => assert!(vec![d, a].iter().all(|v_id| scc.contains(v_id))),
+                3 => assert!(vec![i, h, g].iter().all(|v_id| scc.contains(v_id))),
+                4 => assert!(vec![e, f, c, b].iter().all(|v_id| scc.contains(v_id))),
+                _ => unreachable!("Unknown scc"),
+            }
         }
     }
 }
