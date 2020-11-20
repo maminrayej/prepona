@@ -85,6 +85,16 @@ pub trait Edges<W, E: Edge<W>> {
     }
 }
 
+pub trait Direction {
+    /// # Returns:
+    /// `true`: If edges stored in the graph are directed `false` otherwise.
+    fn is_directed() -> bool;
+
+    /// # Returns:
+    /// `true`: If edges stored in the graph are undirected `false` otherwise.
+    fn is_undirected() -> bool;
+}
+
 /// Trait to guarantee that graph can provide basic functions needed for graph computation.
 ///
 /// # Generic Parameters:
@@ -122,14 +132,4 @@ pub trait Graph<W, E: Edge<W>, Ty: EdgeType> {
     /// # Returns:
     /// The removed edge.
     fn remove_edge(&mut self, src_id: usize, dst_id: usize) -> E;
-
-    /// # Returns:
-    /// `true`: If edges stored in the graph are directed `false` otherwise.
-    fn is_directed(&self) -> bool;
-
-    /// # Returns:
-    /// `true`: If edges stored in the graph are undirected `false` otherwise.
-    fn is_undirected(&self) -> bool {
-        !self.is_directed()
-    }
 }

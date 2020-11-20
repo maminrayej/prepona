@@ -188,14 +188,17 @@ impl<W, E: Edge<W>, Ty: EdgeType, S: GraphStorage<W, E, Ty>> provide::Graph<W, E
     fn remove_edge(&mut self, src_id: usize, dst_id: usize) -> E {
         self.storage.remove_edge(src_id, dst_id)
     }
+}
 
-    /// # Returns:
-    /// `true`: If edges stored in the graph are directed, `false` otherwise.
-    ///
-    /// # Complexity:
-    /// Depends on the storage type.
-    fn is_directed(&self) -> bool {
-        self.storage.is_directed()
+impl<W, E: Edge<W>, Ty: EdgeType, S: GraphStorage<W, E, Ty>> provide::Direction
+    for SimpleGraph<W, E, Ty, S>
+{
+    fn is_directed() -> bool {
+        Ty::is_directed()
+    }
+
+    fn is_undirected() -> bool {
+        Ty::is_undirected()
     }
 }
 
@@ -222,14 +225,14 @@ mod tests {
         // Given: Graph
         //
         //      a  --- b
-        // 
+        //
         let mut graph = MatGraph::init(Mat::<usize>::init());
         let a = graph.add_vertex();
         let b = graph.add_vertex();
-        graph.add_edge((a,b,1).into());
+        graph.add_edge((a, b, 1).into());
 
         // When: Trying to add another edge between a and b.
-        graph.add_edge((a,b,1).into());
+        graph.add_edge((a, b, 1).into());
 
         // Then: Code should panic.
     }
