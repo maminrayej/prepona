@@ -82,20 +82,18 @@ mod tests {
         let e = graph.add_vertex();
         let f = graph.add_vertex();
 
-        graph.add_edge((a, b, 1).into());
-        graph.add_edge((a, d, 1).into());
-        graph.add_edge((b, c, 1).into());
-        graph.add_edge((b, e, 1).into());
-        graph.add_edge((d, e, 1).into());
-        graph.add_edge((c, e, 1).into());
-        graph.add_edge((c, f, 1).into());
+        graph.add_edge(a, b, 1.into());
+        graph.add_edge(a, d, 1.into());
+        graph.add_edge(b, c, 1.into());
+        graph.add_edge(b, e, 1.into());
+        graph.add_edge(d, e, 1.into());
+        graph.add_edge(c, e, 1.into());
+        graph.add_edge(c, f, 1.into());
 
         let sorted_vertices = TopologicalSort::init().execute(&graph);
 
         assert_eq!(sorted_vertices.len(), 6);
-        for edge in graph.edges() {
-            let (src_id, dst_id) = (edge.get_src_id(), edge.get_dst_id());
-
+        for (src_id, dst_id, _) in graph.edges() {
             // src must appear before dst in topological sort
             let src_index = sorted_vertices
                 .iter()

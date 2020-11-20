@@ -30,7 +30,6 @@ impl IdMap {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;

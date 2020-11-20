@@ -343,12 +343,12 @@ mod tests {
         let e = graph.add_vertex();
         let f = graph.add_vertex();
 
-        graph.add_edge((a, b, 1).into());
-        graph.add_edge((b, c, 1).into());
-        graph.add_edge((c, a, 1).into());
-        graph.add_edge((b, d, 1).into());
-        graph.add_edge((d, e, 1).into());
-        graph.add_edge((e, f, 1).into());
+        graph.add_edge(a, b, 1.into());
+        graph.add_edge(b, c, 1.into());
+        graph.add_edge(c, a, 1.into());
+        graph.add_edge(b, d, 1.into());
+        graph.add_edge(d, e, 1.into());
+        graph.add_edge(e, f, 1.into());
 
         // When: Performing DFS algorithm.
         let mut listener = DefaultListener::init();
@@ -379,12 +379,12 @@ mod tests {
         let e = graph.add_vertex();
         let f = graph.add_vertex();
 
-        graph.add_edge((a, b, 1).into());
-        graph.add_edge((b, c, 1).into());
-        graph.add_edge((c, a, 1).into());
-        graph.add_edge((b, d, 1).into());
-        graph.add_edge((d, e, 1).into());
-        graph.add_edge((e, f, 1).into());
+        graph.add_edge(a, b, 1.into());
+        graph.add_edge(b, c, 1.into());
+        graph.add_edge(c, a, 1.into());
+        graph.add_edge(b, d, 1.into());
+        graph.add_edge(d, e, 1.into());
+        graph.add_edge(e, f, 1.into());
 
         // When: Performing DFS algorithm.
         let mut listener = DefaultListener::init();
@@ -415,10 +415,10 @@ mod tests {
         let e = graph.add_vertex();
         let f = graph.add_vertex();
 
-        graph.add_edge((a, b, 1).into());
-        graph.add_edge((b, c, 1).into());
-        graph.add_edge((d, f, 1).into());
-        graph.add_edge((d, e, 1).into());
+        graph.add_edge(a, b, 1.into());
+        graph.add_edge(b, c, 1.into());
+        graph.add_edge(d, f, 1.into());
+        graph.add_edge(d, e, 1.into());
 
         // When: Performing DFS algorithm.
         let mut listener = DefaultListener::init();
@@ -448,10 +448,10 @@ mod tests {
         let e = graph.add_vertex();
         let f = graph.add_vertex();
 
-        graph.add_edge((a, b, 1).into());
-        graph.add_edge((b, c, 1).into());
-        graph.add_edge((d, f, 1).into());
-        graph.add_edge((d, e, 1).into());
+        graph.add_edge(a, b, 1.into());
+        graph.add_edge(b, c, 1.into());
+        graph.add_edge(d, f, 1.into());
+        graph.add_edge(d, e, 1.into());
 
         // When: Performing DFS algorithm.
         let mut listener = DefaultListener::init();
@@ -480,11 +480,11 @@ mod tests {
         let c = graph.add_vertex();
         let d = graph.add_vertex(); // 3
         let e = graph.add_vertex();
-        graph.add_edge((a, b, 1).into());
-        graph.add_edge((a, d, 1).into());
-        graph.add_edge((b, c, 1).into());
-        graph.add_edge((b, e, 1).into());
-        graph.add_edge((d, e, 1).into());
+        graph.add_edge(a, b, 1.into());
+        graph.add_edge(a, d, 1.into());
+        graph.add_edge(b, c, 1.into());
+        graph.add_edge(b, e, 1.into());
+        graph.add_edge(d, e, 1.into());
 
         // When: Performing DFS algorithm.
         let mut listener = DefaultListener::init();

@@ -104,7 +104,7 @@ impl<W, E: Edge<W>, Ty: EdgeType, S: GraphStorage<W, E, Ty>> provide::Edges<W, E
     ///
     /// # Complexity:
     /// Depends on the storage type.
-    fn edges(&self) -> Vec<&E> {
+    fn edges(&self) -> Vec<(usize, usize, &E)> {
         self.storage.edges()
     }
 
@@ -116,7 +116,7 @@ impl<W, E: Edge<W>, Ty: EdgeType, S: GraphStorage<W, E, Ty>> provide::Edges<W, E
     ///
     /// # Complexity:
     /// Depends on the storage type.
-    fn edges_from(&self, src_id: usize) -> Vec<&E> {
+    fn edges_from(&self, src_id: usize) -> Vec<(usize, &E)> {
         self.storage.edges_from(src_id)
     }
 }
@@ -158,20 +158,20 @@ impl<W, E: Edge<W>, Ty: EdgeType, S: GraphStorage<W, E, Ty>> provide::Graph<W, E
     ///
     /// # Complexity:
     /// Depends on the storage type.
-    fn add_edge(&mut self, edge: E) {
-        if edge.get_src_id() == edge.get_dst_id() {
+    fn add_edge(&mut self, src_id: usize, dst_id: usize, edge: E) {
+        if src_id == dst_id {
             panic!("Can not create loop in simple graph")
         }
 
-        if self.storage.has_edge(edge.get_src_id(), edge.get_dst_id()) {
+        if self.storage.has_edge(src_id, dst_id) {
             panic!("Can not add multiple edges between two vertices in simple graph");
         }
 
-        self.storage.add_edge(edge);
+        self.storage.add_edge(src_id, dst_id, edge);
     }
 
-    fn update_edge(&mut self, edge: E) {
-        self.storage.update_edge(edge);
+    fn update_edge(&mut self, src_id: usize, dst_id: usize, edge: E) {
+        self.storage.update_edge(src_id, dst_id, edge);
     }
 
     /// Removes the edge from vertex with `src_id` to vertex with `dst_id`.
@@ -214,7 +214,7 @@ mod tests {
         let mut graph = MatGraph::init(Mat::<usize>::init());
 
         // When: Adding an edge from a vertex to itself.
-        graph.add_edge((0, 0, 1).into());
+        graph.add_edge(0, 0, 1.into());
 
         // Then: Code should panic.
     }
@@ -229,10 +229,10 @@ mod tests {
         let mut graph = MatGraph::init(Mat::<usize>::init());
         let a = graph.add_vertex();
         let b = graph.add_vertex();
-        graph.add_edge((a, b, 1).into());
+        graph.add_edge(a, b, 1.into());
 
         // When: Trying to add another edge between a and b.
-        graph.add_edge((a, b, 1).into());
+        graph.add_edge(a, b, 1.into());
 
         // Then: Code should panic.
     }

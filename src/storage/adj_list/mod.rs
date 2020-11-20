@@ -13,7 +13,7 @@ pub type FlowList<W> = AdjList<W, FlowEdge<W>, UndirectedEdge>;
 pub type DiFlowList<W> = AdjList<W, FlowEdge<W>, DirectedEdge>;
 
 pub struct AdjList<W, E: Edge<W>, Ty: EdgeType> {
-    edges_of: Vec<Vec<E>>,
+    edges_of: Vec<Vec<(usize, E)>>,
     reusable_ids: HashSet<usize>,
 
     vertex_count: usize,
@@ -76,7 +76,7 @@ impl<W: Copy, E: Edge<W>, Ty: EdgeType> GraphStorage<W, E, Ty> for AdjList<W, E,
         self.edges_of[vertex_id].clear();
 
         for src_id in 0..self.vertex_count() {
-            self.edges_of[src_id].retain(|edge| edge.get_dst_id() != vertex_id)
+            self.edges_of[src_id].retain(|(dst_id, _)| *dst_id != vertex_id)
         }
 
         self.vertex_count -= 1;
@@ -84,27 +84,23 @@ impl<W: Copy, E: Edge<W>, Ty: EdgeType> GraphStorage<W, E, Ty> for AdjList<W, E,
         self.reusable_ids.insert(vertex_id);
     }
 
-    fn add_edge(&mut self, edge: E) {
-        let (src_id, dst_id) = (edge.get_src_id(), edge.get_dst_id());
-
+    fn add_edge(&mut self, src_id: usize, dst_id: usize, edge: E) {
         self.validate_id(src_id);
         self.validate_id(dst_id);
 
         let weight = *edge.get_weight();
 
-        self.edges_of[src_id].push(edge);
+        self.edges_of[src_id].push((dst_id, edge));
 
         if self.is_undirected() {
-            self.edges_of[dst_id].push(E::init(dst_id, src_id, weight));
+            self.edges_of[dst_id].push((src_id, E::init(weight)));
         }
     }
 
-    fn update_edge(&mut self, edge: E) {
-        let (src_id, dst_id) = (edge.get_src_id(), edge.get_dst_id());
-
+    fn update_edge(&mut self, src_id: usize, dst_id: usize, edge: E) {
         self.remove_edge(src_id, dst_id);
 
-        self.add_edge(edge);
+        self.add_edge(src_id, dst_id, edge);
     }
 
     fn remove_edge(&mut self, src_id: usize, dst_id: usize) -> E {
@@ -114,13 +110,13 @@ impl<W: Copy, E: Edge<W>, Ty: EdgeType> GraphStorage<W, E, Ty> for AdjList<W, E,
         if let Some((index, _)) = self.edges_of[src_id]
             .iter()
             .enumerate()
-            .find(|(_, edge)| edge.get_dst_id() == dst_id)
+            .find(|(_, (d_id, _))| *d_id == dst_id)
         {
             if self.is_undirected() {
-                self.edges_of[dst_id].retain(|edge| edge.get_dst_id() != src_id);
+                self.edges_of[dst_id].retain(|(d_id, _)| *d_id != src_id);
             }
 
-            self.edges_of[src_id].remove(index)
+            self.edges_of[src_id].remove(index).1
         } else {
             panic!(
                 "There is no edge from vertex: {} to vertex: {}",
@@ -145,22 +141,28 @@ impl<W: Copy, E: Edge<W>, Ty: EdgeType> GraphStorage<W, E, Ty> for AdjList<W, E,
 
         self.edges_of[src_id]
             .iter()
-            .find(|edge| edge.get_dst_id() == dst_id)
+            .find(|(d_id, _)| *d_id == dst_id)
+            .map(|(_, edge)| edge)
     }
 
-    fn edges(&self) -> Vec<&E> {
+    fn edges(&self) -> Vec<(usize, usize, &E)> {
         self.vertices()
             .into_iter()
-            .flat_map(|src_id| self.edges_from(src_id).into_iter())
+            .flat_map(|src_id| {
+                self.edges_from(src_id)
+                    .into_iter()
+                    .map(|(dst_id, edge)| (src_id, dst_id, edge))
+                    .collect::<Vec<(usize, usize, &E)>>()
+            })
             .collect()
     }
 
-    fn edges_from(&self, src_id: usize) -> Vec<&E> {
+    fn edges_from(&self, src_id: usize) -> Vec<(usize, &E)> {
         self.validate_id(src_id);
 
         self.edges_of[src_id]
             .iter()
-            .filter(|edge| edge.get_weight().is_finite())
+            .map(|(dst_id, edge)| (*dst_id, edge))
             .collect()
     }
 
@@ -169,7 +171,7 @@ impl<W: Copy, E: Edge<W>, Ty: EdgeType> GraphStorage<W, E, Ty> for AdjList<W, E,
 
         self.edges_of[src_id]
             .iter()
-            .map(|edge| edge.get_dst_id())
+            .map(|(dst_id, _)| *dst_id)
             .collect()
     }
 
@@ -432,9 +434,9 @@ mod tests {
         //      ^               |
         //      '----------------
         //
-        list.add_edge((a, b, 1).into());
-        list.add_edge((b, c, 2).into());
-        list.add_edge((c, a, 3).into());
+        list.add_edge(a, b, 1.into());
+        list.add_edge(b, c, 2.into());
+        list.add_edge(c, a, 3.into());
 
         // Then:
         assert_eq!(list.vertex_count(), 3);
@@ -442,8 +444,8 @@ mod tests {
         assert!(list.edges_of.iter().all(|edges| edges.len() == 1));
 
         assert_eq!(list.edges().len(), 3);
-        for edge in list.edges() {
-            match (edge.get_src_id(), edge.get_dst_id()) {
+        for (src_id, dst_id, edge) in list.edges() {
+            match (src_id, dst_id) {
                 (0, 1) => assert_eq!(edge.get_weight().unwrap(), 1),
                 (1, 2) => assert_eq!(edge.get_weight().unwrap(), 2),
                 (2, 0) => assert_eq!(edge.get_weight().unwrap(), 3),
@@ -469,9 +471,9 @@ mod tests {
         //      |               |
         //      '----------------
         //
-        list.add_edge((a, b, 1).into());
-        list.add_edge((b, c, 2).into());
-        list.add_edge((c, a, 3).into());
+        list.add_edge(a, b, 1.into());
+        list.add_edge(b, c, 2.into());
+        list.add_edge(c, a, 3.into());
 
         // Then:
         assert_eq!(list.vertex_count(), 3);
@@ -479,8 +481,8 @@ mod tests {
         assert!(list.edges_of.iter().all(|edges| edges.len() == 2));
 
         assert_eq!(list.edges().len(), 6);
-        for edge in list.edges() {
-            match (edge.get_src_id(), edge.get_dst_id()) {
+        for (src_id, dst_id, edge) in list.edges() {
+            match (src_id, dst_id) {
                 (0, 1) | (1, 0) => assert_eq!(edge.get_weight().unwrap(), 1),
                 (1, 2) | (2, 1) => assert_eq!(edge.get_weight().unwrap(), 2),
                 (2, 0) | (0, 2) => assert_eq!(edge.get_weight().unwrap(), 3),
@@ -501,9 +503,9 @@ mod tests {
         let a = list.add_vertex();
         let b = list.add_vertex();
         let c = list.add_vertex();
-        list.add_edge((a, b, 1).into());
-        list.add_edge((b, c, 2).into());
-        list.add_edge((c, a, 3).into());
+        list.add_edge(a, b, 1.into());
+        list.add_edge(b, c, 2.into());
+        list.add_edge(c, a, 3.into());
 
         // When: Doing nothing.
 
@@ -525,9 +527,9 @@ mod tests {
         let a = list.add_vertex();
         let b = list.add_vertex();
         let c = list.add_vertex();
-        list.add_edge((a, b, 1).into());
-        list.add_edge((b, c, 2).into());
-        list.add_edge((c, a, 3).into());
+        list.add_edge(a, b, 1.into());
+        list.add_edge(b, c, 2.into());
+        list.add_edge(c, a, 3.into());
 
         // When: Doing nothing.
 
@@ -537,7 +539,7 @@ mod tests {
 
         assert!(list.has_edge(b, c));
         assert!(list.has_edge(c, b));
-        
+
         assert!(list.has_edge(c, a));
         assert!(list.has_edge(a, c));
     }
@@ -554,14 +556,14 @@ mod tests {
         let a = list.add_vertex();
         let b = list.add_vertex();
         let c = list.add_vertex();
-        list.add_edge((a, b, 1).into());
-        list.add_edge((b, c, 2).into());
-        list.add_edge((c, a, 3).into());
+        list.add_edge(a, b, 1.into());
+        list.add_edge(b, c, 2.into());
+        list.add_edge(c, a, 3.into());
 
         // When: Incrementing edge of each edge by 1.
-        list.update_edge((a, b, 2).into());
-        list.update_edge((b, c, 3).into());
-        list.update_edge((c, a, 4).into());
+        list.update_edge(a, b, 2.into());
+        list.update_edge(b, c, 3.into());
+        list.update_edge(c, a, 4.into());
 
         // Then:
         assert_eq!(list.vertex_count(), 3);
@@ -569,8 +571,8 @@ mod tests {
         assert!(list.edges_of.iter().all(|edges| edges.len() == 1));
 
         assert_eq!(list.edges().len(), 3);
-        for edge in list.edges() {
-            match (edge.get_src_id(), edge.get_dst_id()) {
+        for (src_id, dst_id, edge) in list.edges() {
+            match (src_id, dst_id) {
                 (0, 1) => assert_eq!(edge.get_weight().unwrap(), 2),
                 (1, 2) => assert_eq!(edge.get_weight().unwrap(), 3),
                 (2, 0) => assert_eq!(edge.get_weight().unwrap(), 4),
@@ -591,30 +593,29 @@ mod tests {
         let a = list.add_vertex();
         let b = list.add_vertex();
         let c = list.add_vertex();
-        list.add_edge((a, b, 1).into());
-        list.add_edge((b, c, 2).into());
-        list.add_edge((c, a, 3).into());
-        
+        list.add_edge(a, b, 1.into());
+        list.add_edge(b, c, 2.into());
+        list.add_edge(c, a, 3.into());
+
         // When: Incrementing edge of each edge by 1.
-        list.update_edge((a, b, 2).into());
-        list.update_edge((b, c, 3).into());
-        list.update_edge((c, a, 4).into());
-    
+        list.update_edge(a, b, 2.into());
+        list.update_edge(b, c, 3.into());
+        list.update_edge(c, a, 4.into());
+
         // Then:
         assert_eq!(list.vertex_count(), 3);
         assert_eq!(list.edges_of.len(), 3);
         assert!(list.edges_of.iter().all(|edges| edges.len() == 2));
 
         assert_eq!(list.edges().len(), 6);
-        for edge in list.edges() {
-            match (edge.get_src_id(), edge.get_dst_id()) {
+        for (src_id, dst_id, edge) in list.edges() {
+            match (src_id, dst_id) {
                 (0, 1) | (1, 0) => assert_eq!(edge.get_weight().unwrap(), 2),
                 (1, 2) | (2, 1) => assert_eq!(edge.get_weight().unwrap(), 3),
                 (2, 0) | (0, 2) => assert_eq!(edge.get_weight().unwrap(), 4),
                 _ => panic!("Unknown vertex id"),
             }
         }
-    
     }
 
     #[test]
@@ -629,9 +630,9 @@ mod tests {
         let a = list.add_vertex();
         let b = list.add_vertex();
         let c = list.add_vertex();
-        list.add_edge((a, b, 1).into());
-        list.add_edge((b, c, 2).into());
-        list.add_edge((c, a, 3).into());
+        list.add_edge(a, b, 1.into());
+        list.add_edge(b, c, 2.into());
+        list.add_edge(c, a, 3.into());
 
         // When: Removing edges a --> b and b --> c
         //
@@ -665,9 +666,9 @@ mod tests {
         let a = list.add_vertex();
         let b = list.add_vertex();
         let c = list.add_vertex();
-        list.add_edge((a, b, 1).into());
-        list.add_edge((b, c, 2).into());
-        list.add_edge((c, a, 3).into());
+        list.add_edge(a, b, 1.into());
+        list.add_edge(b, c, 2.into());
+        list.add_edge(c, a, 3.into());
 
         // When: Removing edges a --- b and b --- c
         //
@@ -700,9 +701,9 @@ mod tests {
         let a = list.add_vertex();
         let b = list.add_vertex();
         let c = list.add_vertex();
-        list.add_edge((a, b, 1).into());
-        list.add_edge((b, c, 2).into());
-        list.add_edge((c, a, 3).into());
+        list.add_edge(a, b, 1.into());
+        list.add_edge(b, c, 2.into());
+        list.add_edge(c, a, 3.into());
 
         // When: Doing nothing.
 
@@ -733,9 +734,9 @@ mod tests {
         let a = list.add_vertex();
         let b = list.add_vertex();
         let c = list.add_vertex();
-        list.add_edge((a, b, 1).into());
-        list.add_edge((b, c, 2).into());
-        list.add_edge((c, a, 3).into());
+        list.add_edge(a, b, 1.into());
+        list.add_edge(b, c, 2.into());
+        list.add_edge(c, a, 3.into());
 
         // When: Doing nothing.
 

@@ -113,20 +113,20 @@ mod tests {
         let h = graph.add_vertex();
         let i = graph.add_vertex();
 
-        graph.add_edge((a, d, 1).into());
-        graph.add_edge((d, a, 1).into());
-        graph.add_edge((a, b, 1).into());
-        graph.add_edge((d, c, 1).into());
-        graph.add_edge((b, c, 1).into());
+        graph.add_edge(a, d, 1.into());
+        graph.add_edge(d, a, 1.into());
+        graph.add_edge(a, b, 1.into());
+        graph.add_edge(d, c, 1.into());
+        graph.add_edge(b, c, 1.into());
 
-        graph.add_edge((f, b, 1).into());
-        graph.add_edge((f, h, 1).into());
-        graph.add_edge((c, h, 1).into());
-        graph.add_edge((c, f, 1).into());
-        graph.add_edge((f, g, 1).into());
-        graph.add_edge((h, i, 1).into());
-        graph.add_edge((g, h, 1).into());
-        graph.add_edge((i, g, 1).into());
+        graph.add_edge(f, b, 1.into());
+        graph.add_edge(f, h, 1.into());
+        graph.add_edge(c, h, 1.into());
+        graph.add_edge(c, f, 1.into());
+        graph.add_edge(f, g, 1.into());
+        graph.add_edge(h, i, 1.into());
+        graph.add_edge(g, h, 1.into());
+        graph.add_edge(i, g, 1.into());
 
         let mut tags = std::collections::HashMap::<usize, &'static str>::new();
         tags.insert(a, "a");

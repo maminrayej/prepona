@@ -56,7 +56,7 @@ pub trait Edges<W, E: Edge<W>> {
 
     /// # Returns:
     /// Vector of edges in the format of (`src_id`, `dst_id`, `edge`).
-    fn edges(&self) -> Vec<&E>;
+    fn edges(&self) -> Vec<(usize, usize, &E)>;
 
     /// # Returns:
     /// Vector of edges from vertex with `src_id` in the format of (`dst_id`, `edge`).
@@ -66,12 +66,13 @@ pub trait Edges<W, E: Edge<W>> {
     ///
     /// # Note:
     /// This function has a default implementation but for better performance its usually better to implement it manually.
-    fn edges_from(&self, src_id: usize) -> Vec<&E> {
+    fn edges_from(&self, src_id: usize) -> Vec<(usize, &E)> {
         // 1. From triplets produced by `edges` function, only keep those that their source vertex id is `src_id`.
         // 2. Map each triplet to a pair by discarding the source vertex id
         self.edges()
             .into_iter()
-            .filter(|edge| edge.get_src_id() == src_id)
+            .filter(|(s_id, _, _)| *s_id == src_id)
+            .map(|(_, dst_id, edge)| (dst_id, edge))
             .collect()
     }
 
@@ -119,9 +120,9 @@ pub trait Graph<W, E: Edge<W>, Ty: EdgeType> {
     /// * `src_id`: Id of the vertex at the start of the edge.
     /// * `dst_id`: Id of the vertex at the end of the edge.
     /// * `edge`: Edge between `src_id` and `dst_id`.
-    fn add_edge(&mut self, edge: E);
+    fn add_edge(&mut self, src_id: usize, dst_id: usize, edge: E);
 
-    fn update_edge(&mut self, edge: E);
+    fn update_edge(&mut self, src_id: usize, dst_id: usize, edge: E);
 
     /// Removes the edge from vertex with `src_id` to vertex with `dst_id`.
     ///

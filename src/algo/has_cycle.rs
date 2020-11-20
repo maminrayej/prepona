@@ -145,7 +145,7 @@ mod tests {
         let mut graph = MatGraph::init(Mat::<usize>::init());
         let a = graph.add_vertex();
         let b = graph.add_vertex();
-        graph.add_edge((a, b, 1).into());
+        graph.add_edge(a, b, 1.into());
 
         // When: Performing cycle detection.
         let cycle = HasCycle::init(&graph).execute(&graph);
@@ -165,8 +165,8 @@ mod tests {
         let mut graph = MatGraph::init(DiMat::<usize>::init());
         let a = graph.add_vertex();
         let b = graph.add_vertex();
-        graph.add_edge((a, b, 1).into());
-        graph.add_edge((b, a, 1).into());
+        graph.add_edge(a, b, 1.into());
+        graph.add_edge(b, a, 1.into());
 
         // When: Performing cycle detection.
         let cycle = HasCycle::init(&graph).execute(&graph);
@@ -191,11 +191,11 @@ mod tests {
         let c = graph.add_vertex();
         let d = graph.add_vertex();
         let e = graph.add_vertex();
-        graph.add_edge((a, b, 1).into());
-        graph.add_edge((a, d, 1).into());
-        graph.add_edge((b, c, 1).into());
-        graph.add_edge((b, e, 1).into());
-        graph.add_edge((d, e, 1).into());
+        graph.add_edge(a, b, 1.into());
+        graph.add_edge(a, d, 1.into());
+        graph.add_edge(b, c, 1.into());
+        graph.add_edge(b, e, 1.into());
+        graph.add_edge(d, e, 1.into());
 
         // When: Performing cycle detection.
         let cycle = HasCycle::init(&graph).execute(&graph);
@@ -219,10 +219,10 @@ mod tests {
         let c = graph.add_vertex();
         let d = graph.add_vertex();
         let e = graph.add_vertex();
-        graph.add_edge((a, b, 1).into());
-        graph.add_edge((b, c, 1).into());
-        graph.add_edge((b, e, 1).into());
-        graph.add_edge((d, e, 1).into());
+        graph.add_edge(a, b, 1.into());
+        graph.add_edge(b, c, 1.into());
+        graph.add_edge(b, e, 1.into());
+        graph.add_edge(d, e, 1.into());
 
         // When: Performing cycle detection.
         let cycle = HasCycle::init(&graph).execute(&graph);
@@ -249,12 +249,12 @@ mod tests {
         let d = graph.add_vertex();
         let e = graph.add_vertex();
 
-        graph.add_edge((a, b, 1).into());
-        graph.add_edge((b, c, 1).into());
-        graph.add_edge((c, d, 1).into());
-        graph.add_edge((b, e, 1).into());
-        graph.add_edge((e, d, 1).into());
-        graph.add_edge((e, a, 1).into());
+        graph.add_edge(a, b, 1.into());
+        graph.add_edge(b, c, 1.into());
+        graph.add_edge(c, d, 1.into());
+        graph.add_edge(b, e, 1.into());
+        graph.add_edge(e, d, 1.into());
+        graph.add_edge(e, a, 1.into());
 
         // When: Performing cycle detection.
         let cycle = HasCycle::init(&graph).execute(&graph);
@@ -281,11 +281,11 @@ mod tests {
         let d = graph.add_vertex();
         let e = graph.add_vertex();
 
-        graph.add_edge((a, b, 1).into());
-        graph.add_edge((b, c, 1).into());
-        graph.add_edge((c, d, 1).into());
-        graph.add_edge((b, e, 1).into());
-        graph.add_edge((e, a, 1).into());
+        graph.add_edge(a, b, 1.into());
+        graph.add_edge(b, c, 1.into());
+        graph.add_edge(c, d, 1.into());
+        graph.add_edge(b, e, 1.into());
+        graph.add_edge(e, a, 1.into());
 
         // When: Performing cycle detection.
         let cycle = HasCycle::init(&graph).execute(&graph);

@@ -154,14 +154,8 @@ impl<W: Any, E: Edge<W>, Ty: EdgeType> GraphStorage<W, E, Ty> for AdjMatrix<W, E
             // Populate these new allocated slots with positive infinity.
             let vertex_id = self.vertex_count();
 
-            self.vec.resize_with(new_size, || {
-                Edge::init(vertex_id, vertex_id, Magnitude::PosInfinite)
-            });
-
-            (0..self.total_vertex_count()).for_each(|v_id| {
-                self[(vertex_id, v_id)] = Edge::init(vertex_id, v_id, Magnitude::PosInfinite);
-                self[(v_id, vertex_id)] = Edge::init(v_id, vertex_id, Magnitude::PosInfinite);
-            });
+            self.vec
+                .resize_with(new_size, || Edge::init(Magnitude::PosInfinite));
 
             self.vertex_count += 1;
 
@@ -185,8 +179,8 @@ impl<W: Any, E: Edge<W>, Ty: EdgeType> GraphStorage<W, E, Ty> for AdjMatrix<W, E
         // |   | ∞ |   |
         //  -----------
         for other_id in self.vertices() {
-            self[(vertex_id, other_id)] = Edge::init(vertex_id, other_id, Magnitude::PosInfinite);
-            self[(other_id, vertex_id)] = Edge::init(other_id, vertex_id, Magnitude::PosInfinite);
+            self[(vertex_id, other_id)] = Edge::init(Magnitude::PosInfinite.into());
+            self[(other_id, vertex_id)] = Edge::init(Magnitude::PosInfinite.into());
         }
 
         // Removed vertex id is now reusable.
@@ -208,14 +202,12 @@ impl<W: Any, E: Edge<W>, Ty: EdgeType> GraphStorage<W, E, Ty> for AdjMatrix<W, E
     ///
     /// # Complexity:
     /// O(1).
-    fn add_edge(&mut self, edge: E) {
-        let (src_id, dst_id) = (edge.get_src_id(), edge.get_dst_id());
-
+    fn add_edge(&mut self, src_id: usize, dst_id: usize, edge: E) {
         self[(src_id, dst_id)] = edge;
     }
 
-    fn update_edge(&mut self, edge: E) {
-        self.add_edge(edge);
+    fn update_edge(&mut self, src_id: usize, dst_id: usize, edge: E) {
+        self.add_edge(src_id, dst_id, edge);
     }
 
     /// Removes the edge from vertex with `src_id` to vertex with `dst_id`.
@@ -234,7 +226,7 @@ impl<W: Any, E: Edge<W>, Ty: EdgeType> GraphStorage<W, E, Ty> for AdjMatrix<W, E
     /// # Complexity:
     /// O(1).
     fn remove_edge(&mut self, src_id: usize, dst_id: usize) -> E {
-        let mut edge = E::init(src_id, dst_id, Magnitude::PosInfinite);
+        let mut edge = E::init(Magnitude::PosInfinite);
 
         std::mem::swap(&mut self[(src_id, dst_id)], &mut edge);
 
@@ -278,7 +270,7 @@ impl<W: Any, E: Edge<W>, Ty: EdgeType> GraphStorage<W, E, Ty> for AdjMatrix<W, E
     ///
     /// # Complexity:
     /// O(|V|<sup>2</sup>).
-    fn edges(&self) -> Vec<&E> {
+    fn edges(&self) -> Vec<(usize, usize, &E)> {
         let vertices = self.vertices();
 
         // 1. Produce cartesian product: { vertices } x { vertices }:
@@ -287,8 +279,12 @@ impl<W: Any, E: Edge<W>, Ty: EdgeType> GraphStorage<W, E, Ty> for AdjMatrix<W, E
         // 2. Map each tuple (v1, v2) to (v1, v2, edge between v1 and v2).
         vertices
             .iter()
-            .flat_map(|v1| self.edges_from(*v1))
-            .filter(|edge| edge.get_weight().is_finite())
+            .flat_map(|src_id| {
+                self.edges_from(*src_id)
+                    .into_iter()
+                    .map(|(dst_id, edge)| (*src_id, dst_id, edge))
+                    .collect::<Vec<(usize, usize, &E)>>()
+            })
             .collect()
     }
 
@@ -300,13 +296,13 @@ impl<W: Any, E: Edge<W>, Ty: EdgeType> GraphStorage<W, E, Ty> for AdjMatrix<W, E
     ///
     /// Complexity:
     /// O(|V|).
-    fn edges_from(&self, src_id: usize) -> Vec<&E> {
+    fn edges_from(&self, src_id: usize) -> Vec<(usize, &E)> {
         // 1. Produce tuple (v, edge between src and v): ∀v ∈ { vertices }.
         // 2. Only keep those tuples that weight of their edge is finite(weight with infinite value indicates absence of edge between src and v).
         self.vertices()
             .into_iter()
-            .map(|v_id| &self[(src_id, v_id)])
-            .filter(|edge| edge.get_weight().is_finite())
+            .map(|dst_id| (dst_id, &self[(src_id, dst_id)]))
+            .filter(|(_, edge)| edge.get_weight().is_finite())
             .collect()
     }
 
@@ -622,9 +618,9 @@ mod tests {
         //      ^               |
         //      '----------------
         //
-        matrix.add_edge((a, b, 1).into());
-        matrix.add_edge((b, c, 2).into());
-        matrix.add_edge((c, a, 3).into());
+        matrix.add_edge(a, b, 1.into());
+        matrix.add_edge(b, c, 2.into());
+        matrix.add_edge(c, a, 3.into());
 
         // Then:
         assert_eq!(matrix.vertex_count(), 3);
@@ -632,8 +628,8 @@ mod tests {
         assert_eq!(matrix.vec.len(), 9);
 
         assert_eq!(matrix.edges().len(), 3);
-        for edge in matrix.edges() {
-            match (edge.get_src_id(), edge.get_dst_id()) {
+        for (src_id, dst_id, edge) in matrix.edges() {
+            match (src_id, dst_id) {
                 (0, 1) => assert_eq!(edge.get_weight().unwrap(), 1),
                 (1, 2) => assert_eq!(edge.get_weight().unwrap(), 2),
                 (2, 0) => assert_eq!(edge.get_weight().unwrap(), 3),
@@ -659,9 +655,9 @@ mod tests {
         //      |               |
         //      '----------------
         //
-        matrix.add_edge((a, b, 1).into());
-        matrix.add_edge((b, c, 2).into());
-        matrix.add_edge((c, a, 3).into());
+        matrix.add_edge(a, b, 1.into());
+        matrix.add_edge(b, c, 2.into());
+        matrix.add_edge(c, a, 3.into());
 
         // Then:
         assert_eq!(matrix.vertex_count(), 3);
@@ -669,8 +665,8 @@ mod tests {
         assert_eq!(matrix.vec.len(), 6);
 
         assert_eq!(matrix.edges().len(), 6);
-        for edge in matrix.edges() {
-            match (edge.get_src_id(), edge.get_dst_id()) {
+        for (src_id, dst_id, edge) in matrix.edges() {
+            match (src_id, dst_id) {
                 (0, 1) | (1, 0) => assert_eq!(edge.get_weight().unwrap(), 1),
                 (1, 2) | (2, 1) => assert_eq!(edge.get_weight().unwrap(), 2),
                 (2, 0) | (0, 2) => assert_eq!(edge.get_weight().unwrap(), 3),
@@ -691,9 +687,9 @@ mod tests {
         let a = matrix.add_vertex();
         let b = matrix.add_vertex();
         let c = matrix.add_vertex();
-        matrix.add_edge((a, b, 1).into());
-        matrix.add_edge((b, c, 2).into());
-        matrix.add_edge((c, a, 3).into());
+        matrix.add_edge(a, b, 1.into());
+        matrix.add_edge(b, c, 2.into());
+        matrix.add_edge(c, a, 3.into());
 
         // When: Doing nothing.
 
@@ -715,9 +711,9 @@ mod tests {
         let a = matrix.add_vertex();
         let b = matrix.add_vertex();
         let c = matrix.add_vertex();
-        matrix.add_edge((a, b, 1).into());
-        matrix.add_edge((b, c, 2).into());
-        matrix.add_edge((c, a, 3).into());
+        matrix.add_edge(a, b, 1.into());
+        matrix.add_edge(b, c, 2.into());
+        matrix.add_edge(c, a, 3.into());
 
         // When: Doing nothing.
 
@@ -727,7 +723,7 @@ mod tests {
 
         assert!(matrix.has_edge(b, c));
         assert!(matrix.has_edge(c, b));
-        
+
         assert!(matrix.has_edge(c, a));
         assert!(matrix.has_edge(a, c));
     }
@@ -744,14 +740,14 @@ mod tests {
         let a = matrix.add_vertex();
         let b = matrix.add_vertex();
         let c = matrix.add_vertex();
-        matrix.add_edge((a, b, 1).into());
-        matrix.add_edge((b, c, 2).into());
-        matrix.add_edge((c, a, 3).into());
+        matrix.add_edge(a, b, 1.into());
+        matrix.add_edge(b, c, 2.into());
+        matrix.add_edge(c, a, 3.into());
 
         // When: Incrementing edge of each edge by 1.
-        matrix.update_edge((a, b, 2).into());
-        matrix.update_edge((b, c, 3).into());
-        matrix.update_edge((c, a, 4).into());
+        matrix.update_edge(a, b, 2.into());
+        matrix.update_edge(b, c, 3.into());
+        matrix.update_edge(c, a, 4.into());
 
         // Then:
         assert_eq!(matrix.vertex_count(), 3);
@@ -759,8 +755,8 @@ mod tests {
         assert_eq!(matrix.vec.len(), 9);
 
         assert_eq!(matrix.edges().len(), 3);
-        for edge in matrix.edges() {
-            match (edge.get_src_id(), edge.get_dst_id()) {
+        for (src_id, dst_id, edge) in matrix.edges() {
+            match (src_id, dst_id) {
                 (0, 1) => assert_eq!(edge.get_weight().unwrap(), 2),
                 (1, 2) => assert_eq!(edge.get_weight().unwrap(), 3),
                 (2, 0) => assert_eq!(edge.get_weight().unwrap(), 4),
@@ -781,14 +777,14 @@ mod tests {
         let a = matrix.add_vertex();
         let b = matrix.add_vertex();
         let c = matrix.add_vertex();
-        matrix.add_edge((a, b, 1).into());
-        matrix.add_edge((b, c, 2).into());
-        matrix.add_edge((c, a, 3).into());
+        matrix.add_edge(a, b, 1.into());
+        matrix.add_edge(b, c, 2.into());
+        matrix.add_edge(c, a, 3.into());
 
         // When: Incrementing edge of each edge by 1.
-        matrix.update_edge((a, b, 2).into());
-        matrix.update_edge((b, c, 3).into());
-        matrix.update_edge((c, a, 4).into());
+        matrix.update_edge(a, b, 2.into());
+        matrix.update_edge(b, c, 3.into());
+        matrix.update_edge(c, a, 4.into());
 
         // Then:
         assert_eq!(matrix.vertex_count(), 3);
@@ -796,8 +792,8 @@ mod tests {
         assert_eq!(matrix.vec.len(), 6);
 
         assert_eq!(matrix.edges().len(), 6);
-        for edge in matrix.edges() {
-            match (edge.get_src_id(), edge.get_dst_id()) {
+        for (src_id, dst_id, edge) in matrix.edges() {
+            match (src_id, dst_id) {
                 (0, 1) | (1, 0) => assert_eq!(edge.get_weight().unwrap(), 2),
                 (1, 2) | (2, 1) => assert_eq!(edge.get_weight().unwrap(), 3),
                 (2, 0) | (0, 2) => assert_eq!(edge.get_weight().unwrap(), 4),
@@ -818,9 +814,9 @@ mod tests {
         let a = matrix.add_vertex();
         let b = matrix.add_vertex();
         let c = matrix.add_vertex();
-        matrix.add_edge((a, b, 1).into());
-        matrix.add_edge((b, c, 2).into());
-        matrix.add_edge((c, a, 3).into());
+        matrix.add_edge(a, b, 1.into());
+        matrix.add_edge(b, c, 2.into());
+        matrix.add_edge(c, a, 3.into());
 
         // When: Removing edges a --> b and b --> c
         //
@@ -852,9 +848,9 @@ mod tests {
         let a = matrix.add_vertex();
         let b = matrix.add_vertex();
         let c = matrix.add_vertex();
-        matrix.add_edge((a, b, 1).into());
-        matrix.add_edge((b, c, 2).into());
-        matrix.add_edge((c, a, 3).into());
+        matrix.add_edge(a, b, 1.into());
+        matrix.add_edge(b, c, 2.into());
+        matrix.add_edge(c, a, 3.into());
 
         // When: Removing edges a --- b and b --- c
         //
@@ -886,9 +882,9 @@ mod tests {
         let a = matrix.add_vertex();
         let b = matrix.add_vertex();
         let c = matrix.add_vertex();
-        matrix.add_edge((a, b, 1).into());
-        matrix.add_edge((b, c, 2).into());
-        matrix.add_edge((c, a, 3).into());
+        matrix.add_edge(a, b, 1.into());
+        matrix.add_edge(b, c, 2.into());
+        matrix.add_edge(c, a, 3.into());
 
         // When: Doing nothing.
 
@@ -919,9 +915,9 @@ mod tests {
         let a = matrix.add_vertex();
         let b = matrix.add_vertex();
         let c = matrix.add_vertex();
-        matrix.add_edge((a, b, 1).into());
-        matrix.add_edge((b, c, 2).into());
-        matrix.add_edge((c, a, 3).into());
+        matrix.add_edge(a, b, 1.into());
+        matrix.add_edge(b, c, 2.into());
+        matrix.add_edge(c, a, 3.into());
 
         // When: Doing nothing.
 

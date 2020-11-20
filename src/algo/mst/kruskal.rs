@@ -42,13 +42,13 @@ impl Kruskal {
         let mut edges = graph
             .edges()
             .into_iter()
-            .filter(|edge| edge.get_src_id() < edge.get_dst_id())
-            .collect::<Vec<&E>>();
+            .filter(|(src_id, dst_id, _)| src_id < dst_id)
+            .collect::<Vec<(usize, usize, &E)>>();
 
-        edges.sort_by(|e1, e2| e1.get_weight().cmp(e2.get_weight()));
+        edges.sort_by(|(_, _, e1), (_, _, e2)| e1.get_weight().cmp(e2.get_weight()));
 
-        for edge in edges {
-            let (v_real_id, u_real_id) = (edge.get_src_id(), edge.get_dst_id());
+        for (v_real_id, u_real_id, _) in edges {
+            // let (v_real_id, u_real_id) = (edge.get_src_id(), edge.get_dst_id());
 
             let v_virt_id = id_map.get_real_to_virt(v_real_id).unwrap();
             let u_virt_id = id_map.get_real_to_virt(u_real_id).unwrap();
@@ -94,18 +94,18 @@ mod tests {
         let e = graph.add_vertex();
         let f = graph.add_vertex();
 
-        graph.add_edge((a, b, 1).into());
-        graph.add_edge((a, c, 3).into());
-        graph.add_edge((a, f, 3).into());
+        graph.add_edge(a, b, 1.into());
+        graph.add_edge(a, c, 3.into());
+        graph.add_edge(a, f, 3.into());
 
-        graph.add_edge((b, c, 5).into());
-        graph.add_edge((b, d, 1).into());
+        graph.add_edge(b, c, 5.into());
+        graph.add_edge(b, d, 1.into());
 
-        graph.add_edge((d, c, 2).into());
-        graph.add_edge((d, e, 4).into());
+        graph.add_edge(d, c, 2.into());
+        graph.add_edge(d, e, 4.into());
 
-        graph.add_edge((e, c, 1).into());
-        graph.add_edge((e, f, 5).into());
+        graph.add_edge(e, c, 1.into());
+        graph.add_edge(e, f, 5.into());
 
         let mut tags = std::collections::HashMap::<usize, &'static str>::new();
         tags.insert(a, "a");

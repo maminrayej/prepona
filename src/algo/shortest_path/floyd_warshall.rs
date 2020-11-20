@@ -30,8 +30,8 @@ impl FloydWarshall {
         for &u_real_id in &vertices {
             let u_virt_id = id_map.get_real_to_virt(u_real_id).unwrap();
 
-            for edge in graph.edges_from(u_real_id) {
-                let v_real_id = edge.get_dst_id();
+            for (v_real_id, edge) in graph.edges_from(u_real_id) {
+                // let v_real_id = edge.get_dst_id();
                 let v_virt_id = id_map.get_real_to_virt(v_real_id).unwrap();
                 if u_virt_id == v_virt_id {
                     dist[u_virt_id][v_virt_id] = W::zero().into();

@@ -27,8 +27,7 @@ impl<W: Clone + Ord + Zero + Any + std::fmt::Debug> Dijkstra<W> {
     }
 
     fn next_id(&self) -> Option<usize> {
-        self
-            .dist
+        self.dist
             .iter()
             .enumerate()
             .filter(|(virt_id, dist)| dist.is_finite() && self.visited[*virt_id] == false)
@@ -59,12 +58,12 @@ impl<W: Clone + Ord + Zero + Any + std::fmt::Debug> Dijkstra<W> {
 
             let real_id = id_map.get_virt_to_real(virt_id).unwrap();
 
-            for edge in graph.edges_from(real_id) {
-                let n_id = if real_id == edge.get_src_id() {
-                    edge.get_dst_id()
-                } else {
-                    edge.get_src_id()
-                };
+            for (n_id, edge) in graph.edges_from(real_id) {
+                // let n_id = if real_id == edge.get_src_id() {
+                //     edge.get_dst_id()
+                // } else {
+                //     edge.get_src_id()
+                // };
 
                 let n_virt_id = id_map.get_real_to_virt(n_id).unwrap();
 
@@ -91,7 +90,7 @@ mod tests {
     use super::*;
     use crate::graph::MatGraph;
     use crate::provide::*;
-    use crate::storage::{Mat, DiMat};
+    use crate::storage::{DiMat, Mat};
 
     #[test]
     #[should_panic(expected = "0 is not valid")]
@@ -156,13 +155,13 @@ mod tests {
         let d = graph.add_vertex();
         let e = graph.add_vertex();
 
-        graph.add_edge((a, b, 6).into());
-        graph.add_edge((a, d, 1).into());
-        graph.add_edge((b, d, 2).into());
-        graph.add_edge((b, c, 5).into());
-        graph.add_edge((b, e, 2).into());
-        graph.add_edge((c, e, 5).into());
-        graph.add_edge((d, e, 1).into());
+        graph.add_edge(a, b, 6.into());
+        graph.add_edge(a, d, 1.into());
+        graph.add_edge(b, d, 2.into());
+        graph.add_edge(b, c, 5.into());
+        graph.add_edge(b, e, 2.into());
+        graph.add_edge(c, e, 5.into());
+        graph.add_edge(d, e, 1.into());
 
         // When: Performing Dijkstra algorithm.
         let shortest_paths = Dijkstra::init(&graph).execute(&graph, a);
@@ -178,10 +177,10 @@ mod tests {
 
     #[test]
     fn trivial_directed_graph() {
-                // Given: Graph
+        // Given: Graph
         //          6       1
         //      a  -->  b  <--  c ---
-        //    1 |       |           |      
+        //    1 |       |           |
         //      |  2 /`````\ 2      |
         //      |````       ````|   |
         //      v               v   | 1
@@ -194,13 +193,13 @@ mod tests {
         let d = graph.add_vertex(); // 3
         let e = graph.add_vertex(); // 4
 
-        graph.add_edge((a, b, 6).into());
-        graph.add_edge((a, d, 1).into());
-        graph.add_edge((b, d, 2).into());
-        graph.add_edge((b, e, 2).into());
-        graph.add_edge((c, b, 1).into());
-        graph.add_edge((e, c, 1).into());
-        graph.add_edge((d, e, 1).into());
+        graph.add_edge(a, b, 6.into());
+        graph.add_edge(a, d, 1.into());
+        graph.add_edge(b, d, 2.into());
+        graph.add_edge(b, e, 2.into());
+        graph.add_edge(c, b, 1.into());
+        graph.add_edge(e, c, 1.into());
+        graph.add_edge(d, e, 1.into());
 
         // When: Performing Dijkstra algorithm.
         let shortest_paths = Dijkstra::init(&graph).execute(&graph, a);

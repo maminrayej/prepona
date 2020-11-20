@@ -5,7 +5,7 @@
 
 pub struct Bfs {
     // queue: VecDeque<usize>,
-    // discovered: HashSet<usize>,
+// discovered: HashSet<usize>,
 }
 
 // impl Bfs {

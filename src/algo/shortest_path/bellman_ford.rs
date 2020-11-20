@@ -45,11 +45,11 @@ impl<W: Clone + Any + Zero + Ord + std::fmt::Debug> BellmanFord<W> {
         let edges = graph.edges();
 
         for _ in 0..vertex_count - 1 {
-            for edge in &edges {
-                let (u_real_id, v_real_id) = (edge.get_src_id(), edge.get_dst_id());
+            for (u_real_id, v_real_id, edge) in &edges {
+                // let (u_real_id, v_real_id) = (edge.get_src_id(), edge.get_dst_id());
 
-                let u_virt_id = id_map.get_real_to_virt(u_real_id).unwrap();
-                let v_virt_id = id_map.get_real_to_virt(v_real_id).unwrap();
+                let u_virt_id = id_map.get_real_to_virt(*u_real_id).unwrap();
+                let v_virt_id = id_map.get_real_to_virt(*v_real_id).unwrap();
 
                 let alt = self.distance[u_virt_id].clone() + edge.get_weight().clone();
                 if alt < self.distance[v_virt_id] {
@@ -61,11 +61,11 @@ impl<W: Clone + Any + Zero + Ord + std::fmt::Debug> BellmanFord<W> {
             }
         }
 
-        for edge in &edges {
-            let (u_real_id, v_real_id) = (edge.get_src_id(), edge.get_dst_id());
+        for (u_real_id, v_real_id, edge) in &edges {
+            // let (u_real_id, v_real_id) = (edge.get_src_id(), edge.get_dst_id());
 
-            let u_virt_id = id_map.get_real_to_virt(u_real_id).unwrap();
-            let v_virt_id = id_map.get_real_to_virt(v_real_id).unwrap();
+            let u_virt_id = id_map.get_real_to_virt(*u_real_id).unwrap();
+            let v_virt_id = id_map.get_real_to_virt(*v_real_id).unwrap();
 
             let alt = self.distance[u_virt_id].clone() + edge.get_weight().clone();
             if alt < self.distance[v_virt_id] {
@@ -99,16 +99,16 @@ mod tests {
         let d = graph.add_vertex(); // 3
         let e = graph.add_vertex(); // 4
 
-        graph.add_edge((a, b, 6).into());
-        graph.add_edge((a, d, 1).into());
+        graph.add_edge(a, b, 6.into());
+        graph.add_edge(a, d, 1.into());
 
-        graph.add_edge((b, d, 2).into());
-        graph.add_edge((b, c, 5).into());
-        graph.add_edge((b, e, 2).into());
+        graph.add_edge(b, d, 2.into());
+        graph.add_edge(b, c, 5.into());
+        graph.add_edge(b, e, 2.into());
 
-        graph.add_edge((c, e, 5).into());
+        graph.add_edge(c, e, 5.into());
 
-        graph.add_edge((d, e, 1).into());
+        graph.add_edge(d, e, 1.into());
 
         let dijkstra = BellmanFord::init(&graph).execute(&graph, a).unwrap();
 
