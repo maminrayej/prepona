@@ -159,15 +159,6 @@ mod tests {
         graph.add_edge((a, b, 6).into());
         graph.add_edge((a, d, 1).into());
         graph.add_edge((b, d, 2).into());
-
-        for edge in graph.edges() {
-            println!(
-                "({},{}): {:?}",
-                edge.get_src_id(),
-                edge.get_dst_id(),
-                edge.get_weight().as_ref()
-            );
-        }
         graph.add_edge((b, c, 5).into());
         graph.add_edge((b, e, 2).into());
         graph.add_edge((c, e, 5).into());
