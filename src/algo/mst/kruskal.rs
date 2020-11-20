@@ -2,7 +2,7 @@ use std::cell::RefCell;
 use std::collections::HashSet;
 use std::rc::Rc;
 
-use crate::graph::Edge;
+use crate::graph::{Edge, UndirectedEdge};
 use crate::provide;
 
 pub struct Kruskal {
@@ -12,7 +12,7 @@ pub struct Kruskal {
 impl Kruskal {
     pub fn init<G, W: Ord, E: Edge<W>>(graph: &G) -> Self
     where
-        G: provide::Vertices + provide::Edges<W, E>,
+        G: provide::Vertices + provide::Edges<W, E> + provide::Graph<W, E, UndirectedEdge>,
     {
         let vertex_count = graph.vertex_count();
 
@@ -24,16 +24,18 @@ impl Kruskal {
             sets[virt_id].borrow_mut().insert(virt_id);
         }
 
-        // sets[0].borrow_mut().insert(1);
-
-        println!("init sets: {:?}", sets);
-
         Kruskal { sets }
     }
 
-    pub fn execute<'a, G, W: Ord, E: Edge<W>>(mut self, graph: &'a G) -> Vec<(usize, usize)>
+    pub fn execute<'a, G, W: Ord + std::fmt::Debug, E: Edge<W>>(
+        mut self,
+        graph: &'a G,
+    ) -> Vec<(usize, usize)>
     where
-        G: provide::Edges<W, E> + provide::Vertices,
+        G: provide::Edges<W, E>
+            + provide::Vertices
+            + provide::Direction
+            + provide::Graph<W, E, UndirectedEdge>,
     {
         let mut mst = Vec::<(usize, usize)>::new();
 
@@ -48,8 +50,6 @@ impl Kruskal {
         edges.sort_by(|(_, _, e1), (_, _, e2)| e1.get_weight().cmp(e2.get_weight()));
 
         for (v_real_id, u_real_id, _) in edges {
-            // let (v_real_id, u_real_id) = (edge.get_src_id(), edge.get_dst_id());
-
             let v_virt_id = id_map.get_real_to_virt(v_real_id).unwrap();
             let u_virt_id = id_map.get_real_to_virt(u_real_id).unwrap();
 
@@ -85,7 +85,25 @@ mod tests {
     use crate::storage::Mat;
 
     #[test]
-    fn kruskal_test() {
+    fn empty_graph() {
+        let graph = MatGraph::init(Mat::<usize>::init());
+
+        let pairs = Kruskal::init(&graph).execute(&graph);
+
+        assert_eq!(pairs.len(), 0);
+    }
+
+    #[test]
+    fn trivial_directed_graph() {
+        //  Given: Graph
+        //                5
+        //      f ----------------.
+        //      |                 |
+        //    3 |  1     1     4  |
+        //      a --- b --- d --- e
+        //    3 |   5 |   2 |   1 |
+        //      |     |     |     |
+        //      c ----'-----'-----'
         let mut graph = MatGraph::init(Mat::<usize>::init());
         let a = graph.add_vertex();
         let b = graph.add_vertex();
@@ -115,15 +133,27 @@ mod tests {
         tags.insert(e, "e");
         tags.insert(f, "f");
 
-        let kurskal = Kruskal::init(&graph);
+        let pairs = Kruskal::init(&graph).execute(&graph);
 
-        println!(
-            "{:?}",
-            kurskal
-                .execute(&graph)
-                .into_iter()
-                .map(|(v1, v2)| (tags.get(&v1).unwrap(), tags.get(&v2).unwrap()))
-                .collect::<Vec<(&&str, &&str)>>()
-        )
+        assert_eq!(pairs.len(), 5);
+        assert!(vec![(a, b), (b, a)]
+            .iter()
+            .any(|pair| pairs.contains(&pair)));
+
+        assert!(vec![(b, d), (d, b)]
+            .iter()
+            .any(|pair| pairs.contains(&pair)));
+
+        assert!(vec![(e, c), (c, e)]
+            .iter()
+            .any(|pair| pairs.contains(&pair)));
+
+        assert!(vec![(c, d), (d, c)]
+            .iter()
+            .any(|pair| pairs.contains(&pair)));
+
+        assert!(vec![(a, f), (f, a)]
+            .iter()
+            .any(|pair| pairs.contains(&pair)));
     }
 }
