@@ -50,17 +50,6 @@ impl FloydWarshall {
                     if (dist[i_virt_id][k] + dist[k][j_virt_id]).is_finite()
                         && dist[i_virt_id][j_virt_id] > dist[i_virt_id][k] + dist[k][j_virt_id]
                     {
-                        // println!(
-                        //     "dist from {} to {}: {:?} is larger than: {} to {} + {} to {}: {:?}",
-                        //     i_virt_id,
-                        //     j_virt_id,
-                        //     dist[i_virt_id][j_virt_id],
-                        //     i_virt_id,
-                        //     k,
-                        //     k,
-                        //     j_virt_id,
-                        //     dist[i_virt_id][k] + dist[k][j_virt_id]
-                        // );
                         dist[i_virt_id][j_virt_id] = dist[i_virt_id][k] + dist[k][j_virt_id]
                     }
                 }

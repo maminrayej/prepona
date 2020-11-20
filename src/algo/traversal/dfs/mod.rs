@@ -113,7 +113,6 @@ impl<'a, L: DfsListener> Dfs<'a, L> {
         G: provide::Vertices + provide::Neighbors,
     {
         while let Some(virt_start_id) = self.next_start_id() {
-            println!("Starting dfs with: {}", virt_start_id);
             if self.colors.borrow()[virt_start_id] != Color::White {
                 continue;
             }
@@ -124,11 +123,9 @@ impl<'a, L: DfsListener> Dfs<'a, L> {
             self.listener.borrow_mut().on_start(&self, virt_start_id);
 
             while let Some(virt_id) = self.next_virt_id() {
-                println!("Visiting vertex: {}", virt_id);
                 let color = self.colors.borrow()[virt_id];
                 match color {
                     Color::White => {
-                        println!("Visiting white: {}", virt_id);
                         *self.time.borrow_mut() += 1;
                         self.discovered.borrow_mut()[virt_id] = (*self.time.borrow()).into();
 
@@ -150,7 +147,6 @@ impl<'a, L: DfsListener> Dfs<'a, L> {
                         self.stack.borrow_mut().append(&mut undiscovered_neighbors);
                     }
                     Color::Gray => {
-                        println!("Visiting gray: {}", virt_id);
                         // On gray.
                         self.listener.borrow_mut().on_gray(&self, virt_id);
 

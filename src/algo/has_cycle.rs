@@ -14,8 +14,6 @@ impl<'a, G: provide::Neighbors + provide::Vertices + provide::Direction> DfsList
     for HasCycle<'a, G>
 {
     fn on_white(&mut self, dfs: &Dfs<Self>, virt_id: usize) {
-        println!("Calling on white with vertex: {}", virt_id);
-
         if let Some(parent_id) = self.stack.last() {
             self.parent_of[virt_id] = (*parent_id).into();
         }
@@ -87,11 +85,8 @@ impl<'a, G: provide::Neighbors + provide::Vertices + provide::Direction> HasCycl
     }
 
     pub fn execute(mut self, graph: &G) -> Vec<usize> {
-        println!("Executing ...");
         let dfs = Dfs::init(graph, &mut self);
-        println!("Before executing dfs...");
         dfs.execute(graph);
-        println!("After executing dfs...");
 
         let id_map = dfs.id_map();
 
