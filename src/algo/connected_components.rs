@@ -1,6 +1,6 @@
+use crate::algo::{Dfs, DfsListener};
 use crate::graph::{Edge, UndirectedEdge};
 use crate::provide;
-use crate::algo::{Dfs, DfsListener};
 
 pub struct ConnectedComponents {
     current_component: Vec<usize>,
@@ -51,10 +51,19 @@ mod tests {
     use crate::storage::Mat;
 
     #[test]
-    fn cc_test() {
-        //      a  ---  b   d           g
-        //      |      /    |
-        //      c ___/      e  --- f
+    fn empty_graph() {
+        let graph = MatGraph::init(Mat::<usize>::init());
+
+        let ccs = ConnectedComponents::init(&graph).execute(&graph);
+
+        assert_eq!(ccs.len(), 0);
+    }
+
+    #[test]
+    fn graph_with_one_component() {
+        //      a  ---  b  ---  d            g
+        //      |      /        |            |
+        //      c ___/          '---  e  --- f
         let mut graph = MatGraph::init(Mat::<usize>::init());
         let a = graph.add_vertex();
         let b = graph.add_vertex();
@@ -67,28 +76,71 @@ mod tests {
         graph.add_edge((a, b, 1).into());
         graph.add_edge((a, c, 1).into());
         graph.add_edge((c, b, 1).into());
-
+        graph.add_edge((b, d, 1).into());
         graph.add_edge((d, e, 1).into());
         graph.add_edge((e, f, 1).into());
+        graph.add_edge((f, g, 1).into());
 
-        let mut tags = std::collections::HashMap::<usize, &'static str>::new();
-        tags.insert(a, "a");
-        tags.insert(b, "b");
-        tags.insert(c, "c");
-        tags.insert(d, "d");
-        tags.insert(e, "e");
-        tags.insert(f, "f");
-        tags.insert(g, "g");
+        let ccs = ConnectedComponents::init(&graph).execute(&graph);
+
+        assert_eq!(ccs.len(), 1);
+        assert_eq!(ccs[0].len(), 7);
+        assert!(vec![a, b, c, d, e, f, g]
+            .iter()
+            .all(|v_id| ccs[0].contains(v_id)));
+    }
+
+    #[test]
+    fn trivial_graph() {
+        //      a  ---  b  ---  d               g
+        //      |      /
+        //      c ___/              e  --- f
+        let mut graph = MatGraph::init(Mat::<usize>::init());
+        let a = graph.add_vertex();
+        let b = graph.add_vertex();
+        let c = graph.add_vertex();
+        let d = graph.add_vertex();
+        let e = graph.add_vertex();
+        let f = graph.add_vertex();
+        let g = graph.add_vertex();
+
+        graph.add_edge((a, b, 1).into());
+        graph.add_edge((a, c, 1).into());
+        graph.add_edge((c, b, 1).into());
+        graph.add_edge((b, d, 1).into());
+
+        graph.add_edge((e, f, 1).into());
 
         let ccs = ConnectedComponents::init(&graph).execute(&graph);
 
         for cc in ccs {
-            println!(
-                "{:?}",
-                cc.iter()
-                    .map(|v_id| tags.get(v_id).unwrap().to_string())
-                    .collect::<String>()
-            )
+            match cc.len() {
+                1 => assert!(cc.contains(&g)),
+                2 => assert!(vec![e, f].iter().all(|v_id| cc.contains(v_id))),
+                4 => assert!(vec![a, b, c, d].iter().all(|v_id| cc.contains(v_id))),
+                _ => panic!("Unknown component: {:?}", cc),
+            }
         }
+    }
+
+    #[test]
+    fn graph_with_no_edge() {
+        //      a       b       c
+        //      d       e       f
+        let mut graph = MatGraph::init(Mat::<usize>::init());
+        let a = graph.add_vertex();
+        let b = graph.add_vertex();
+        let c = graph.add_vertex();
+        let d = graph.add_vertex();
+        let e = graph.add_vertex();
+        let f = graph.add_vertex();
+
+        let ccs = ConnectedComponents::init(&graph).execute(&graph);
+
+        assert_eq!(ccs.len(), 6);
+        for cc in &ccs {
+            assert_eq!(cc.len(), 1)
+        }
+        assert_eq!(ccs.concat(), [a, b, c, d, e, f]);
     }
 }
