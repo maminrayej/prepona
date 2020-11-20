@@ -70,11 +70,13 @@ impl<'a, L: DfsListener> Dfs<'a, L> {
         Dfs::init_with_starts(graph, listener, vec![])
     }
 
-    pub fn init_with_starts<G>(graph: &G, listener: &'a mut L, start_ids: Vec<usize>) -> Self
+    pub fn init_with_starts<G>(graph: &G, listener: &'a mut L, mut start_ids: Vec<usize>) -> Self
     where
         G: provide::Vertices + provide::Neighbors,
     {
         let vertex_count = graph.vertex_count();
+
+        start_ids.reverse();
 
         Dfs {
             stack: RefCell::new(vec![]),
@@ -111,6 +113,7 @@ impl<'a, L: DfsListener> Dfs<'a, L> {
         G: provide::Vertices + provide::Neighbors,
     {
         while let Some(virt_start_id) = self.next_start_id() {
+            println!("Starting dfs with: {}", virt_start_id);
             if self.colors.borrow()[virt_start_id] != Color::White {
                 continue;
             }
@@ -121,9 +124,11 @@ impl<'a, L: DfsListener> Dfs<'a, L> {
             self.listener.borrow_mut().on_start(&self, virt_start_id);
 
             while let Some(virt_id) = self.next_virt_id() {
+                println!("Visiting vertex: {}", virt_id);
                 let color = self.colors.borrow()[virt_id];
                 match color {
                     Color::White => {
+                        println!("Visiting white: {}", virt_id);
                         *self.time.borrow_mut() += 1;
                         self.discovered.borrow_mut()[virt_id] = (*self.time.borrow()).into();
 
@@ -145,6 +150,7 @@ impl<'a, L: DfsListener> Dfs<'a, L> {
                         self.stack.borrow_mut().append(&mut undiscovered_neighbors);
                     }
                     Color::Gray => {
+                        println!("Visiting gray: {}", virt_id);
                         // On gray.
                         self.listener.borrow_mut().on_gray(&self, virt_id);
 
@@ -324,7 +330,7 @@ mod tests {
     fn trivial_directed_graph() {
         // Given: Graph
         //
-        //      a  -->  b  -->  d  -->  e  
+        //      a  -->  b  -->  d  -->  e
         //      ^       |               |
         //      |       v               v
         //      '______ c               f
@@ -361,7 +367,7 @@ mod tests {
     fn trivial_undirected_graph() {
         // Given: Graph
         //
-        //      a  ---  b  ---  d  ---  e  
+        //      a  ---  b  ---  d  ---  e
         //      |       |               |
         //      '______ c               f
         //
@@ -382,7 +388,7 @@ mod tests {
 
         // When: Performing DFS algorithm.
         let mut listener = DefaultListener::init();
-        let dfs = Dfs::init_with_starts(&graph, &mut listener,vec![a]);
+        let dfs = Dfs::init_with_starts(&graph, &mut listener, vec![a]);
         dfs.execute(&graph);
 
         // Then:
@@ -458,5 +464,38 @@ mod tests {
         assert_eq!(listener.on_gray_called, 6);
         assert_eq!(listener.on_black_called, 6);
         assert_eq!(listener.on_finish_called, 2);
+    }
+
+    #[test]
+    fn trivial_directed_graph_2() {
+        // Given: Graph
+        //
+        //      a  -->  b  -->  c
+        //      |       |
+        //      v       v
+        //      d  -->  e
+        let mut graph = MatGraph::init(DiMat::<usize>::init());
+        let a = graph.add_vertex();
+        let b = graph.add_vertex();
+        let c = graph.add_vertex();
+        let d = graph.add_vertex(); // 3
+        let e = graph.add_vertex();
+        graph.add_edge((a, b, 1).into());
+        graph.add_edge((a, d, 1).into());
+        graph.add_edge((b, c, 1).into());
+        graph.add_edge((b, e, 1).into());
+        graph.add_edge((d, e, 1).into());
+
+        // When: Performing DFS algorithm.
+        let mut listener = DefaultListener::init();
+        let dfs = Dfs::init_with_starts(&graph, &mut listener, vec![a, d]);
+        dfs.execute(&graph);
+
+        // Then:
+        assert_eq!(listener.on_start_called, 1);
+        assert_eq!(listener.on_white_called, 5);
+        assert_eq!(listener.on_gray_called, 5);
+        assert_eq!(listener.on_black_called, 5);
+        assert_eq!(listener.on_finish_called, 1);
     }
 }
