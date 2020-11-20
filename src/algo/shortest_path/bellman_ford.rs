@@ -232,8 +232,23 @@ mod tests {
         graph.add_edge(b, c, 2.into());
         graph.add_edge(c, a, (-5).into());
 
-
         // When: Performing BellmanFord algorithm.
+        let shortest_paths = BellmanFord::init(&graph).execute(&graph, a);
+
+        assert!(shortest_paths.is_err());
+    }
+
+    #[test]
+    fn undirected_graph_with_negative_walk() {
+        // Given: Graph
+        //          -1
+        //      a ----- b
+        //
+        let mut graph = MatGraph::init(Mat::<isize>::init());
+        let a = graph.add_vertex();
+        let b = graph.add_vertex();
+        graph.add_edge(a, b, (-1).into());
+
         let shortest_paths = BellmanFord::init(&graph).execute(&graph, a);
 
         assert!(shortest_paths.is_err());
@@ -256,7 +271,6 @@ mod tests {
         graph.add_edge(a, b, 1.into());
         graph.add_edge(b, c, 2.into());
         graph.add_edge(c, a, (-5).into());
-
 
         // When: Performing BellmanFord algorithm.
         let shortest_paths = BellmanFord::init(&graph).execute(&graph, a);
