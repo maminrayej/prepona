@@ -33,27 +33,11 @@ impl EdgeType for UndirectedEdge {
     }
 }
 
-/// Trait to guarantee a struct can act as edge of a graph.
-///
-/// `W`: Weight of the edge.
 pub trait Edge<W> {
-    /// Initializes an edge with the given `weight`.
-    ///
-    /// # Arguments:
-    /// * `weight`: Weight of the edge.
-    ///
-    /// # Returns:
-    /// * Initialized edge.
     fn init(weight: Magnitude<W>) -> Self;
 
-    /// # Returns:
-    /// Weight of the edge.
     fn get_weight(&self) -> &Magnitude<W>;
 
-    /// # Updates weight of the edge.
-    ///
-    /// # Arguments:
-    /// * `weight`: New weight.
     fn set_weight(&mut self, weight: Magnitude<W>);
 }
 

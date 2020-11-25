@@ -4,11 +4,9 @@ use std::marker::PhantomData;
 use crate::graph::{DefaultEdge, DirectedEdge, Edge, EdgeType, FlowEdge, UndirectedEdge};
 use crate::storage::GraphStorage;
 
-/// An `AdjList` that stores edges of type `DefaultEdge`.
 pub type List<W> = AdjList<W, DefaultEdge<W>, UndirectedEdge>;
 pub type DiList<W> = AdjList<W, DefaultEdge<W>, DirectedEdge>;
 
-/// An `AdjList` that stores edges of type `FlowEdge`.
 pub type FlowList<W> = AdjList<W, FlowEdge<W>, UndirectedEdge>;
 pub type DiFlowList<W> = AdjList<W, FlowEdge<W>, DirectedEdge>;
 

@@ -59,7 +59,6 @@ impl<W: Clone + Ord + Zero + Any + Unsigned> Dijkstra<W> {
             let real_id = id_map.get_virt_to_real(virt_id).unwrap();
 
             for (n_id, edge) in graph.edges_from(real_id) {
-
                 let n_virt_id = id_map.get_real_to_virt(n_id).unwrap();
 
                 let alt = self.dist[virt_id].clone() + edge.get_weight().clone();

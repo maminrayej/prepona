@@ -8,27 +8,12 @@ use std::marker::PhantomData;
 use crate::graph::{DefaultEdge, DirectedEdge, Edge, EdgeType, FlowEdge, UndirectedEdge};
 use crate::storage::GraphStorage;
 
-/// An `AdjMatrix` that stores edges of type `DefaultEdge`.
 pub type Mat<W, Ty = UndirectedEdge> = AdjMatrix<W, DefaultEdge<W>, Ty>;
 pub type DiMat<W> = AdjMatrix<W, DefaultEdge<W>, DirectedEdge>;
 
-/// An `AdjMatrix` that stores edges of type `FlowEdge`.
 pub type FlowMat<W> = AdjMatrix<W, FlowEdge<W>, UndirectedEdge>;
 pub type DiFlowMat<W> = AdjMatrix<W, FlowEdge<W>, DirectedEdge>;
 
-/// For a simple graph with vertex set *V*, the adjacency matrix is a square |V| × |V| matrix *A*
-/// such that its element *A<sub>ij</sub>* is the weight when there is an edge from vertex *i* to vertex *j*, and ∞ when there is no edge.
-///
-/// In an undirected graph, the adjacency matrix is symmetric in the sense that: ∀ i,j *A<sub>ij</sub>* = *A<sub>ji</sub>*.
-/// Therefore `AdjMatrix` only stores the lower triangle of the matrix to save space.
-///
-/// # Generic Parameters:
-/// * `W`: Weight of the edge.
-/// * `E`: Edge of the graph.
-///
-/// # Conventions:
-/// * |V| represents total number of vertices in the adjacency matrix: \
-/// number of vertices present in the graph + number of removed vertices that are present in the adjacency matrix.
 pub struct AdjMatrix<W, E: Edge<W>, Ty: EdgeType = UndirectedEdge> {
     // AdjMatrix uses a flat vector to store the adjacency matrix and uses a mapping function to map the (i,j) tuple to an index.
     // this mapping function depends on wether the matrix is used to store directed or undirected edges.
@@ -47,13 +32,6 @@ pub struct AdjMatrix<W, E: Edge<W>, Ty: EdgeType = UndirectedEdge> {
 }
 
 impl<W, E: Edge<W>, Ty: EdgeType> AdjMatrix<W, E, Ty> {
-    /// Initializes an adjacency matrix.
-    ///
-    /// # Arguments:
-    /// * `is_directed`: indicates wether the adjacency matrix is going to store directed or undirected edges.
-    ///
-    /// # Returns:
-    /// An adjacency matrix.
     pub fn init() -> Self {
         AdjMatrix {
             vec: vec![],
@@ -81,14 +59,6 @@ impl<W, E: Edge<W>, Ty: EdgeType> AdjMatrix<W, E, Ty> {
         }
     }
 
-    /// Returns number of both vertices that are present in the graph and the vertices that are removed but are ready to be reused again. \
-    /// In other words this method return the number of rows/columns of the adjacency matrix.
-    ///
-    /// # Returns:
-    /// Total number of vertices present in the adjacency matrix: |V|.
-    ///
-    /// # Complexity:
-    /// O(1)
     pub fn total_vertex_count(&self) -> usize {
         self.vertex_count + self.reusable_ids.len()
     }
@@ -129,14 +99,6 @@ impl<W, E: Edge<W>, Ty: EdgeType> AdjMatrix<W, E, Ty> {
 }
 
 impl<W: Any, E: Edge<W>, Ty: EdgeType> GraphStorage<W, E, Ty> for AdjMatrix<W, E, Ty> {
-    /// Adds a vertex into the adjacency matrix.
-    ///
-    /// # Returns:
-    /// Id of the newly inserted vertex.
-    ///
-    /// # Complexity:
-    /// * If there exists a reusable id: O(1).
-    /// * Else: O(|V|).
     fn add_vertex(&mut self) -> usize {
         if let Some(reusable_id) = self.next_reusable_id() {
             self.vertex_count += 1;
@@ -163,13 +125,6 @@ impl<W: Any, E: Edge<W>, Ty: EdgeType> GraphStorage<W, E, Ty> for AdjMatrix<W, E
         }
     }
 
-    /// Removes a vertex from the adjacency matrix.
-    ///
-    /// # Arguments:
-    /// * `vertex_id`: id of the vertex to be removed.
-    ///
-    /// # Complexity:
-    /// O(|V|).
     fn remove_vertex(&mut self, vertex_id: usize) {
         // When a vertex is removed, row and column corresponding to that vertex must be filled with positive infinity.
         // ex: if vertex with id: 1 got removed
@@ -189,19 +144,6 @@ impl<W: Any, E: Edge<W>, Ty: EdgeType> GraphStorage<W, E, Ty> for AdjMatrix<W, E
         self.vertex_count -= 1;
     }
 
-    /// Adds an edge from vertex with `src_id` to vertex with `dst_id`.
-    ///
-    /// # Arguments:
-    /// * `src_id`: Id of the vertex at the start of the edge.
-    /// * `dst_id`: Id of the vertex at the end of the edge.
-    /// * `edge`: The edge between `src_id` and `dst_id`.
-    ///
-    /// # Panics:
-    /// * If vertex with `src_id` or `dst_id` is not present in the graph.
-    /// * If slot [`src_id`][`dst_id`] is out of bounds.
-    ///
-    /// # Complexity:
-    /// O(1).
     fn add_edge(&mut self, src_id: usize, dst_id: usize, edge: E) {
         self[(src_id, dst_id)] = edge;
     }
@@ -210,21 +152,6 @@ impl<W: Any, E: Edge<W>, Ty: EdgeType> GraphStorage<W, E, Ty> for AdjMatrix<W, E
         self.add_edge(src_id, dst_id, edge);
     }
 
-    /// Removes the edge from vertex with `src_id` to vertex with `dst_id`.
-    ///
-    /// # Arguments:
-    /// * `src_id`: Id of the vertex at the start of the edge.
-    /// * `dst_id`: Id of the vertex at the end of the edge.
-    ///
-    /// # Returns:
-    /// The removed edge.
-    ///
-    /// # Panics:
-    /// * If vertex with `src_id` or `dst_id` is not present in the graph.
-    /// * If slot [`src_id`][`dst_id`] is out of bounds.
-    ///
-    /// # Complexity:
-    /// O(1).
     fn remove_edge(&mut self, src_id: usize, dst_id: usize) -> E {
         let mut edge = E::init(Magnitude::PosInfinite);
 
@@ -233,20 +160,10 @@ impl<W: Any, E: Edge<W>, Ty: EdgeType> GraphStorage<W, E, Ty> for AdjMatrix<W, E
         edge
     }
 
-    /// # Returns:
-    /// Number of vertices present in the graph.
-    ///
-    /// # Complexity:
-    /// O(1).
     fn vertex_count(&self) -> usize {
         self.vertex_count
     }
 
-    /// # Returns:
-    /// Vector of vertex ids that are present in the graph.
-    ///
-    /// # Complexity:
-    /// O(|V|).
     fn vertices(&self) -> Vec<usize> {
         // Out of all vertex ids, remove ids that are reusable(hence are removed and not present in the graph).
         (0..self.total_vertex_count())
@@ -265,11 +182,6 @@ impl<W: Any, E: Edge<W>, Ty: EdgeType> GraphStorage<W, E, Ty> for AdjMatrix<W, E
         }
     }
 
-    /// # Returns:
-    /// Vector of edges in the format of (`src_id`, `dst_id`, `edge`).
-    ///
-    /// # Complexity:
-    /// O(|V|<sup>2</sup>).
     fn edges(&self) -> Vec<(usize, usize, &E)> {
         let vertices = self.vertices();
 
@@ -288,14 +200,6 @@ impl<W: Any, E: Edge<W>, Ty: EdgeType> GraphStorage<W, E, Ty> for AdjMatrix<W, E
             .collect()
     }
 
-    /// # Returns:
-    /// Vector of edges from vertex with `src_id` in the format of (`dst_id`, `edge`).
-    ///
-    /// # Arguments:
-    /// * `src_id`: Id of the source vertex.
-    ///
-    /// Complexity:
-    /// O(|V|).
     fn edges_from(&self, src_id: usize) -> Vec<(usize, &E)> {
         // 1. Produce tuple (v, edge between src and v): ∀v ∈ { vertices }.
         // 2. Only keep those tuples that weight of their edge is finite(weight with infinite value indicates absence of edge between src and v).
@@ -306,14 +210,6 @@ impl<W: Any, E: Edge<W>, Ty: EdgeType> GraphStorage<W, E, Ty> for AdjMatrix<W, E
             .collect()
     }
 
-    /// # Returns:
-    /// Id of neighbors of the vertex with `src_id`.
-    ///
-    /// # Arguments:
-    /// * `src_id`: Id of the source vertex.
-    ///
-    /// # Complexity:
-    /// O(|V|).
     fn neighbors(&self, src_id: usize) -> Vec<usize> {
         // Of all vertices, only keep those that there exists an edge from vertex with `src_id` to them.
         self.vertices()
@@ -322,11 +218,6 @@ impl<W: Any, E: Edge<W>, Ty: EdgeType> GraphStorage<W, E, Ty> for AdjMatrix<W, E
             .collect()
     }
 
-    /// # Returns:
-    /// `true` If edges stored in the matrix is directed `false` otherwise.
-    ///
-    /// # Complexity:
-    /// O(1).
     fn is_directed(&self) -> bool {
         self.is_directed
     }
