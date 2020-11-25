@@ -1,6 +1,5 @@
 mod utils;
 
-use magnitude::Magnitude;
 use std::any::Any;
 use std::collections::HashSet;
 use std::marker::PhantomData;
@@ -18,7 +17,7 @@ pub struct AdjMatrix<W, E: Edge<W>, Ty: EdgeType = UndirectedEdge> {
     // AdjMatrix uses a flat vector to store the adjacency matrix and uses a mapping function to map the (i,j) tuple to an index.
     // this mapping function depends on wether the matrix is used to store directed or undirected edges.
     // for more info about the mapping function, checkout utils module.
-    vec: Vec<E>,
+    vec: Vec<Vec<E>>,
 
     // When a vertex is deleted from the graph, AdjMatrix stores the removed vertex id in this struct to use it later when a vertex needs to be inserted into the graph.
     // Instead of allocation more space for the new vertex, AdjMatrix uses one of the available ids in this struct.
@@ -72,39 +71,25 @@ impl<W: Any, E: Edge<W>, Ty: EdgeType> GraphStorage<W, E, Ty> for AdjMatrix<W, E
             reusable_id
         } else {
             let new_size = if self.is_directed() {
-                // Has to allocate for a new row(|V|) + a new column(|V|) + one slot for the diagonal: 2 * |V| + 1.
                 self.vec.len() + 2 * self.total_vertex_count() + 1
             } else {
-                // Has to allocate just one row(|V|) + one slot for diagonal: |V| + 1.
                 self.vec.len() + self.total_vertex_count() + 1
             };
 
-            // Populate these new allocated slots with positive infinity.
-            let vertex_id = self.vertex_count();
-
-            self.vec
-                .resize_with(new_size, || Edge::init(Magnitude::PosInfinite));
+            self.vec.resize_with(new_size, || vec![]);
 
             self.vertex_count += 1;
 
-            vertex_id
+            self.vertex_count - 1
         }
     }
 
     fn remove_vertex(&mut self, vertex_id: usize) {
-        // When a vertex is removed, row and column corresponding to that vertex must be filled with positive infinity.
-        // ex: if vertex with id: 1 got removed
-        //  ___________
-        // |   | ∞ |   |
-        // | ∞ | ∞ | ∞ |
-        // |   | ∞ |   |
-        //  -----------
-        for other_id in self.vertices() {
-            self[(vertex_id, other_id)] = Edge::init(Magnitude::PosInfinite.into());
-            self[(other_id, vertex_id)] = Edge::init(Magnitude::PosInfinite.into());
+        for other_id in 0..self.total_vertex_count() {
+            self[(vertex_id, other_id)].clear();
+            self[(other_id, vertex_id)].clear();
         }
 
-        // Removed vertex id is now reusable.
         self.reusable_ids.insert(vertex_id);
 
         self.vertex_count -= 1;
@@ -113,7 +98,7 @@ impl<W: Any, E: Edge<W>, Ty: EdgeType> GraphStorage<W, E, Ty> for AdjMatrix<W, E
     fn add_edge(&mut self, src_id: usize, dst_id: usize, mut edge: E) -> usize {
         edge.set_id(self.edge_id);
 
-        self[(src_id, dst_id)] = edge;
+        self[(src_id, dst_id)].push(edge);
 
         self.edge_id += 1;
 
@@ -121,19 +106,24 @@ impl<W: Any, E: Edge<W>, Ty: EdgeType> GraphStorage<W, E, Ty> for AdjMatrix<W, E
     }
 
     fn update_edge(&mut self, src_id: usize, dst_id: usize, edge_id: usize, mut edge: E) {
-        let removed_edge = self.remove_edge(src_id, dst_id, edge_id);
-
-        edge.set_id(removed_edge.get_id());
-
-        self.add_edge(src_id, dst_id, edge);
+        if let Some(index) = self[(src_id, dst_id)]
+            .iter()
+            .position(|edge| edge.get_id() == edge_id)
+        {
+            edge.set_id(edge_id);
+            self[(src_id, dst_id)][index] = edge;
+        }
     }
 
-    fn remove_edge(&mut self, src_id: usize, dst_id: usize, _: usize) -> E {
-        let mut edge = E::init(Magnitude::PosInfinite);
-
-        std::mem::swap(&mut self[(src_id, dst_id)], &mut edge);
-
-        edge
+    fn remove_edge(&mut self, src_id: usize, dst_id: usize, edge_id: usize) -> Option<E> {
+        if let Some(index) = self[(src_id, dst_id)]
+            .iter()
+            .position(|edge| edge.get_id() == edge_id)
+        {
+            Some(self[(src_id, dst_id)].remove(index))
+        } else {
+            None
+        }
     }
 
     fn vertex_count(&self) -> usize {
@@ -141,7 +131,6 @@ impl<W: Any, E: Edge<W>, Ty: EdgeType> GraphStorage<W, E, Ty> for AdjMatrix<W, E
     }
 
     fn vertices(&self) -> Vec<usize> {
-        // Out of all vertex ids, remove ids that are reusable(hence are removed and not present in the graph).
         (0..self.total_vertex_count())
             .into_iter()
             .filter(|v_id| !self.reusable_ids.contains(v_id))
@@ -149,20 +138,21 @@ impl<W: Any, E: Edge<W>, Ty: EdgeType> GraphStorage<W, E, Ty> for AdjMatrix<W, E
     }
 
     fn edges_from(&self, src_id: usize) -> Vec<(usize, &E)> {
-        // 1. Produce tuple (v, edge between src and v): ∀v ∈ { vertices }.
-        // 2. Only keep those tuples that weight of their edge is finite(weight with infinite value indicates absence of edge between src and v).
-        self.vertices()
+        (0..self.total_vertex_count())
             .into_iter()
-            .map(|dst_id| (dst_id, &self[(src_id, dst_id)]))
-            .filter(|(_, edge)| edge.get_weight().is_finite())
+            .flat_map(|dst_id| {
+                self.edges_between(src_id, dst_id)
+                    .into_iter()
+                    .map(|edge| (dst_id, edge))
+                    .collect::<Vec<(usize, &E)>>()
+            })
             .collect()
     }
 
     fn neighbors(&self, src_id: usize) -> Vec<usize> {
-        // Of all vertices, only keep those that there exists an edge from vertex with `src_id` to them.
-        self.vertices()
+        (0..self.total_vertex_count())
             .into_iter()
-            .filter(|dst_id| self[(src_id, *dst_id)].get_weight().is_finite())
+            .filter(|dst_id| !self[(src_id, *dst_id)].is_empty())
             .collect()
     }
 
@@ -171,19 +161,13 @@ impl<W: Any, E: Edge<W>, Ty: EdgeType> GraphStorage<W, E, Ty> for AdjMatrix<W, E
     }
 
     fn edges_between(&self, src_id: usize, dst_id: usize) -> Vec<&E> {
-        let edge = &self[(src_id, dst_id)];
-
-        if edge.get_weight().is_finite() {
-            vec![edge]
-        } else {
-            vec![]
-        }
+        self[(src_id, dst_id)].iter().collect()
     }
 }
 
 use std::ops::{Index, IndexMut};
 impl<W: Any, E: Edge<W>, Ty: EdgeType> Index<(usize, usize)> for AdjMatrix<W, E, Ty> {
-    type Output = E;
+    type Output = Vec<E>;
 
     fn index(&self, (src_id, dst_id): (usize, usize)) -> &Self::Output {
         let index = utils::from_ij(src_id, dst_id, self.is_directed);
