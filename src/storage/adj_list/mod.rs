@@ -55,7 +55,7 @@ impl<W, E: Edge<W>, Ty: EdgeType> AdjList<W, E, Ty> {
     }
 }
 
-impl<W: Copy, E: Edge<W>, Ty: EdgeType> GraphStorage<W, E, Ty> for AdjList<W, E, Ty> {
+impl<W: Copy, E: Edge<W> + Copy, Ty: EdgeType> GraphStorage<W, E, Ty> for AdjList<W, E, Ty> {
     fn add_vertex(&mut self) -> usize {
         self.vertex_count += 1;
 
@@ -86,12 +86,10 @@ impl<W: Copy, E: Edge<W>, Ty: EdgeType> GraphStorage<W, E, Ty> for AdjList<W, E,
         self.validate_id(src_id);
         self.validate_id(dst_id);
 
-        let weight = *edge.get_weight();
-
         self.edges_of[src_id].push((dst_id, edge));
 
         if self.is_undirected() {
-            self.edges_of[dst_id].push((src_id, E::init(weight)));
+            self.edges_of[dst_id].push((src_id, edge));
         }
     }
 
