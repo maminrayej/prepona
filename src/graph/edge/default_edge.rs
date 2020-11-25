@@ -2,6 +2,7 @@ use magnitude::Magnitude;
 
 use crate::graph::edge::Edge;
 
+#[derive(Debug, Copy, Clone)]
 pub struct DefaultEdge<W> {
     weight: Magnitude<W>,
 }

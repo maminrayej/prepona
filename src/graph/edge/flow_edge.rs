@@ -2,7 +2,7 @@ use magnitude::Magnitude;
 
 use crate::graph::edge::Edge;
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub struct FlowEdge<W> {
     weight: Magnitude<W>,
     capacity: usize,
