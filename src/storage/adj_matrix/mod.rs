@@ -49,11 +49,6 @@ impl<W, E: Edge<W>, Ty: EdgeType> AdjMatrix<W, E, Ty> {
         }
     }
 
-    // If there exists a reusable id, this method returns it and removes the id from the reusable_ids struct.
-    // If there is no reusable id, this method returns None.
-    //
-    // Complexity:
-    // O(1)
     fn next_reusable_id(&mut self) -> Option<usize> {
         if let Some(id) = self.reusable_ids.iter().take(1).next().copied() {
             self.reusable_ids.remove(&id);
@@ -66,40 +61,6 @@ impl<W, E: Edge<W>, Ty: EdgeType> AdjMatrix<W, E, Ty> {
 
     pub fn total_vertex_count(&self) -> usize {
         self.vertex_count + self.reusable_ids.len()
-    }
-
-    fn index_of(&self, src_id: usize, dst_id: usize) -> Result<usize, String> {
-        // Make sure both src and dst vertices are present in the graph.
-        match (
-            self.reusable_ids.contains(&src_id),
-            self.reusable_ids.contains(&dst_id),
-        ) {
-            (true, true) => Err(format!(
-                "Vertices with id: {} and {} are not present in the graph",
-                src_id, dst_id
-            )),
-            (true, false) => Err(format!(
-                "Vertex with id: {} is not present in the graph",
-                src_id
-            )),
-            (false, true) => Err(format!(
-                "Vertex with id: {} is not present in the graph",
-                dst_id
-            )),
-            (false, false) => {
-                let index = utils::from_ij(src_id, dst_id, self.is_directed);
-
-                if index < self.vec.len() {
-                    Ok(index)
-                } else {
-                    Err(format!(
-                        "Index out of bounds: ({src_id},{dst_id}) does not exist",
-                        src_id = src_id,
-                        dst_id = dst_id
-                    ))
-                }
-            }
-        }
     }
 }
 
@@ -159,8 +120,10 @@ impl<W: Any, E: Edge<W>, Ty: EdgeType> GraphStorage<W, E, Ty> for AdjMatrix<W, E
         self.edge_id - 1
     }
 
-    fn update_edge(&mut self, src_id: usize, dst_id: usize, edge_id: usize, edge: E) {
-        self.remove_edge(src_id, dst_id, edge_id);
+    fn update_edge(&mut self, src_id: usize, dst_id: usize, edge_id: usize, mut edge: E) {
+        let removed_edge = self.remove_edge(src_id, dst_id, edge_id);
+
+        edge.set_id(removed_edge.get_id());
 
         self.add_edge(src_id, dst_id, edge);
     }
@@ -222,24 +185,18 @@ use std::ops::{Index, IndexMut};
 impl<W: Any, E: Edge<W>, Ty: EdgeType> Index<(usize, usize)> for AdjMatrix<W, E, Ty> {
     type Output = E;
 
-    fn index(&self, src_dst: (usize, usize)) -> &Self::Output {
-        let (src_id, dst_id) = src_dst;
+    fn index(&self, (src_id, dst_id): (usize, usize)) -> &Self::Output {
+        let index = utils::from_ij(src_id, dst_id, self.is_directed);
 
-        let index_result = self.index_of(src_id, dst_id);
-
-        // The error message is already in the Err, no need to specify a message.
-        &self.vec[index_result.expect("")]
+        &self.vec[index]
     }
 }
 
 impl<W: Any, E: Edge<W>, Ty: EdgeType> IndexMut<(usize, usize)> for AdjMatrix<W, E, Ty> {
-    fn index_mut(&mut self, src_dst: (usize, usize)) -> &mut Self::Output {
-        let (src_id, dst_id) = src_dst;
+    fn index_mut(&mut self, (src_id, dst_id): (usize, usize)) -> &mut Self::Output {
+        let index = utils::from_ij(src_id, dst_id, self.is_directed);
 
-        let index_result = self.index_of(src_id, dst_id);
-
-        // The error message is already in the Err, no need to specify a message.
-        &mut self.vec[index_result.expect("")]
+        &mut self.vec[index]
     }
 }
 
