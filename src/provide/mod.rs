@@ -61,5 +61,5 @@ pub trait Graph<W, E: Edge<W>, Ty: EdgeType> {
 
     fn update_edge(&mut self, src_id: usize, dst_id: usize, edge_id: usize, edge: E);
 
-    fn remove_edge(&mut self, src_id: usize, dst_id: usize, edge_id: usize) -> E;
+    fn remove_edge(&mut self, src_id: usize, dst_id: usize, edge_id: usize) -> Option<E>;
 }

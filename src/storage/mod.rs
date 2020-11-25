@@ -15,7 +15,7 @@ pub trait GraphStorage<W, E: Edge<W>, Ty: EdgeType> {
 
     fn update_edge(&mut self, src_id: usize, dst_id: usize, edge_id: usize, edge: E);
 
-    fn remove_edge(&mut self, src_id: usize, dst_id: usize, edge_id: usize) -> E;
+    fn remove_edge(&mut self, src_id: usize, dst_id: usize, edge_id: usize) -> Option<E>;
 
     fn vertex_count(&self) -> usize;
 
@@ -26,13 +26,13 @@ pub trait GraphStorage<W, E: Edge<W>, Ty: EdgeType> {
     fn edge_between(&self, src_id: usize, dst_id: usize, edge_id: usize) -> Option<&E> {
         self.edges_between(src_id, dst_id)
             .into_iter()
-            .find(|edge| edge.get_weight().is_finite() && edge.get_id() == edge_id)
+            .find(|edge| edge.get_id() == edge_id)
     }
 
     fn edge(&self, edge_id: usize) -> Option<&E> {
         self.edges()
             .into_iter()
-            .find(|(_, _, edge)| edge.get_weight().is_finite() && edge.get_id() == edge_id)
+            .find(|(_, _, edge)| edge.get_id() == edge_id)
             .and_then(|(_, _, edge)| Some(edge))
     }
 

@@ -96,29 +96,25 @@ impl<W: Copy, E: Edge<W> + Copy + std::fmt::Debug, Ty: EdgeType> GraphStorage<W,
     }
 
     fn update_edge(&mut self, src_id: usize, dst_id: usize, edge_id: usize, mut edge: E) {
-        let removed_edge = self.remove_edge(src_id, dst_id, edge_id);
+        if let Some(removed_edge) = self.remove_edge(src_id, dst_id, edge_id) {
+            edge.set_id(removed_edge.get_id());
 
-        edge.set_id(removed_edge.get_id());
-
-        self.add_edge(src_id, dst_id, edge);
+            self.add_edge(src_id, dst_id, edge);
+        }
     }
 
-    fn remove_edge(&mut self, src_id: usize, dst_id: usize, edge_id: usize) -> E {
+    fn remove_edge(&mut self, src_id: usize, dst_id: usize, edge_id: usize) -> Option<E> {
         if let Some(index) = self.edges_of[src_id]
             .iter()
-            .position(|(did, edge)| *did == dst_id && edge.get_id() == edge_id)
+            .position(|(_, edge)| edge.get_id() == edge_id)
         {
             if self.is_undirected() {
-                self.edges_of[dst_id]
-                    .retain(|(d_id, edge)| *d_id != src_id && edge.get_id() != edge_id);
+                self.edges_of[dst_id].retain(|(_, edge)| edge.get_id() != edge_id);
             }
 
-            self.edges_of[src_id].remove(index).1
+            Some(self.edges_of[src_id].remove(index).1)
         } else {
-            panic!(
-                "There is no edge from vertex: {} to vertex: {}",
-                src_id, dst_id
-            )
+            None
         }
     }
 

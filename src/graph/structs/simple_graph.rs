@@ -111,7 +111,7 @@ impl<W, E: Edge<W>, Ty: EdgeType, S: GraphStorage<W, E, Ty>> provide::Graph<W, E
         self.storage.update_edge(src_id, dst_id, edge_id, edge);
     }
 
-    fn remove_edge(&mut self, src_id: usize, dst_id: usize, edge_id: usize) -> E {
+    fn remove_edge(&mut self, src_id: usize, dst_id: usize, edge_id: usize) -> Option<E> {
         self.storage.remove_edge(src_id, dst_id, edge_id)
     }
 }
