@@ -55,20 +55,32 @@ impl<W, E: Edge<W>, Ty: EdgeType, S: GraphStorage<W, E, Ty>> provide::Vertices
 impl<W, E: Edge<W>, Ty: EdgeType, S: GraphStorage<W, E, Ty>> provide::Edges<W, E>
     for SimpleGraph<W, E, Ty, S>
 {
-    fn edge(&self, src_id: usize, dst_id: usize) -> Option<&E> {
-        self.storage.edge(src_id, dst_id)
+    fn edges_from(&self, src_id: usize) -> Vec<(usize, &E)> {
+        self.storage.edges_from(src_id)
     }
 
-    fn has_edge(&self, src_id: usize, dst_id: usize) -> bool {
-        self.storage.has_edge(src_id, dst_id)
+    fn edges_between(&self, src_id: usize, dst_id: usize) -> Vec<&E> {
+        self.storage.edges_between(src_id, dst_id)
+    }
+
+    fn edge_between(&self, src_id: usize, dst_id: usize, edge_id: usize) -> Option<&E> {
+        self.storage.edge_between(src_id, dst_id, edge_id)
+    }
+
+    fn edge(&self, edge_id: usize) -> Option<&E> {
+        self.storage.edge(edge_id)
+    }
+
+    fn has_any_edge(&self, src_id: usize, dst_id: usize) -> bool {
+        self.storage.has_any_edge(src_id, dst_id)
     }
 
     fn edges(&self) -> Vec<(usize, usize, &E)> {
         self.storage.edges()
     }
 
-    fn edges_from(&self, src_id: usize) -> Vec<(usize, &E)> {
-        self.storage.edges_from(src_id)
+    fn edges_count(&self) -> usize {
+        self.storage.edges().len()
     }
 }
 
@@ -83,24 +95,24 @@ impl<W, E: Edge<W>, Ty: EdgeType, S: GraphStorage<W, E, Ty>> provide::Graph<W, E
         self.storage.remove_vertex(vertex_id);
     }
 
-    fn add_edge(&mut self, src_id: usize, dst_id: usize, edge: E) {
+    fn add_edge(&mut self, src_id: usize, dst_id: usize, edge: E) -> usize{
         if src_id == dst_id {
             panic!("Can not create loop in simple graph")
         }
 
-        if self.storage.has_edge(src_id, dst_id) {
+        if self.storage.has_any_edge(src_id, dst_id) {
             panic!("Can not add multiple edges between two vertices in simple graph");
         }
 
-        self.storage.add_edge(src_id, dst_id, edge);
+        self.storage.add_edge(src_id, dst_id, edge)
     }
 
-    fn update_edge(&mut self, src_id: usize, dst_id: usize, edge: E) {
-        self.storage.update_edge(src_id, dst_id, edge);
+    fn update_edge(&mut self, src_id: usize, dst_id: usize, edge_id: usize, edge: E) {
+        self.storage.update_edge(src_id, dst_id, edge_id, edge);
     }
 
-    fn remove_edge(&mut self, src_id: usize, dst_id: usize) -> E {
-        self.storage.remove_edge(src_id, dst_id)
+    fn remove_edge(&mut self, src_id: usize, dst_id: usize, edge_id: usize) -> E {
+        self.storage.remove_edge(src_id, dst_id, edge_id)
     }
 }
 

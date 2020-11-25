@@ -14,6 +14,8 @@ pub struct AdjList<W, E: Edge<W>, Ty: EdgeType> {
     edges_of: Vec<Vec<(usize, E)>>,
     reusable_ids: HashSet<usize>,
 
+    edge_id: usize,
+
     vertex_count: usize,
     is_directed: bool,
 
@@ -26,6 +28,8 @@ impl<W, E: Edge<W>, Ty: EdgeType> AdjList<W, E, Ty> {
         AdjList {
             edges_of: vec![],
             reusable_ids: HashSet::new(),
+
+            edge_id: 0,
 
             vertex_count: 0,
             is_directed: Ty::is_directed(),
@@ -45,17 +49,14 @@ impl<W, E: Edge<W>, Ty: EdgeType> AdjList<W, E, Ty> {
         }
     }
 
-    fn validate_id(&self, vertex_id: usize) {
-        if self.reusable_ids.contains(&vertex_id) || vertex_id >= self.edges_of.len() {
-            panic!(format!(
-                "Vertex with id: {} is not present in the graph",
-                vertex_id
-            ))
-        }
-    }
+    // fn is_vertex_vlid(&self, vertex_id: usize) -> bool {
+    //     !self.reusable_ids.contains(&vertex_id) && vertex_id < self.edges_of.len()
+    // }
 }
 
-impl<W: Copy, E: Edge<W> + Copy, Ty: EdgeType> GraphStorage<W, E, Ty> for AdjList<W, E, Ty> {
+impl<W: Copy, E: Edge<W> + Copy + std::fmt::Debug, Ty: EdgeType> GraphStorage<W, E, Ty>
+    for AdjList<W, E, Ty>
+{
     fn add_vertex(&mut self) -> usize {
         self.vertex_count += 1;
 
@@ -69,8 +70,6 @@ impl<W: Copy, E: Edge<W> + Copy, Ty: EdgeType> GraphStorage<W, E, Ty> for AdjLis
     }
 
     fn remove_vertex(&mut self, vertex_id: usize) {
-        self.validate_id(vertex_id);
-
         self.edges_of[vertex_id].clear();
 
         for src_id in 0..self.vertex_count() {
@@ -82,34 +81,36 @@ impl<W: Copy, E: Edge<W> + Copy, Ty: EdgeType> GraphStorage<W, E, Ty> for AdjLis
         self.reusable_ids.insert(vertex_id);
     }
 
-    fn add_edge(&mut self, src_id: usize, dst_id: usize, edge: E) {
-        self.validate_id(src_id);
-        self.validate_id(dst_id);
+    fn add_edge(&mut self, src_id: usize, dst_id: usize, mut edge: E) -> usize {
+        edge.set_id(self.edge_id);
 
         self.edges_of[src_id].push((dst_id, edge));
 
         if self.is_undirected() {
             self.edges_of[dst_id].push((src_id, edge));
         }
+
+        self.edge_id += 1;
+
+        self.edge_id - 1
     }
 
-    fn update_edge(&mut self, src_id: usize, dst_id: usize, edge: E) {
-        self.remove_edge(src_id, dst_id);
+    fn update_edge(&mut self, src_id: usize, dst_id: usize, edge_id: usize, mut edge: E) {
+        let removed_edge = self.remove_edge(src_id, dst_id, edge_id);
+
+        edge.set_id(removed_edge.get_id());
 
         self.add_edge(src_id, dst_id, edge);
     }
 
-    fn remove_edge(&mut self, src_id: usize, dst_id: usize) -> E {
-        self.validate_id(src_id);
-        self.validate_id(dst_id);
-
-        if let Some((index, _)) = self.edges_of[src_id]
+    fn remove_edge(&mut self, src_id: usize, dst_id: usize, edge_id: usize) -> E {
+        if let Some(index) = self.edges_of[src_id]
             .iter()
-            .enumerate()
-            .find(|(_, (d_id, _))| *d_id == dst_id)
+            .position(|(did, edge)| *did == dst_id && edge.get_id() == edge_id)
         {
             if self.is_undirected() {
-                self.edges_of[dst_id].retain(|(d_id, _)| *d_id != src_id);
+                self.edges_of[dst_id]
+                    .retain(|(d_id, edge)| *d_id != src_id && edge.get_id() != edge_id);
             }
 
             self.edges_of[src_id].remove(index).1
@@ -131,31 +132,15 @@ impl<W: Copy, E: Edge<W> + Copy, Ty: EdgeType> GraphStorage<W, E, Ty> for AdjLis
             .collect()
     }
 
-    fn edge(&self, src_id: usize, dst_id: usize) -> Option<&E> {
-        self.validate_id(src_id);
-        self.validate_id(dst_id);
-
+    fn edges_between(&self, src_id: usize, dst_id: usize) -> Vec<&E> {
         self.edges_of[src_id]
             .iter()
-            .find(|(d_id, _)| *d_id == dst_id)
+            .filter(|(did, _)| *did == dst_id)
             .map(|(_, edge)| edge)
-    }
-
-    fn edges(&self) -> Vec<(usize, usize, &E)> {
-        self.vertices()
-            .into_iter()
-            .flat_map(|src_id| {
-                self.edges_from(src_id)
-                    .into_iter()
-                    .map(|(dst_id, edge)| (src_id, dst_id, edge))
-                    .collect::<Vec<(usize, usize, &E)>>()
-            })
             .collect()
     }
 
     fn edges_from(&self, src_id: usize) -> Vec<(usize, &E)> {
-        self.validate_id(src_id);
-
         self.edges_of[src_id]
             .iter()
             .map(|(dst_id, edge)| (*dst_id, edge))
@@ -163,8 +148,6 @@ impl<W: Copy, E: Edge<W> + Copy, Ty: EdgeType> GraphStorage<W, E, Ty> for AdjLis
     }
 
     fn neighbors(&self, src_id: usize) -> Vec<usize> {
-        self.validate_id(src_id);
-
         self.edges_of[src_id]
             .iter()
             .map(|(dst_id, _)| *dst_id)
@@ -237,7 +220,7 @@ mod tests {
         assert!(vec![a, b, c]
             .into_iter()
             .flat_map(|vertex_id| vec![(vertex_id, a), (vertex_id, b), (vertex_id, c)])
-            .all(|(src_id, dst_id)| list.edge(src_id, dst_id).is_none()));
+            .all(|(src_id, dst_id)| !list.has_any_edge(src_id, dst_id)));
     }
 
     #[test]
@@ -266,7 +249,7 @@ mod tests {
         assert!(vec![a, b, c]
             .into_iter()
             .flat_map(|vertex_id| vec![(vertex_id, a), (vertex_id, b), (vertex_id, c)])
-            .all(|(src_id, dst_id)| list.edge(src_id, dst_id).is_none()));
+            .all(|(src_id, dst_id)| !list.has_any_edge(src_id, dst_id)));
     }
 
     #[test]
@@ -299,7 +282,7 @@ mod tests {
         assert_eq!(list.vertices().len(), 1);
         assert!(list.vertices().contains(&c));
 
-        assert!(list.edge(c, c).is_none());
+        assert!(!list.has_any_edge(c, c));
     }
 
     #[test]
@@ -332,7 +315,7 @@ mod tests {
         assert_eq!(list.vertices().len(), 1);
         assert!(list.vertices().contains(&c));
 
-        assert!(list.edge(c, c).is_none());
+        assert!(!list.has_any_edge(c, c));
     }
 
     #[test]
@@ -371,7 +354,7 @@ mod tests {
         assert!(vec![a, b, c]
             .into_iter()
             .flat_map(|vertex_id| vec![(vertex_id, a), (vertex_id, b), (vertex_id, c)])
-            .all(|(src_id, dst_id)| list.edge(src_id, dst_id).is_none()));
+            .all(|(src_id, dst_id)| !list.has_any_edge(src_id, dst_id)));
     }
 
     #[test]
@@ -410,7 +393,7 @@ mod tests {
         assert!(vec![a, b, c]
             .into_iter()
             .flat_map(|vertex_id| vec![(vertex_id, a), (vertex_id, b), (vertex_id, c)])
-            .all(|(src_id, dst_id)| list.edge(src_id, dst_id).is_none()));
+            .all(|(src_id, dst_id)| !list.has_any_edge(src_id, dst_id)));
     }
 
     #[test]
@@ -506,9 +489,9 @@ mod tests {
         // When: Doing nothing.
 
         // Then:
-        assert!(list.has_edge(a, b));
-        assert!(list.has_edge(b, c));
-        assert!(list.has_edge(c, a));
+        assert!(list.has_any_edge(a, b));
+        assert!(list.has_any_edge(b, c));
+        assert!(list.has_any_edge(c, a));
     }
 
     #[test]
@@ -530,14 +513,14 @@ mod tests {
         // When: Doing nothing.
 
         // Then:
-        assert!(list.has_edge(a, b));
-        assert!(list.has_edge(b, a));
+        assert!(list.has_any_edge(a, b));
+        assert!(list.has_any_edge(b, a));
 
-        assert!(list.has_edge(b, c));
-        assert!(list.has_edge(c, b));
+        assert!(list.has_any_edge(b, c));
+        assert!(list.has_any_edge(c, b));
 
-        assert!(list.has_edge(c, a));
-        assert!(list.has_edge(a, c));
+        assert!(list.has_any_edge(c, a));
+        assert!(list.has_any_edge(a, c));
     }
 
     #[test]
@@ -552,14 +535,15 @@ mod tests {
         let a = list.add_vertex();
         let b = list.add_vertex();
         let c = list.add_vertex();
-        list.add_edge(a, b, 1.into());
-        list.add_edge(b, c, 2.into());
-        list.add_edge(c, a, 3.into());
+
+        let ab = list.add_edge(a, b, 1.into());
+        let bc = list.add_edge(b, c, 2.into());
+        let ca = list.add_edge(c, a, 3.into());
 
         // When: Incrementing edge of each edge by 1.
-        list.update_edge(a, b, 2.into());
-        list.update_edge(b, c, 3.into());
-        list.update_edge(c, a, 4.into());
+        list.update_edge(a, b, ab, 2.into());
+        list.update_edge(b, c, bc, 3.into());
+        list.update_edge(c, a, ca, 4.into());
 
         // Then:
         assert_eq!(list.vertex_count(), 3);
@@ -589,14 +573,15 @@ mod tests {
         let a = list.add_vertex();
         let b = list.add_vertex();
         let c = list.add_vertex();
-        list.add_edge(a, b, 1.into());
-        list.add_edge(b, c, 2.into());
-        list.add_edge(c, a, 3.into());
+
+        let ab = list.add_edge(a, b, 1.into());
+        let bc = list.add_edge(b, c, 2.into());
+        let ca = list.add_edge(c, a, 3.into());
 
         // When: Incrementing edge of each edge by 1.
-        list.update_edge(a, b, 2.into());
-        list.update_edge(b, c, 3.into());
-        list.update_edge(c, a, 4.into());
+        list.update_edge(a, b, ab, 2.into());
+        list.update_edge(b, c, bc, 3.into());
+        list.update_edge(c, a, ca, 4.into());
 
         // Then:
         assert_eq!(list.vertex_count(), 3);
@@ -626,8 +611,8 @@ mod tests {
         let a = list.add_vertex();
         let b = list.add_vertex();
         let c = list.add_vertex();
-        list.add_edge(a, b, 1.into());
-        list.add_edge(b, c, 2.into());
+        let ab = list.add_edge(a, b, 1.into());
+        let bc = list.add_edge(b, c, 2.into());
         list.add_edge(c, a, 3.into());
 
         // When: Removing edges a --> b and b --> c
@@ -636,8 +621,8 @@ mod tests {
         //      ^       |
         //      '--------
         //
-        list.remove_edge(a, b);
-        list.remove_edge(b, c);
+        list.remove_edge(a, b, ab);
+        list.remove_edge(b, c, bc);
 
         // Then:
         assert_eq!(list.vertex_count(), 3);
@@ -647,7 +632,7 @@ mod tests {
         assert_eq!(list.edges_of[c].len(), 1);
 
         assert_eq!(list.edges().len(), 1);
-        assert_eq!(list.edge(c, a).unwrap().get_weight().unwrap(), 3);
+        assert_eq!(list.edges_between(c, a)[0].get_weight().unwrap(), 3);
     }
 
     #[test]
@@ -662,8 +647,8 @@ mod tests {
         let a = list.add_vertex();
         let b = list.add_vertex();
         let c = list.add_vertex();
-        list.add_edge(a, b, 1.into());
-        list.add_edge(b, c, 2.into());
+        let ab = list.add_edge(a, b, 1.into());
+        let bc = list.add_edge(b, c, 2.into());
         list.add_edge(c, a, 3.into());
 
         // When: Removing edges a --- b and b --- c
@@ -672,8 +657,8 @@ mod tests {
         //      |       |
         //      '--------
         //
-        list.remove_edge(a, b);
-        list.remove_edge(b, c);
+        list.remove_edge(a, b, ab);
+        list.remove_edge(b, c, bc);
 
         // Then:
         assert_eq!(list.vertex_count(), 3);
@@ -682,7 +667,7 @@ mod tests {
         assert_eq!(list.edges_of[c].len(), 1);
 
         assert_eq!(list.edges().len(), 2);
-        assert_eq!(list.edge(a, c).unwrap().get_weight().unwrap(), 3);
+        assert_eq!(list.edges_between(a, c)[0].get_weight().unwrap(), 3);
     }
 
     #[test]
@@ -757,73 +742,73 @@ mod tests {
             .all(|vertex_id| list.neighbors(c).contains(vertex_id)));
     }
 
-    #[test]
-    #[should_panic(expected = "Vertex with id: 0 is not present in the graph")]
-    fn first_vertex_not_present() {
-        // Given: list
-        //
-        //      a
-        //
-        let mut list = List::<usize>::init();
-        let a = list.add_vertex();
-        let b = list.add_vertex();
+    // #[test]
+    // #[should_panic(expected = "Vertex with id: 0 is not present in the graph")]
+    // fn first_vertex_not_present() {
+    //     // Given: list
+    //     //
+    //     //      a
+    //     //
+    //     let mut list = List::<usize>::init();
+    //     let a = list.add_vertex();
+    //     let b = list.add_vertex();
 
-        // When: Removing vertex a and try to pass it as valid vertex id.
-        list.remove_vertex(a);
-        list.edge(a, b);
+    //     // When: Removing vertex a and try to pass it as valid vertex id.
+    //     list.remove_vertex(a);
+    //     list.edge(a, b);
 
-        // Then: Code should panic.
-    }
+    //     // Then: Code should panic.
+    // }
 
-    #[test]
-    #[should_panic(expected = "Vertex with id: 1 is not present in the graph")]
-    fn second_vertex_not_present() {
-        // Given: list
-        //
-        //      a
-        //
-        let mut list = List::<usize>::init();
-        let a = list.add_vertex();
-        let b = list.add_vertex();
+    // #[test]
+    // #[should_panic(expected = "Vertex with id: 1 is not present in the graph")]
+    // fn second_vertex_not_present() {
+    //     // Given: list
+    //     //
+    //     //      a
+    //     //
+    //     let mut list = List::<usize>::init();
+    //     let a = list.add_vertex();
+    //     let b = list.add_vertex();
 
-        // When: Removing vertex b and try to pass it as valid vertex id.
-        list.remove_vertex(b);
-        list.edge(a, b);
+    //     // When: Removing vertex b and try to pass it as valid vertex id.
+    //     list.remove_vertex(b);
+    //     list.edge(a, b);
 
-        // Then: Code should panic.
-    }
+    //     // Then: Code should panic.
+    // }
 
-    #[test]
-    #[should_panic(expected = "Vertex with id: 3 is not present in the graph")]
-    fn non_existent_vertex() {
-        // Given: list
-        //
-        //      a
-        //
-        let mut list = List::<usize>::init();
-        let a = list.add_vertex();
-        let b = 3;
+    // #[test]
+    // #[should_panic(expected = "Vertex with id: 3 is not present in the graph")]
+    // fn non_existent_vertex() {
+    //     // Given: list
+    //     //
+    //     //      a
+    //     //
+    //     let mut list = List::<usize>::init();
+    //     let a = list.add_vertex();
+    //     let b = 3;
 
-        // When: Trying to access b which is never add to graph.
-        list.edge(a, b);
+    //     // When: Trying to access b which is never add to graph.
+    //     list.edge(a, b);
 
-        // Then: Code should panic.
-    }
+    //     // Then: Code should panic.
+    // }
 
-    #[test]
-    #[should_panic(expected = "There is no edge from vertex: 0 to vertex: 1")]
-    fn non_existent_edge() {
-        // Given: List
-        //
-        //      a   b
-        //
-        let mut list = List::<usize>::init();
-        let a = list.add_vertex();
-        let b = list.add_vertex();
+    // #[test]
+    // #[should_panic(expected = "There is no edge from vertex: 0 to vertex: 1")]
+    // fn non_existent_edge() {
+    //     // Given: List
+    //     //
+    //     //      a   b
+    //     //
+    //     let mut list = List::<usize>::init();
+    //     let a = list.add_vertex();
+    //     let b = list.add_vertex();
 
-        // When: Trying to remove non existent edge between a and b.
-        list.remove_edge(a, b);
+    //     // When: Trying to remove non existent edge between a and b.
+    //     list.remove_edge(a, b);
 
-        // Then: Code should panic.
-    }
+    //     // Then: Code should panic.
+    // }
 }

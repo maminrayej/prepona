@@ -4,6 +4,7 @@ use crate::graph::edge::Edge;
 
 #[derive(Debug, Copy, Clone)]
 pub struct FlowEdge<W> {
+    id: usize,
     weight: Magnitude<W>,
     capacity: usize,
     flow: isize,
@@ -19,6 +20,7 @@ impl<W> FlowEdge<W> {
         }
 
         FlowEdge {
+            id: 0,
             weight,
             capacity,
             flow,
@@ -61,6 +63,14 @@ impl<W> Edge<W> for FlowEdge<W> {
     fn set_weight(&mut self, weight: Magnitude<W>) {
         self.weight = weight
     }
+
+    fn set_id(&mut self, id: usize) {
+        self.id = id
+    }
+
+    fn get_id(&self) -> usize {
+        self.id
+    }
 }
 
 use std::any::Any;
@@ -83,6 +93,15 @@ impl<W: Any> TryFrom<(W, usize, isize)> for FlowEdge<W> {
         } else {
             Ok(FlowEdge::init_with(weight.into(), capacity, flow))
         }
+    }
+}
+
+impl<W: PartialEq> PartialEq for FlowEdge<W> {
+    fn eq(&self, other: &Self) -> bool {
+        self.weight == other.weight &&
+        self.id == other.id &&
+        self.flow == other.flow &&
+        self.capacity == other.capacity
     }
 }
 

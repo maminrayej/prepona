@@ -11,23 +11,46 @@ pub trait GraphStorage<W, E: Edge<W>, Ty: EdgeType> {
 
     fn remove_vertex(&mut self, vertex_id: usize);
 
-    fn add_edge(&mut self, src_id: usize, dst_id: usize, edge: E);
+    fn add_edge(&mut self, src_id: usize, dst_id: usize, edge: E) -> usize;
 
-    fn update_edge(&mut self, src_id: usize, dst_id: usize, edge: E);
+    fn update_edge(&mut self, src_id: usize, dst_id: usize, edge_id: usize, edge: E);
 
-    fn remove_edge(&mut self, src_id: usize, dst_id: usize) -> E;
+    fn remove_edge(&mut self, src_id: usize, dst_id: usize, edge_id: usize) -> E;
 
     fn vertex_count(&self) -> usize;
 
     fn vertices(&self) -> Vec<usize>;
 
-    fn edge(&self, src_id: usize, dst_id: usize) -> Option<&E>;
+    fn edges_between(&self, src_id: usize, dst_id: usize) -> Vec<&E>;
 
-    fn has_edge(&self, src_id: usize, dst_id: usize) -> bool {
-        self.edge(src_id, dst_id).is_some()
+    fn edge_between(&self, src_id: usize, dst_id: usize, edge_id: usize) -> Option<&E> {
+        self.edges_between(src_id, dst_id)
+            .into_iter()
+            .find(|edge| edge.get_weight().is_finite() && edge.get_id() == edge_id)
     }
 
-    fn edges(&self) -> Vec<(usize, usize, &E)>;
+    fn edge(&self, edge_id: usize) -> Option<&E> {
+        self.edges()
+            .into_iter()
+            .find(|(_, _, edge)| edge.get_weight().is_finite() && edge.get_id() == edge_id)
+            .and_then(|(_, _, edge)| Some(edge))
+    }
+
+    fn has_any_edge(&self, src_id: usize, dst_id: usize) -> bool {
+        !self.edges_between(src_id, dst_id).is_empty()
+    }
+
+    fn edges(&self) -> Vec<(usize, usize, &E)> {
+        self.vertices()
+            .into_iter()
+            .flat_map(|src_id| {
+                self.edges_from(src_id)
+                    .into_iter()
+                    .map(|(dst_id, edge)| (src_id, dst_id, edge))
+                    .collect::<Vec<(usize, usize, &E)>>()
+            })
+            .collect()
+    }
 
     fn edges_from(&self, src_id: usize) -> Vec<(usize, &E)>;
 

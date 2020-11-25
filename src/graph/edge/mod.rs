@@ -39,6 +39,10 @@ pub trait Edge<W> {
     fn get_weight(&self) -> &Magnitude<W>;
 
     fn set_weight(&mut self, weight: Magnitude<W>);
+
+    fn set_id(&mut self, id: usize);
+
+    fn get_id(&self) -> usize;
 }
 
 #[cfg(test)]

@@ -31,25 +31,19 @@ pub trait Vertices {
 }
 
 pub trait Edges<W, E: Edge<W>> {
-    fn edge(&self, src_id: usize, dst_id: usize) -> Option<&E>;
+    fn edges_from(&self, src_id: usize) -> Vec<(usize, &E)>;
 
-    fn has_edge(&self, src_id: usize, dst_id: usize) -> bool;
+    fn edges_between(&self, src_id: usize, dst_id: usize) -> Vec<&E>;
+
+    fn edge_between(&self, src_id: usize, dst_id: usize, edge_id: usize) -> Option<&E>;
+
+    fn edge(&self, edge_id: usize) -> Option<&E>;
+
+    fn has_any_edge(&self, src_id: usize, dst_id: usize) -> bool;
 
     fn edges(&self) -> Vec<(usize, usize, &E)>;
 
-    fn edges_from(&self, src_id: usize) -> Vec<(usize, &E)> {
-        // 1. From triplets produced by `edges` function, only keep those that their source vertex id is `src_id`.
-        // 2. Map each triplet to a pair by discarding the source vertex id
-        self.edges()
-            .into_iter()
-            .filter(|(s_id, _, _)| *s_id == src_id)
-            .map(|(_, dst_id, edge)| (dst_id, edge))
-            .collect()
-    }
-
-    fn edges_count(&self) -> usize {
-        self.edges().len()
-    }
+    fn edges_count(&self) -> usize;
 }
 
 pub trait Direction {
@@ -63,9 +57,9 @@ pub trait Graph<W, E: Edge<W>, Ty: EdgeType> {
 
     fn remove_vertex(&mut self, vertex_id: usize);
 
-    fn add_edge(&mut self, src_id: usize, dst_id: usize, edge: E);
+    fn add_edge(&mut self, src_id: usize, dst_id: usize, edge: E) -> usize;
 
-    fn update_edge(&mut self, src_id: usize, dst_id: usize, edge: E);
+    fn update_edge(&mut self, src_id: usize, dst_id: usize, edge_id: usize, edge: E);
 
-    fn remove_edge(&mut self, src_id: usize, dst_id: usize) -> E;
+    fn remove_edge(&mut self, src_id: usize, dst_id: usize, edge_id: usize) -> E;
 }
