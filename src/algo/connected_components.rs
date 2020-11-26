@@ -35,7 +35,7 @@ impl ConnectedComponents {
     where
         G: provide::Graph<W, E, UndirectedEdge> + provide::Vertices + provide::Neighbors,
     {
-        let dfs = Dfs::init(graph, &mut self);
+        let mut dfs = Dfs::init(graph, &mut self);
 
         dfs.execute(graph);
 

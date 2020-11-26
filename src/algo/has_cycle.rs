@@ -85,10 +85,10 @@ impl<'a, G: provide::Neighbors + provide::Vertices + provide::Direction> HasCycl
     }
 
     pub fn execute(mut self, graph: &G) -> Vec<usize> {
-        let dfs = Dfs::init(graph, &mut self);
+        let mut dfs = Dfs::init(graph, &mut self);
         dfs.execute(graph);
 
-        let id_map = dfs.id_map();
+        let id_map = dfs.dissolve().2;
 
         let a = self
             .cycle

@@ -23,17 +23,19 @@ impl TopologicalSort {
     where
         G: provide::Graph<W, E, DirectedEdge> + provide::Vertices + provide::Neighbors,
     {
-        let dfs = Dfs::init(graph, &mut self);
+        let mut dfs = Dfs::init(graph, &mut self);
 
         dfs.execute(graph);
 
-        let id_map = dfs.id_map();
+        let dfs = dfs;
+
+        let id_map = dfs.dissolve().2;
 
         self.sorted_vertex_ids.reverse();
 
         self.sorted_vertex_ids
-            .into_iter()
-            .map(|virt_id| id_map.get_virt_to_real(virt_id).unwrap())
+            .iter()
+            .map(|virt_id| id_map.get_virt_to_real(*virt_id).unwrap())
             .collect()
     }
 }
