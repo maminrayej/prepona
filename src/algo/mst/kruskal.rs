@@ -50,8 +50,8 @@ impl Kruskal {
         edges.sort_by(|(_, _, e1), (_, _, e2)| e1.get_weight().cmp(e2.get_weight()));
 
         for (v_real_id, u_real_id, _) in edges {
-            let v_virt_id = id_map.get_real_to_virt(v_real_id).unwrap();
-            let u_virt_id = id_map.get_real_to_virt(u_real_id).unwrap();
+            let v_virt_id = id_map.virt_id_of(v_real_id);
+            let u_virt_id = id_map.virt_id_of(u_real_id);
 
             if !self.sets[v_virt_id]
                 .borrow()

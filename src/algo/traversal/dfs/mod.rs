@@ -37,7 +37,7 @@ impl<'a, L: DfsListener> Dfs<'a, L> {
 
         start_ids = start_ids
             .into_iter()
-            .map(|real_id| id_map.get_real_to_virt(real_id).unwrap())
+            .map(|real_id| id_map.virt_id_of(real_id))
             .collect();
 
         Dfs {
@@ -83,12 +83,12 @@ impl<'a, L: DfsListener> Dfs<'a, L> {
 
                         self.colors[virt_id] = Color::Gray;
 
-                        let real_id = self.id_map.get_virt_to_real(virt_id).unwrap();
+                        let real_id = self.id_map.real_id_of(virt_id);
 
                         let mut neighbors = graph
                             .neighbors(real_id)
                             .into_iter()
-                            .map(|real_id| self.id_map.get_real_to_virt(real_id).unwrap())
+                            .map(|real_id| self.id_map.virt_id_of(real_id))
                             .filter(|virt_id| self.colors[*virt_id] == Color::White)
                             .collect();
 

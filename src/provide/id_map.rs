@@ -21,12 +21,12 @@ impl IdMap {
         self.virt_to_real[virt_id] = real_id;
     }
 
-    pub fn get_real_to_virt(&self, real_id: usize) -> Option<usize> {
-        self.real_to_virt.get(&real_id).copied()
+    pub fn virt_id_of(&self, real_id: usize) -> usize {
+        self.real_to_virt.get(&real_id).copied().unwrap()
     }
 
-    pub fn get_virt_to_real(&self, virt_id: usize) -> Option<usize> {
-        self.virt_to_real.get(virt_id).copied()
+    pub fn real_id_of(&self, virt_id: usize) -> usize {
+        self.virt_to_real[virt_id]
     }
 }
 
@@ -81,7 +81,7 @@ mod tests {
         id_map.put_real_to_virt(0, 1);
 
         // Then: Api must return the mapping.
-        assert_eq!(id_map.get_real_to_virt(0).unwrap(), 1);
+        assert_eq!(id_map.virt_id_of(0), 1);
     }
 
     #[test]
@@ -93,6 +93,6 @@ mod tests {
         id_map.put_virt_to_real(0, 1);
 
         // Then: Api must return the mapping.
-        assert_eq!(id_map.get_virt_to_real(0).unwrap(), 1);
+        assert_eq!(id_map.real_id_of(0), 1);
     }
 }

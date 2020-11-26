@@ -35,7 +35,7 @@ impl TopologicalSort {
 
         self.sorted_vertex_ids
             .iter()
-            .map(|virt_id| id_map.get_virt_to_real(*virt_id).unwrap())
+            .map(|virt_id| id_map.real_id_of(*virt_id))
             .collect()
     }
 }

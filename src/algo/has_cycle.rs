@@ -21,13 +21,13 @@ impl<'a, G: provide::Neighbors + provide::Vertices + provide::Direction> DfsList
         self.stack.push(virt_id);
 
         // detect cycle
-        let real_id = dfs.get_id_map().get_virt_to_real(virt_id).unwrap();
+        let real_id = dfs.get_id_map().real_id_of(virt_id);
 
         if let Some(start_virt_id) = self
             .graph
             .neighbors(real_id)
             .into_iter()
-            .map(|real_id| dfs.get_id_map().get_real_to_virt(real_id).unwrap())
+            .map(|real_id| dfs.get_id_map().virt_id_of(real_id))
             .find(|&n_id| {
                 self.has_back_edge_to_neighbor(
                     n_id,
@@ -93,7 +93,7 @@ impl<'a, G: provide::Neighbors + provide::Vertices + provide::Direction> HasCycl
         let a = self
             .cycle
             .iter()
-            .map(|virt_id| id_map.get_virt_to_real(*virt_id).unwrap())
+            .map(|virt_id| id_map.real_id_of(*virt_id))
             .collect();
 
         a

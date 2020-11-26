@@ -45,21 +45,17 @@ impl<W: Clone + Ord + Zero + Any + Unsigned> Dijkstra<W> {
     {
         let id_map = graph.continuos_id_map();
 
-        let src_virt_id = id_map.get_real_to_virt(src_id);
+        let src_virt_id = id_map.virt_id_of(src_id);
 
-        if src_virt_id.is_none() {
-            panic!(format!("{} is not valid", src_id))
-        }
-
-        self.dist[src_virt_id.unwrap()] = W::zero().into();
+        self.dist[src_virt_id] = W::zero().into();
 
         while let Some(virt_id) = self.next_id() {
             self.visited[virt_id] = true;
 
-            let real_id = id_map.get_virt_to_real(virt_id).unwrap();
+            let real_id = id_map.real_id_of(virt_id);
 
             for (n_id, edge) in graph.edges_from(real_id) {
-                let n_virt_id = id_map.get_real_to_virt(n_id).unwrap();
+                let n_virt_id = id_map.virt_id_of(n_id);
 
                 let alt = self.dist[virt_id].clone() + edge.get_weight().clone();
                 if alt < self.dist[n_virt_id] {
@@ -71,7 +67,7 @@ impl<W: Clone + Ord + Zero + Any + Unsigned> Dijkstra<W> {
 
         let mut distance_map = HashMap::new();
         for virt_id in 0..graph.vertex_count() {
-            let real_id = id_map.get_virt_to_real(virt_id).unwrap();
+            let real_id = id_map.real_id_of(virt_id);
             distance_map.insert((src_id, real_id), self.dist[virt_id].clone());
         }
 
@@ -85,23 +81,7 @@ mod tests {
     use crate::graph::MatGraph;
     use crate::provide::*;
     use crate::storage::{DiMat, Mat};
-
-    #[test]
-    #[should_panic(expected = "0 is not valid")]
-    fn empty_undirected_graph() {
-        let graph = MatGraph::init(Mat::<usize>::init());
-
-        Dijkstra::init(&graph).execute(&graph, 0);
-    }
-
-    #[test]
-    #[should_panic(expected = "0 is not valid")]
-    fn empty_directed_graph() {
-        let graph = MatGraph::init(Mat::<usize>::init());
-
-        Dijkstra::init(&graph).execute(&graph, 0);
-    }
-
+    
     #[test]
     fn one_vertex_undirected_graph() {
         // Given: Graph

@@ -56,10 +56,10 @@ impl TarjanSCC {
         self.stack.push(virt_id);
         self.on_stack[virt_id] = true;
 
-        let real_id = self.id_map.get_virt_to_real(virt_id).unwrap();
+        let real_id = self.id_map.real_id_of(virt_id);
 
         for dst_real_id in graph.neighbors(real_id) {
-            let dst_virt_id = self.id_map.get_real_to_virt(dst_real_id).unwrap();
+            let dst_virt_id = self.id_map.virt_id_of(dst_real_id);
 
             if self.index_of[dst_virt_id].is_pos_infinite() {
                 self._execute(graph, dst_virt_id);
@@ -79,7 +79,7 @@ impl TarjanSCC {
                 self.on_stack[w_virt_id] = false;
 
                 // add w to new scc
-                scc.push(self.id_map.get_virt_to_real(w_virt_id).unwrap());
+                scc.push(self.id_map.real_id_of(w_virt_id));
                 if w_virt_id == virt_id {
                     break;
                 }

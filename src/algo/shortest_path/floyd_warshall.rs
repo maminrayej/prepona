@@ -28,24 +28,24 @@ impl FloydWarshall {
         let mut dist = vec![vec![Magnitude::PosInfinite; vertex_count]; vertex_count];
 
         for &u_real_id in &vertices {
-            let u_virt_id = id_map.get_real_to_virt(u_real_id).unwrap();
+            let u_virt_id = id_map.virt_id_of(u_real_id);
             dist[u_virt_id][u_virt_id] = W::zero().into();
         }
 
         for &u_real_id in &vertices {
-            let u_virt_id = id_map.get_real_to_virt(u_real_id).unwrap();
+            let u_virt_id = id_map.virt_id_of(u_real_id);
 
             for (v_real_id, edge) in graph.edges_from(u_real_id) {
-                let v_virt_id = id_map.get_real_to_virt(v_real_id).unwrap();
+                let v_virt_id = id_map.virt_id_of(v_real_id);
                 dist[u_virt_id][v_virt_id] = edge.get_weight().clone();
             }
         }
 
         for k in 0..vertex_count {
             for &i in &vertices {
-                let i_virt_id = id_map.get_real_to_virt(i).unwrap();
+                let i_virt_id = id_map.virt_id_of(i);
                 for &j in &vertices {
-                    let j_virt_id = id_map.get_real_to_virt(j).unwrap();
+                    let j_virt_id = id_map.virt_id_of(j);
 
                     if (dist[i_virt_id][k] + dist[k][j_virt_id]).is_finite()
                         && dist[i_virt_id][j_virt_id] > dist[i_virt_id][k] + dist[k][j_virt_id]
@@ -56,7 +56,7 @@ impl FloydWarshall {
 
                 // check for negative cycle
                 for v_id in &vertices {
-                    let v_virt_id = id_map.get_real_to_virt(*v_id).unwrap();
+                    let v_virt_id = id_map.virt_id_of(*v_id);
                     if dist[v_virt_id][v_virt_id] < W::zero().into() {
                         return Err("Graph contains negative cycle".to_string());
                     }
@@ -66,9 +66,9 @@ impl FloydWarshall {
 
         let mut distance_map = HashMap::new();
         for i in 0..vertex_count {
-            let i_real_id = id_map.get_virt_to_real(i).unwrap();
+            let i_real_id = id_map.real_id_of(i);
             for j in 0..vertex_count {
-                let j_real_id = id_map.get_virt_to_real(j).unwrap();
+                let j_real_id = id_map.real_id_of(j);
 
                 distance_map.insert((i_real_id, j_real_id), dist[i][j].clone());
             }

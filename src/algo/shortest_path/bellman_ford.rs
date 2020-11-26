@@ -36,9 +36,7 @@ impl<W: Clone + Any + Zero + Ord + std::fmt::Debug> BellmanFord<W> {
 
         let id_map = graph.continuos_id_map();
 
-        let src_virt_id = id_map
-            .get_real_to_virt(src_id)
-            .expect(&format!("{} is not valid", src_id));
+        let src_virt_id = id_map.virt_id_of(src_id);
 
         self.distance[src_virt_id] = W::zero().into();
 
@@ -46,8 +44,8 @@ impl<W: Clone + Any + Zero + Ord + std::fmt::Debug> BellmanFord<W> {
 
         for _ in 0..vertex_count - 1 {
             for (u_real_id, v_real_id, edge) in &edges {
-                let u_virt_id = id_map.get_real_to_virt(*u_real_id).unwrap();
-                let v_virt_id = id_map.get_real_to_virt(*v_real_id).unwrap();
+                let u_virt_id = id_map.virt_id_of(*u_real_id);
+                let v_virt_id = id_map.virt_id_of(*v_real_id);
 
                 let alt = self.distance[u_virt_id].clone() + edge.get_weight().clone();
                 if alt < self.distance[v_virt_id] {
@@ -60,8 +58,8 @@ impl<W: Clone + Any + Zero + Ord + std::fmt::Debug> BellmanFord<W> {
         for (u_real_id, v_real_id, edge) in &edges {
             // let (u_real_id, v_real_id) = (edge.get_src_id(), edge.get_dst_id());
 
-            let u_virt_id = id_map.get_real_to_virt(*u_real_id).unwrap();
-            let v_virt_id = id_map.get_real_to_virt(*v_real_id).unwrap();
+            let u_virt_id = id_map.real_id_of(*u_real_id);
+            let v_virt_id = id_map.real_id_of(*v_real_id);
 
             let alt = self.distance[u_virt_id].clone() + edge.get_weight().clone();
             if alt < self.distance[v_virt_id] {
@@ -71,7 +69,7 @@ impl<W: Clone + Any + Zero + Ord + std::fmt::Debug> BellmanFord<W> {
 
         let mut distance_map = HashMap::new();
         for virt_id in 0..graph.vertex_count() {
-            let real_id = id_map.get_virt_to_real(virt_id).unwrap();
+            let real_id = id_map.real_id_of(virt_id);
             distance_map.insert((src_id, real_id), self.distance[virt_id].clone());
         }
 
@@ -85,22 +83,6 @@ mod tests {
     use crate::graph::MatGraph;
     use crate::provide::*;
     use crate::storage::{DiMat, Mat};
-
-    #[test]
-    #[should_panic(expected = "0 is not valid")]
-    fn empty_undirected_graph() {
-        let graph = MatGraph::init(Mat::<usize>::init());
-
-        let _ = BellmanFord::init(&graph).execute(&graph, 0);
-    }
-
-    #[test]
-    #[should_panic(expected = "0 is not valid")]
-    fn empty_directed_graph() {
-        let graph = MatGraph::init(Mat::<usize>::init());
-
-        let _ = BellmanFord::init(&graph).execute(&graph, 0);
-    }
 
     #[test]
     fn one_vertex_undirected_graph() {
