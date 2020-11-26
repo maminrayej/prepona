@@ -81,7 +81,7 @@ mod tests {
     use crate::graph::MatGraph;
     use crate::provide::*;
     use crate::storage::{DiMat, Mat};
-    
+
     #[test]
     fn one_vertex_undirected_graph() {
         // Given: Graph

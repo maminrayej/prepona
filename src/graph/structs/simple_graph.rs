@@ -95,7 +95,7 @@ impl<W, E: Edge<W>, Ty: EdgeType, S: GraphStorage<W, E, Ty>> provide::Graph<W, E
         self.storage.remove_vertex(vertex_id);
     }
 
-    fn add_edge(&mut self, src_id: usize, dst_id: usize, edge: E) -> usize{
+    fn add_edge(&mut self, src_id: usize, dst_id: usize, edge: E) -> usize {
         if src_id == dst_id {
             panic!("Can not create loop in simple graph")
         }

@@ -98,10 +98,10 @@ impl<W: Any> TryFrom<(W, usize, isize)> for FlowEdge<W> {
 
 impl<W: PartialEq> PartialEq for FlowEdge<W> {
     fn eq(&self, other: &Self) -> bool {
-        self.weight == other.weight &&
-        self.id == other.id &&
-        self.flow == other.flow &&
-        self.capacity == other.capacity
+        self.weight == other.weight
+            && self.id == other.id
+            && self.flow == other.flow
+            && self.capacity == other.capacity
     }
 }
 
