@@ -16,7 +16,9 @@ pub trait Vertices {
     }
 
     fn continuos_id_map(&self) -> IdMap {
-        let mut id_map = IdMap::init();
+        let vertex_count = self.vertex_count();
+
+        let mut id_map = IdMap::init(vertex_count);
 
         self.vertices()
             .iter()
