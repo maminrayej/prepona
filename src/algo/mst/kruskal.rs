@@ -2,7 +2,7 @@ use std::cell::RefCell;
 use std::collections::HashSet;
 use std::rc::Rc;
 
-use crate::graph::{Edge, UndirectedEdge};
+use crate::graph::{subgraph::Subgraph, Edge, UndirectedEdge};
 use crate::provide;
 
 pub struct Kruskal {
@@ -16,7 +16,6 @@ impl Kruskal {
     {
         let vertex_count = graph.vertex_count();
 
-        // let sets = vec![; vertex_count];
         let mut sets = vec![];
         sets.resize_with(vertex_count, || Rc::new(RefCell::new(HashSet::new())));
 
@@ -30,14 +29,14 @@ impl Kruskal {
     pub fn execute<'a, G, W: Ord + std::fmt::Debug, E: Edge<W>>(
         mut self,
         graph: &'a G,
-    ) -> Vec<(usize, usize)>
+    ) -> Subgraph<W, E>
     where
         G: provide::Edges<W, E>
             + provide::Vertices
             + provide::Direction
             + provide::Graph<W, E, UndirectedEdge>,
     {
-        let mut mst = Vec::<(usize, usize)>::new();
+        let mut mst = Vec::<(usize, usize, &E)>::new();
 
         let id_map = graph.continuos_id_map();
 
@@ -49,7 +48,7 @@ impl Kruskal {
 
         edges.sort_by(|(_, _, e1), (_, _, e2)| e1.get_weight().cmp(e2.get_weight()));
 
-        for (v_real_id, u_real_id, _) in edges {
+        for (v_real_id, u_real_id, edge) in edges {
             let v_virt_id = id_map.virt_id_of(v_real_id);
             let u_virt_id = id_map.virt_id_of(u_real_id);
 
@@ -57,7 +56,7 @@ impl Kruskal {
                 .borrow()
                 .eq(&*self.sets[u_virt_id].borrow())
             {
-                mst.push((v_real_id, u_real_id));
+                mst.push((v_real_id, u_real_id, edge));
 
                 let union_set = self.sets[v_virt_id]
                     .borrow()
@@ -73,7 +72,7 @@ impl Kruskal {
             }
         }
 
-        mst
+        Subgraph::init(mst)
     }
 }
 
@@ -88,9 +87,9 @@ mod tests {
     fn empty_graph() {
         let graph = MatGraph::init(Mat::<usize>::init());
 
-        let pairs = Kruskal::init(&graph).execute(&graph);
+        let mst = Kruskal::init(&graph).execute(&graph);
 
-        assert_eq!(pairs.len(), 0);
+        assert_eq!(mst.vertex_count(), 0);
     }
 
     #[test]
@@ -112,17 +111,17 @@ mod tests {
         let e = graph.add_vertex();
         let f = graph.add_vertex();
 
-        graph.add_edge(a, b, 1.into());
+        let ab = graph.add_edge(a, b, 1.into());
         graph.add_edge(a, c, 3.into());
-        graph.add_edge(a, f, 3.into());
+        let af = graph.add_edge(a, f, 3.into());
 
         graph.add_edge(b, c, 5.into());
-        graph.add_edge(b, d, 1.into());
+        let bd = graph.add_edge(b, d, 1.into());
 
-        graph.add_edge(d, c, 2.into());
+        let dc = graph.add_edge(d, c, 2.into());
         graph.add_edge(d, e, 4.into());
 
-        graph.add_edge(e, c, 1.into());
+        let ec = graph.add_edge(e, c, 1.into());
         graph.add_edge(e, f, 5.into());
 
         let mut tags = std::collections::HashMap::<usize, &'static str>::new();
@@ -133,27 +132,12 @@ mod tests {
         tags.insert(e, "e");
         tags.insert(f, "f");
 
-        let pairs = Kruskal::init(&graph).execute(&graph);
+        let mst = Kruskal::init(&graph).execute(&graph);
 
-        assert_eq!(pairs.len(), 5);
-        assert!(vec![(a, b), (b, a)]
-            .iter()
-            .any(|pair| pairs.contains(&pair)));
-
-        assert!(vec![(b, d), (d, b)]
-            .iter()
-            .any(|pair| pairs.contains(&pair)));
-
-        assert!(vec![(e, c), (c, e)]
-            .iter()
-            .any(|pair| pairs.contains(&pair)));
-
-        assert!(vec![(c, d), (d, c)]
-            .iter()
-            .any(|pair| pairs.contains(&pair)));
-
-        assert!(vec![(a, f), (f, a)]
-            .iter()
-            .any(|pair| pairs.contains(&pair)));
+        assert_eq!(mst.vertex_count(), 6);
+        assert_eq!(mst.edges_count(), 5);
+        assert!(vec![ab, af, bd, dc, ec]
+            .into_iter()
+            .all(|edge_id| mst.edge(edge_id).is_some()))
     }
 }
