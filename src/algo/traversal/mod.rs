@@ -4,7 +4,7 @@ mod dfs;
 pub use bfs::Bfs;
 pub use dfs::{Dfs, DfsListener};
 
-#[derive(Copy, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub enum Color {
     White,
     Gray,

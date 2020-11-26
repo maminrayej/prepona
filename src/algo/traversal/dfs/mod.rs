@@ -3,19 +3,19 @@ mod listener;
 pub use listener::DfsListener;
 
 use magnitude::Magnitude;
-use std::cell::{Ref, RefCell};
+use std::cell::RefCell;
 
 use super::Color;
-use crate::provide;
+use crate::provide::{self, IdMap};
 
 pub struct Dfs<'a, L: DfsListener> {
-    stack: RefCell<Vec<usize>>,
-    colors: RefCell<Vec<Color>>,
-    discovered: RefCell<Vec<Magnitude<usize>>>,
-    finished: RefCell<Vec<Magnitude<usize>>>,
-    time: RefCell<usize>,
-    id_map: RefCell<provide::IdMap>,
-    start_ids: RefCell<Vec<usize>>,
+    stack: Vec<usize>,
+    colors: Vec<Color>,
+    discovered: Vec<Magnitude<usize>>,
+    finished: Vec<Magnitude<usize>>,
+    time: usize,
+    id_map: IdMap,
+    start_ids: Vec<usize>,
     listener: RefCell<&'a mut L>,
 }
 
@@ -33,120 +33,105 @@ impl<'a, L: DfsListener> Dfs<'a, L> {
     {
         let vertex_count = graph.vertex_count();
 
-        start_ids.reverse();
+        let id_map = graph.continuos_id_map();
+
+        start_ids = start_ids
+            .into_iter()
+            .map(|real_id| id_map.get_real_to_virt(real_id).unwrap())
+            .collect();
 
         Dfs {
-            stack: RefCell::new(vec![]),
-            colors: RefCell::new(vec![Color::White; vertex_count]),
-            discovered: RefCell::new(vec![Magnitude::PosInfinite; vertex_count]),
-            finished: RefCell::new(vec![Magnitude::PosInfinite; vertex_count]),
-            time: RefCell::new(0),
-            id_map: RefCell::new(graph.continuos_id_map()),
-            start_ids: RefCell::new(start_ids),
+            stack: vec![],
+            colors: vec![Color::White; vertex_count],
+            discovered: vec![Magnitude::PosInfinite; vertex_count],
+            finished: vec![Magnitude::PosInfinite; vertex_count],
+            time: 0,
+            id_map: graph.continuos_id_map(),
             listener: RefCell::new(listener),
+            start_ids,
         }
     }
 
     fn next_start_id(&self) -> Option<usize> {
-        if self.start_ids.borrow().is_empty() {
-            for (virt_start_id, &color) in self.colors.borrow().iter().enumerate() {
-                if color == Color::White {
-                    return Some(virt_start_id);
-                }
-            }
-
-            None
+        if self.start_ids.is_empty() {
+            self.colors.iter().position(|color| *color == Color::White)
         } else {
-            self.start_ids.borrow_mut().pop()
+            self.start_ids
+                .iter()
+                .find(|virt_id| self.colors[**virt_id] == Color::White)
+                .and_then(|virt_id| Some(*virt_id))
         }
     }
 
-    fn next_virt_id(&self) -> Option<usize> {
-        self.stack.borrow_mut().pop()
-    }
-
-    pub fn execute<G>(&self, graph: &G)
+    pub fn execute<G>(&mut self, graph: &G)
     where
         G: provide::Vertices + provide::Neighbors,
     {
-        while let Some(virt_start_id) = self.next_start_id() {
-            if self.colors.borrow()[virt_start_id] != Color::White {
-                continue;
-            }
+        while let Some(start_id) = self.next_start_id() {
+            self.time += 1;
+            self.stack.push(start_id);
+            self.listener.borrow_mut().on_start(self, start_id);
 
-            // On start.
-            *self.time.borrow_mut() = 0;
-            self.stack.borrow_mut().push(virt_start_id);
-            self.listener.borrow_mut().on_start(&self, virt_start_id);
+            while let Some(virt_id) = self.stack.pop() {
+                let color = self.colors[virt_id];
 
-            while let Some(virt_id) = self.next_virt_id() {
-                let color = self.colors.borrow()[virt_id];
                 match color {
                     Color::White => {
-                        *self.time.borrow_mut() += 1;
-                        self.discovered.borrow_mut()[virt_id] = (*self.time.borrow()).into();
+                        self.time += 1;
+                        self.discovered[virt_id] = self.time.into();
+                        self.listener.borrow_mut().on_white(self, virt_id);
 
-                        // On white.
-                        self.listener.borrow_mut().on_white(&self, virt_id);
+                        self.colors[virt_id] = Color::Gray;
 
-                        self.colors.borrow_mut()[virt_id] = Color::Gray;
+                        let real_id = self.id_map.get_virt_to_real(virt_id).unwrap();
 
-                        let real_id = self.id_map.borrow().get_virt_to_real(virt_id).unwrap();
-
-                        let mut undiscovered_neighbors = graph
+                        let mut neighbors = graph
                             .neighbors(real_id)
                             .into_iter()
-                            .filter(|n_id| self.colors.borrow()[*n_id] == Color::White)
-                            .map(|real_id| self.id_map.borrow().get_real_to_virt(real_id).unwrap())
-                            .collect::<Vec<usize>>();
+                            .map(|real_id| self.id_map.get_real_to_virt(real_id).unwrap())
+                            .filter(|virt_id| self.colors[*virt_id] == Color::White)
+                            .collect();
 
-                        self.stack.borrow_mut().push(virt_id);
-                        self.stack.borrow_mut().append(&mut undiscovered_neighbors);
+                        self.stack.push(virt_id);
+                        self.stack.append(&mut neighbors);
                     }
                     Color::Gray => {
-                        // On gray.
-                        self.listener.borrow_mut().on_gray(&self, virt_id);
+                        self.listener.borrow_mut().on_gray(self, virt_id);
 
-                        // On black.
-                        self.colors.borrow_mut()[virt_id] = Color::Black;
-                        *self.time.borrow_mut() += 1;
-                        self.finished.borrow_mut()[virt_id] = (*self.time.borrow()).into();
-                        self.listener.borrow_mut().on_black(&self, virt_id);
+                        self.colors[virt_id] = Color::Black;
+                        self.time += 1;
+                        self.finished[virt_id] = self.time.into();
+                        self.listener.borrow_mut().on_black(self, virt_id);
                     }
                     Color::Black => {}
-                };
+                }
             }
-
-            self.listener.borrow_mut().on_finish(&self);
+            self.listener.borrow_mut().on_finish(self);
         }
     }
 
-    pub fn get_stack(&self) -> Ref<'_, Vec<usize>> {
-        self.stack.borrow()
+    pub fn get_stack(&self) -> &Vec<usize> {
+        &self.stack
     }
 
-    pub fn get_colors(&self) -> Ref<'_, Vec<Color>> {
-        self.colors.borrow()
+    pub fn get_colors(&self) -> &Vec<Color> {
+        &self.colors
     }
 
-    pub fn get_discovered(&self) -> Ref<'_, Vec<Magnitude<usize>>> {
-        self.discovered.borrow()
+    pub fn get_discovered(&self) -> &Vec<Magnitude<usize>> {
+        &self.discovered
     }
 
-    pub fn get_finished(&self) -> Ref<'_, Vec<Magnitude<usize>>> {
-        self.finished.borrow()
+    pub fn get_finished(&self) -> &Vec<Magnitude<usize>> {
+        &self.finished
     }
 
-    pub fn get_id_map(&self) -> Ref<'_, provide::IdMap> {
-        self.id_map.borrow()
+    pub fn get_id_map(&self) -> &IdMap {
+        &self.id_map
     }
 
-    pub fn get_time(&self) -> usize {
-        *self.time.borrow()
-    }
-
-    pub fn id_map(self) -> provide::IdMap {
-        self.id_map.into_inner()
+    pub fn dissolve(self) -> (Vec<Magnitude<usize>>, Vec<Magnitude<usize>>, IdMap) {
+        (self.discovered, self.finished, self.id_map)
     }
 }
 
@@ -204,9 +189,9 @@ mod tests {
         // Given: An empty directed graph.
         let graph = MatGraph::init(DiMat::<usize>::init());
 
-        // When: Performing DFS algorithm.
+        // When: Performing Dfs algorithm.
         let mut listener = DefaultListener::init();
-        let dfs = Dfs::init(&graph, &mut listener);
+        let mut dfs = Dfs::init(&graph, &mut listener);
         dfs.execute(&graph);
 
         // Then:
@@ -222,9 +207,9 @@ mod tests {
         // Given: An empty undirected graph.
         let graph = MatGraph::init(Mat::<usize>::init());
 
-        // When: Performing DFS algorithm.
+        // When: Performing Dfs algorithm.
         let mut listener = DefaultListener::init();
-        let dfs = Dfs::init(&graph, &mut listener);
+        let mut dfs = Dfs::init(&graph, &mut listener);
         dfs.execute(&graph);
 
         // Then:
@@ -244,9 +229,9 @@ mod tests {
         let mut graph = MatGraph::init(DiMat::<usize>::init());
         graph.add_vertex();
 
-        // When: Performing DFS algorithm.
+        // When: Performing Dfs algorithm.
         let mut listener = DefaultListener::init();
-        let dfs = Dfs::init(&graph, &mut listener);
+        let mut dfs = Dfs::init(&graph, &mut listener);
         dfs.execute(&graph);
 
         // Then:
@@ -266,9 +251,9 @@ mod tests {
         let mut graph = MatGraph::init(Mat::<usize>::init());
         graph.add_vertex();
 
-        // When: Performing DFS algorithm.
+        // When: Performing Dfs algorithm.
         let mut listener = DefaultListener::init();
-        let dfs = Dfs::init(&graph, &mut listener);
+        let mut dfs = Dfs::init(&graph, &mut listener);
         dfs.execute(&graph);
 
         // Then:
@@ -303,9 +288,9 @@ mod tests {
         graph.add_edge(d, e, 1.into());
         graph.add_edge(e, f, 1.into());
 
-        // When: Performing DFS algorithm.
+        // When: Performing Dfs algorithm.
         let mut listener = DefaultListener::init();
-        let dfs = Dfs::init_with_starts(&graph, &mut listener, vec![a]);
+        let mut dfs = Dfs::init_with_starts(&graph, &mut listener, vec![a]);
         dfs.execute(&graph);
 
         // Then:
@@ -339,9 +324,9 @@ mod tests {
         graph.add_edge(d, e, 1.into());
         graph.add_edge(e, f, 1.into());
 
-        // When: Performing DFS algorithm.
+        // When: Performing Dfs algorithm.
         let mut listener = DefaultListener::init();
-        let dfs = Dfs::init_with_starts(&graph, &mut listener, vec![a]);
+        let mut dfs = Dfs::init_with_starts(&graph, &mut listener, vec![a]);
         dfs.execute(&graph);
 
         // Then:
@@ -373,9 +358,9 @@ mod tests {
         graph.add_edge(d, f, 1.into());
         graph.add_edge(d, e, 1.into());
 
-        // When: Performing DFS algorithm.
+        // When: Performing Dfs algorithm.
         let mut listener = DefaultListener::init();
-        let dfs = Dfs::init_with_starts(&graph, &mut listener, vec![a, d]);
+        let mut dfs = Dfs::init_with_starts(&graph, &mut listener, vec![a, d]);
         dfs.execute(&graph);
 
         // Then:
@@ -406,9 +391,9 @@ mod tests {
         graph.add_edge(d, f, 1.into());
         graph.add_edge(d, e, 1.into());
 
-        // When: Performing DFS algorithm.
+        // When: Performing Dfs algorithm.
         let mut listener = DefaultListener::init();
-        let dfs = Dfs::init_with_starts(&graph, &mut listener, vec![a, d]);
+        let mut dfs = Dfs::init_with_starts(&graph, &mut listener, vec![a, d]);
         dfs.execute(&graph);
 
         // Then:
@@ -439,9 +424,9 @@ mod tests {
         graph.add_edge(b, e, 1.into());
         graph.add_edge(d, e, 1.into());
 
-        // When: Performing DFS algorithm.
+        // When: Performing Dfs algorithm.
         let mut listener = DefaultListener::init();
-        let dfs = Dfs::init_with_starts(&graph, &mut listener, vec![a, d]);
+        let mut dfs = Dfs::init_with_starts(&graph, &mut listener, vec![a, d]);
         dfs.execute(&graph);
 
         // Then:
