@@ -3,12 +3,14 @@ use std::marker::PhantomData;
 
 use crate::graph::{DefaultEdge, Edge, EdgeType, FlowEdge};
 use crate::provide;
-use crate::storage::{FlowMat, GraphStorage, Mat};
+use crate::storage::{FlowMat, GraphStorage, Mat, List, FlowList};
 
 pub type MatGraph<W, Ty> = SimpleGraph<W, DefaultEdge<W>, Ty, Mat<W, Ty>>;
+pub type ListGraph<W, Ty> = SimpleGraph<W, DefaultEdge<W>, Ty, List<W, Ty>>;
 // pub type DiMatGraph<W> = SimpleGraph<W, DefaultEdge<W>, DirectedEdge, DiMat<W>>;
 
 pub type FlowMatGraph<W, Ty> = SimpleGraph<W, FlowEdge<W>, Ty, FlowMat<W>>;
+pub type FlowListGraph<W, Ty> = SimpleGraph<W, DefaultEdge<W>, Ty, FlowList<W, Ty>>;
 // pub type DiFlowMatGraph<W> = SimpleGraph<W, FlowEdge<W>, DirectedEdge, DiFlowMat<W>>;
 
 pub struct SimpleGraph<W, E: Edge<W>, Ty: EdgeType, S: GraphStorage<W, E, Ty>> {

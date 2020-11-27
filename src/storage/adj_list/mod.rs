@@ -4,13 +4,13 @@ use std::marker::PhantomData;
 use crate::graph::{DefaultEdge, DirectedEdge, Edge, EdgeType, FlowEdge, UndirectedEdge};
 use crate::storage::GraphStorage;
 
-pub type List<W> = AdjList<W, DefaultEdge<W>, UndirectedEdge>;
+pub type List<W, Ty = UndirectedEdge> = AdjList<W, DefaultEdge<W>, Ty>;
 pub type DiList<W> = AdjList<W, DefaultEdge<W>, DirectedEdge>;
 
-pub type FlowList<W> = AdjList<W, FlowEdge<W>, UndirectedEdge>;
+pub type FlowList<W, Ty = UndirectedEdge> = AdjList<W, FlowEdge<W>, Ty>;
 pub type DiFlowList<W> = AdjList<W, FlowEdge<W>, DirectedEdge>;
 
-pub struct AdjList<W, E: Edge<W>, Ty: EdgeType> {
+pub struct AdjList<W, E: Edge<W>, Ty: EdgeType = UndirectedEdge> {
     edges_of: Vec<Vec<(usize, E)>>,
     reusable_ids: HashSet<usize>,
 

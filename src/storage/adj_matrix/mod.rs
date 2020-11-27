@@ -10,7 +10,7 @@ use crate::storage::GraphStorage;
 pub type Mat<W, Ty = UndirectedEdge> = AdjMatrix<W, DefaultEdge<W>, Ty>;
 pub type DiMat<W> = AdjMatrix<W, DefaultEdge<W>, DirectedEdge>;
 
-pub type FlowMat<W> = AdjMatrix<W, FlowEdge<W>, UndirectedEdge>;
+pub type FlowMat<W, Ty = UndirectedEdge> = AdjMatrix<W, FlowEdge<W>, Ty>;
 pub type DiFlowMat<W> = AdjMatrix<W, FlowEdge<W>, DirectedEdge>;
 
 pub struct AdjMatrix<W, E: Edge<W>, Ty: EdgeType = UndirectedEdge> {
