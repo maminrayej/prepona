@@ -3,7 +3,7 @@ use num_traits::{Unsigned, Zero};
 use std::any::Any;
 use std::collections::HashMap;
 
-use crate::graph::Edge;
+use crate::graph::{subgraph::ShortestPathSubgraph, Edge};
 use crate::provide;
 
 pub struct Dijkstra<W> {
@@ -12,7 +12,7 @@ pub struct Dijkstra<W> {
     prev: Vec<Magnitude<usize>>,
 }
 
-impl<W: Clone + Ord + Zero + Any + Unsigned> Dijkstra<W> {
+impl<W: Copy + Ord + Zero + Any + Unsigned> Dijkstra<W> {
     pub fn init<G, E: Edge<W>>(graph: &G) -> Self
     where
         G: provide::Edges<W, E> + provide::Vertices,
@@ -31,18 +31,16 @@ impl<W: Clone + Ord + Zero + Any + Unsigned> Dijkstra<W> {
             .iter()
             .enumerate()
             .filter(|(virt_id, dist)| dist.is_finite() && self.visited[*virt_id] == false)
-            .min_by(|dist1, dist2| dist1.1.cmp(dist2.1))
-            .map(|(v_id, _)| v_id)
+            .min_by(|(_, dist1), (_, dist2)| dist1.cmp(dist2))
+            .and_then(|(v_id, _)| Some(v_id))
     }
 
-    pub fn execute<G, E: Edge<W>>(
-        mut self,
-        graph: &G,
-        src_id: usize,
-    ) -> HashMap<(usize, usize), Magnitude<W>>
+    pub fn execute<G, E: Edge<W>>(mut self, graph: &G, src_id: usize) -> ShortestPathSubgraph<W, E>
     where
         G: provide::Edges<W, E> + provide::Vertices,
     {
+        let mut edges = vec![];
+
         let id_map = graph.continuos_id_map();
 
         let src_virt_id = id_map.virt_id_of(src_id);
@@ -57,10 +55,13 @@ impl<W: Clone + Ord + Zero + Any + Unsigned> Dijkstra<W> {
             for (n_id, edge) in graph.edges_from(real_id) {
                 let n_virt_id = id_map.virt_id_of(n_id);
 
-                let alt = self.dist[virt_id].clone() + edge.get_weight().clone();
+                let alt = self.dist[virt_id] + *edge.get_weight();
                 if alt < self.dist[n_virt_id] {
                     self.dist[n_virt_id] = alt;
                     self.prev[n_virt_id] = virt_id.into();
+
+                    edges.retain(|(_, dst_id, _)| *dst_id != n_id); // remove edge to neighbor
+                    edges.push((real_id, n_id, edge)); // add new edge
                 }
             }
         }
@@ -68,10 +69,20 @@ impl<W: Clone + Ord + Zero + Any + Unsigned> Dijkstra<W> {
         let mut distance_map = HashMap::new();
         for virt_id in 0..graph.vertex_count() {
             let real_id = id_map.real_id_of(virt_id);
-            distance_map.insert((src_id, real_id), self.dist[virt_id].clone());
+            distance_map.insert(real_id, self.dist[virt_id]);
         }
 
-        distance_map
+        let mut vertices = edges
+            .iter()
+            .flat_map(|(src_id, dst_id, _)| vec![*src_id, *dst_id])
+            .chain(std::iter::once(src_id))
+            .collect::<Vec<usize>>();
+
+        // Remove duplicated vertices.
+        vertices.sort();
+        vertices.dedup();
+
+        ShortestPathSubgraph::init(edges, vertices, distance_map)
     }
 }
 
@@ -91,10 +102,14 @@ mod tests {
         let mut graph = MatGraph::init(Mat::<usize>::init());
         let a = graph.add_vertex();
 
-        let shortest_paths = Dijkstra::init(&graph).execute(&graph, a);
+        let sp_subgraph = Dijkstra::init(&graph).execute(&graph, a);
 
-        assert_eq!(shortest_paths.keys().len(), 1);
-        assert_eq!(*shortest_paths.get(&(a, a)).unwrap(), 0.into());
+        // assert_eq!(sp_subgraph.keys().len(), 1);
+        // assert_eq!(*sp_subgraph.get(&(a, a)).unwrap(), 0.into());
+        assert_eq!(sp_subgraph.distance_to(a).unwrap(), 0.into());
+        assert_eq!(sp_subgraph.vertex_count(), 1);
+        assert_eq!(sp_subgraph.vertices()[0], a);
+        assert_eq!(sp_subgraph.edges_count(), 0);
     }
 
     #[test]
@@ -106,10 +121,12 @@ mod tests {
         let mut graph = MatGraph::init(DiMat::<usize>::init());
         let a = graph.add_vertex();
 
-        let shortest_paths = Dijkstra::init(&graph).execute(&graph, a);
+        let sp_subgraph = Dijkstra::init(&graph).execute(&graph, a);
 
-        assert_eq!(shortest_paths.keys().len(), 1);
-        assert_eq!(*shortest_paths.get(&(a, a)).unwrap(), 0.into());
+        assert_eq!(sp_subgraph.distance_to(a).unwrap(), 0.into());
+        assert_eq!(sp_subgraph.vertex_count(), 1); // how to add vertex? without edge? problem with Subgraph definition.
+        assert_eq!(sp_subgraph.vertices()[0], a);
+        assert_eq!(sp_subgraph.edges_count(), 0);
     }
 
     #[test]
@@ -130,23 +147,30 @@ mod tests {
         let e = graph.add_vertex();
 
         graph.add_edge(a, b, 6.into());
-        graph.add_edge(a, d, 1.into());
-        graph.add_edge(b, d, 2.into());
+        let ad = graph.add_edge(a, d, 1.into());
+        let bd = graph.add_edge(b, d, 2.into());
         graph.add_edge(b, c, 5.into());
         graph.add_edge(b, e, 2.into());
-        graph.add_edge(c, e, 5.into());
-        graph.add_edge(d, e, 1.into());
+        let ce = graph.add_edge(c, e, 5.into());
+        let de = graph.add_edge(d, e, 1.into());
 
         // When: Performing Dijkstra algorithm.
-        let shortest_paths = Dijkstra::init(&graph).execute(&graph, a);
+        let sp_subgraph = Dijkstra::init(&graph).execute(&graph, a);
 
         // Then:
-        assert_eq!(shortest_paths.keys().len(), 5);
-        assert_eq!(*shortest_paths.get(&(a, a)).unwrap(), 0.into());
-        assert_eq!(*shortest_paths.get(&(a, b)).unwrap(), 3.into());
-        assert_eq!(*shortest_paths.get(&(a, c)).unwrap(), 7.into());
-        assert_eq!(*shortest_paths.get(&(a, d)).unwrap(), 1.into());
-        assert_eq!(*shortest_paths.get(&(a, e)).unwrap(), 2.into());
+        assert_eq!(sp_subgraph.vertex_count(), 5);
+        assert_eq!(sp_subgraph.edges_count(), 4);
+        assert!(vec![a, b, c, d, e]
+            .iter()
+            .all(|vertex_id| sp_subgraph.vertices().contains(vertex_id)));
+        assert!(vec![ad, bd, ce, de]
+            .into_iter()
+            .all(|edge_id| sp_subgraph.edge(edge_id).is_some()));
+        assert_eq!(sp_subgraph.distance_to(a).unwrap(), 0.into());
+        assert_eq!(sp_subgraph.distance_to(b).unwrap(), 3.into());
+        assert_eq!(sp_subgraph.distance_to(c).unwrap(), 7.into());
+        assert_eq!(sp_subgraph.distance_to(d).unwrap(), 1.into());
+        assert_eq!(sp_subgraph.distance_to(e).unwrap(), 2.into());
     }
 
     #[test]
@@ -168,22 +192,29 @@ mod tests {
         let e = graph.add_vertex(); // 4
 
         graph.add_edge(a, b, 6.into());
-        graph.add_edge(a, d, 1.into());
+        let ad = graph.add_edge(a, d, 1.into());
         graph.add_edge(b, d, 2.into());
         graph.add_edge(b, e, 2.into());
-        graph.add_edge(c, b, 1.into());
-        graph.add_edge(e, c, 1.into());
-        graph.add_edge(d, e, 1.into());
+        let cb = graph.add_edge(c, b, 1.into());
+        let ec = graph.add_edge(e, c, 1.into());
+        let de = graph.add_edge(d, e, 1.into());
 
         // When: Performing Dijkstra algorithm.
-        let shortest_paths = Dijkstra::init(&graph).execute(&graph, a);
+        let sp_subgraph = Dijkstra::init(&graph).execute(&graph, a);
 
         // Then:
-        assert_eq!(shortest_paths.keys().len(), 5);
-        assert_eq!(*shortest_paths.get(&(a, a)).unwrap(), 0.into());
-        assert_eq!(*shortest_paths.get(&(a, b)).unwrap(), 4.into());
-        assert_eq!(*shortest_paths.get(&(a, c)).unwrap(), 3.into());
-        assert_eq!(*shortest_paths.get(&(a, d)).unwrap(), 1.into());
-        assert_eq!(*shortest_paths.get(&(a, e)).unwrap(), 2.into());
+        assert_eq!(sp_subgraph.vertex_count(), 5);
+        assert_eq!(sp_subgraph.edges_count(), 4);
+        assert!(vec![a, b, c, d, e]
+            .iter()
+            .all(|vertex_id| sp_subgraph.vertices().contains(vertex_id)));
+        assert!(vec![ad, cb, ec, de]
+            .into_iter()
+            .all(|edge_id| sp_subgraph.edge(edge_id).is_some()));
+        assert_eq!(sp_subgraph.distance_to(a).unwrap(), 0.into());
+        assert_eq!(sp_subgraph.distance_to(b).unwrap(), 4.into());
+        assert_eq!(sp_subgraph.distance_to(c).unwrap(), 3.into());
+        assert_eq!(sp_subgraph.distance_to(d).unwrap(), 1.into());
+        assert_eq!(sp_subgraph.distance_to(e).unwrap(), 2.into());
     }
 }
