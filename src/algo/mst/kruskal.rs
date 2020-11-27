@@ -72,7 +72,16 @@ impl Kruskal {
             }
         }
 
-        Subgraph::init(mst)
+        let mut vertices = mst
+            .iter()
+            .flat_map(|(src_id, dst_id, _)| vec![*src_id, *dst_id])
+            .collect::<Vec<usize>>();
+
+        // Remove duplicated vertices.
+        vertices.sort();
+        vertices.dedup();
+
+        Subgraph::init(mst, vertices)
     }
 }
 
