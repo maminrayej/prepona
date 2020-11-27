@@ -3,7 +3,7 @@ use num_traits::Zero;
 use std::any::Any;
 use std::collections::HashMap;
 
-use crate::graph::Edge;
+use crate::graph::{Edge, subgraph::ShortestPathSubgraph};
 use crate::provide;
 
 pub struct BellmanFord<W> {
@@ -11,7 +11,7 @@ pub struct BellmanFord<W> {
     prev: Vec<Magnitude<usize>>,
 }
 
-impl<W: Clone + Any + Zero + Ord + std::fmt::Debug> BellmanFord<W> {
+impl<W: Copy + Any + Zero + Ord + std::fmt::Debug> BellmanFord<W> {
     pub fn init<G>(graph: &G) -> Self
     where
         G: provide::Vertices,
@@ -28,10 +28,12 @@ impl<W: Clone + Any + Zero + Ord + std::fmt::Debug> BellmanFord<W> {
         mut self,
         graph: &G,
         src_id: usize,
-    ) -> Result<HashMap<(usize, usize), Magnitude<W>>, String>
+    ) -> Result<ShortestPathSubgraph<W, E>, String>
     where
         G: provide::Vertices + provide::Edges<W, E>,
     {
+        let mut sp_edges = vec![];
+
         let vertex_count = graph.vertex_count();
 
         let id_map = graph.continuos_id_map();
@@ -47,17 +49,18 @@ impl<W: Clone + Any + Zero + Ord + std::fmt::Debug> BellmanFord<W> {
                 let u_virt_id = id_map.virt_id_of(*u_real_id);
                 let v_virt_id = id_map.virt_id_of(*v_real_id);
 
-                let alt = self.distance[u_virt_id].clone() + edge.get_weight().clone();
+                let alt = self.distance[u_virt_id] + *edge.get_weight();
                 if alt < self.distance[v_virt_id] {
                     self.distance[v_virt_id] = alt;
                     self.prev[v_virt_id] = u_virt_id.into();
+
+                    sp_edges.retain(|(_, dst_id, _)| dst_id != v_real_id); // remove edge to neighbor
+                    sp_edges.push((*u_real_id, *v_real_id, *edge)); // add new edge
                 }
             }
         }
 
         for (u_real_id, v_real_id, edge) in &edges {
-            // let (u_real_id, v_real_id) = (edge.get_src_id(), edge.get_dst_id());
-
             let u_virt_id = id_map.real_id_of(*u_real_id);
             let v_virt_id = id_map.real_id_of(*v_real_id);
 
@@ -70,10 +73,21 @@ impl<W: Clone + Any + Zero + Ord + std::fmt::Debug> BellmanFord<W> {
         let mut distance_map = HashMap::new();
         for virt_id in 0..graph.vertex_count() {
             let real_id = id_map.real_id_of(virt_id);
-            distance_map.insert((src_id, real_id), self.distance[virt_id].clone());
+            distance_map.insert(real_id, self.distance[virt_id].clone());
         }
 
-        Ok(distance_map)
+
+        let mut vertices = edges
+            .iter()
+            .flat_map(|(src_id, dst_id, _)| vec![*src_id, *dst_id])
+            .chain(std::iter::once(src_id))
+            .collect::<Vec<usize>>();
+
+        // Remove duplicated vertices.
+        vertices.sort();
+        vertices.dedup();
+
+        Ok(ShortestPathSubgraph::init(sp_edges, vertices, distance_map))
     }
 }
 
@@ -93,12 +107,14 @@ mod tests {
         let mut graph = MatGraph::init(Mat::<usize>::init());
         let a = graph.add_vertex();
 
-        let shortest_paths = BellmanFord::init(&graph).execute(&graph, a);
+        let sp_subgraph = BellmanFord::init(&graph).execute(&graph, a);
 
-        assert!(shortest_paths.is_ok());
-        let shortest_paths = shortest_paths.unwrap();
-        assert_eq!(shortest_paths.keys().len(), 1);
-        assert_eq!(*shortest_paths.get(&(a, a)).unwrap(), 0.into());
+        assert!(sp_subgraph.is_ok());
+        let sp_subgraph = sp_subgraph.unwrap();
+        assert_eq!(sp_subgraph.distance_to(a).unwrap(), 0.into());
+        assert_eq!(sp_subgraph.vertex_count(), 1);
+        assert_eq!(sp_subgraph.vertices()[0], a);
+        assert_eq!(sp_subgraph.edges_count(), 0);
     }
 
     #[test]
@@ -110,12 +126,15 @@ mod tests {
         let mut graph = MatGraph::init(DiMat::<usize>::init());
         let a = graph.add_vertex();
 
-        let shortest_paths = BellmanFord::init(&graph).execute(&graph, a);
+        let sp_subgraph = BellmanFord::init(&graph).execute(&graph, a);
 
-        assert!(shortest_paths.is_ok());
-        let shortest_paths = shortest_paths.unwrap();
-        assert_eq!(shortest_paths.keys().len(), 1);
-        assert_eq!(*shortest_paths.get(&(a, a)).unwrap(), 0.into());
+        // Then 
+        assert!(sp_subgraph.is_ok());
+        let sp_subgraph = sp_subgraph.unwrap();
+        assert_eq!(sp_subgraph.distance_to(a).unwrap(), 0.into());
+        assert_eq!(sp_subgraph.vertex_count(), 1);
+        assert_eq!(sp_subgraph.vertices()[0], a);
+        assert_eq!(sp_subgraph.edges_count(), 0);
     }
 
     #[test]
@@ -136,25 +155,32 @@ mod tests {
         let e = graph.add_vertex();
 
         graph.add_edge(a, b, 6.into());
-        graph.add_edge(a, d, 1.into());
-        graph.add_edge(b, d, 2.into());
+        let ad = graph.add_edge(a, d, 1.into());
+        let bd = graph.add_edge(b, d, 2.into());
         graph.add_edge(b, c, 5.into());
         graph.add_edge(b, e, 2.into());
-        graph.add_edge(c, e, 5.into());
-        graph.add_edge(d, e, 1.into());
+        let ce = graph.add_edge(c, e, 5.into());
+        let de = graph.add_edge(d, e, 1.into());
 
         // When: Performing BellmanFord algorithm.
-        let shortest_paths = BellmanFord::init(&graph).execute(&graph, a);
+        let sp_subgraph = BellmanFord::init(&graph).execute(&graph, a);
 
         // Then:
-        assert!(shortest_paths.is_ok());
-        let shortest_paths = shortest_paths.unwrap();
-        assert_eq!(shortest_paths.keys().len(), 5);
-        assert_eq!(*shortest_paths.get(&(a, a)).unwrap(), 0.into());
-        assert_eq!(*shortest_paths.get(&(a, b)).unwrap(), 3.into());
-        assert_eq!(*shortest_paths.get(&(a, c)).unwrap(), 7.into());
-        assert_eq!(*shortest_paths.get(&(a, d)).unwrap(), 1.into());
-        assert_eq!(*shortest_paths.get(&(a, e)).unwrap(), 2.into());
+        assert!(sp_subgraph.is_ok());
+        let sp_subgraph = sp_subgraph.unwrap();
+        assert_eq!(sp_subgraph.vertex_count(), 5);
+        assert_eq!(sp_subgraph.edges_count(), 4);
+        assert!(vec![a, b, c, d, e]
+            .iter()
+            .all(|vertex_id| sp_subgraph.vertices().contains(vertex_id)));
+        assert!(vec![ad, bd, ce, de]
+            .into_iter()
+            .all(|edge_id| sp_subgraph.edge(edge_id).is_some()));
+        assert_eq!(sp_subgraph.distance_to(a).unwrap(), 0.into());
+        assert_eq!(sp_subgraph.distance_to(b).unwrap(), 3.into());
+        assert_eq!(sp_subgraph.distance_to(c).unwrap(), 7.into());
+        assert_eq!(sp_subgraph.distance_to(d).unwrap(), 1.into());
+        assert_eq!(sp_subgraph.distance_to(e).unwrap(), 2.into());
     }
 
     #[test]
@@ -176,25 +202,32 @@ mod tests {
         let e = graph.add_vertex(); // 4
 
         graph.add_edge(a, b, 6.into());
-        graph.add_edge(a, d, 1.into());
+        let ad = graph.add_edge(a, d, 1.into());
         graph.add_edge(b, d, 2.into());
         graph.add_edge(b, e, 2.into());
-        graph.add_edge(c, b, 1.into());
-        graph.add_edge(e, c, 1.into());
-        graph.add_edge(d, e, 1.into());
+        let cb = graph.add_edge(c, b, 1.into());
+        let ec = graph.add_edge(e, c, 1.into());
+        let de = graph.add_edge(d, e, 1.into());
 
         // When: Performing BellmanFord algorithm.
-        let shortest_paths = BellmanFord::init(&graph).execute(&graph, a);
+        let sp_subgraph = BellmanFord::init(&graph).execute(&graph, a);
 
         // Then:
-        assert!(shortest_paths.is_ok());
-        let shortest_paths = shortest_paths.unwrap();
-        assert_eq!(shortest_paths.keys().len(), 5);
-        assert_eq!(*shortest_paths.get(&(a, a)).unwrap(), 0.into());
-        assert_eq!(*shortest_paths.get(&(a, b)).unwrap(), 4.into());
-        assert_eq!(*shortest_paths.get(&(a, c)).unwrap(), 3.into());
-        assert_eq!(*shortest_paths.get(&(a, d)).unwrap(), 1.into());
-        assert_eq!(*shortest_paths.get(&(a, e)).unwrap(), 2.into());
+        assert!(sp_subgraph.is_ok());
+        let sp_subgraph = sp_subgraph.unwrap();
+        assert_eq!(sp_subgraph.vertex_count(), 5);
+        assert_eq!(sp_subgraph.edges_count(), 4);
+        assert!(vec![a, b, c, d, e]
+            .iter()
+            .all(|vertex_id| sp_subgraph.vertices().contains(vertex_id)));
+        assert!(vec![ad, cb, ec, de]
+            .into_iter()
+            .all(|edge_id| sp_subgraph.edge(edge_id).is_some()));
+        assert_eq!(sp_subgraph.distance_to(a).unwrap(), 0.into());
+        assert_eq!(sp_subgraph.distance_to(b).unwrap(), 4.into());
+        assert_eq!(sp_subgraph.distance_to(c).unwrap(), 3.into());
+        assert_eq!(sp_subgraph.distance_to(d).unwrap(), 1.into());
+        assert_eq!(sp_subgraph.distance_to(e).unwrap(), 2.into());
     }
 
     #[test]
