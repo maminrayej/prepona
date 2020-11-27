@@ -1,3 +1,7 @@
+mod sp_subgraph;
+
+pub use sp_subgraph::ShortestPathSubgraph;
+
 use crate::graph::Edge;
 use crate::provide;
 use std::marker::PhantomData;
@@ -21,14 +25,7 @@ pub struct Subgraph<'a, W, E: Edge<W>> {
 }
 
 impl<'a, W, E: Edge<W>> Subgraph<'a, W, E> {
-    pub fn init(edges: Vec<(usize, usize, &'a E)>) -> Self {
-        let mut vertices = edges
-            .iter()
-            .flat_map(|(src_id, dst_id, _)| vec![*src_id, *dst_id])
-            .collect::<Vec<usize>>();
-        vertices.sort();
-        vertices.dedup();
-
+    pub fn init(edges: Vec<(usize, usize, &'a E)>, vertices: Vec<usize>) -> Self {
         Subgraph {
             edges,
             vertices,
