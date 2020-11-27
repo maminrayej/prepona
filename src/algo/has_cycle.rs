@@ -32,7 +32,17 @@ impl<'a, W, E: Edge<W>> HasCycle<'a, W, E> {
         G: provide::Edges<W, E> + provide::Vertices + provide::Direction,
     {
         if graph.vertex_count() != 0 && self.has_cycle(graph, 0, 0) {
-            Some(Subgraph::init(self.edge_stack))
+            let mut vertices = self
+                .edge_stack
+                .iter()
+                .flat_map(|(src_id, dst_id, _)| vec![*src_id, *dst_id])
+                .collect::<Vec<usize>>();
+            
+            // Remove duplicated vertices.
+            vertices.sort();
+            vertices.dedup();
+
+            Some(Subgraph::init(self.edge_stack, vertices))
         } else {
             None
         }
