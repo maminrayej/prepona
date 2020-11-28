@@ -1,52 +1,58 @@
+use std::marker::PhantomData;
+
 use magnitude::Magnitude;
 
 use crate::{
     graph::{Edge, UndirectedEdge},
-    provide::{Graph, IdMap, Neighbors, Vertices},
+    provide::{Edges, Graph, IdMap, Vertices},
 };
 
-pub struct CutVertex {
+pub struct VertexEdgeCut<'a, W, E: Edge<W>> {
     is_visited: Vec<bool>,
     depth_of: Vec<Magnitude<usize>>,
     low_of: Vec<Magnitude<usize>>,
     parent_of: Vec<Magnitude<usize>>,
     id_map: IdMap,
     cut_vertices: Vec<usize>,
+    cut_edges: Vec<(usize, usize, &'a E)>,
+
+    phantom_w: PhantomData<W>,
 }
 
-impl CutVertex {
-    pub fn init<W, E, G>(graph: &G) -> Self
+impl<'a, W, E: Edge<W>> VertexEdgeCut<'a, W, E> {
+    pub fn init<G>(graph: &G) -> Self
     where
-        E: Edge<W>,
-        G: Vertices + Neighbors + Graph<W, E, UndirectedEdge>,
+        G: Vertices + Edges<W, E> + Graph<W, E, UndirectedEdge>,
     {
         let vertex_count = graph.vertex_count();
 
-        CutVertex {
+        VertexEdgeCut {
             is_visited: vec![false; vertex_count],
             depth_of: vec![Magnitude::PosInfinite; vertex_count],
             low_of: vec![Magnitude::PosInfinite; vertex_count],
             parent_of: vec![Magnitude::PosInfinite; vertex_count],
             id_map: graph.continuos_id_map(),
             cut_vertices: vec![],
+            cut_edges: vec![],
+
+            phantom_w: PhantomData,
         }
     }
 
-    pub fn execute<W, E, G>(mut self, graph: &G) -> Vec<usize>
+    pub fn execute<G>(mut self, graph: &'a G) -> (Vec<usize>, Vec<(usize, usize, &E)>)
     where
-        E: Edge<W>,
-        G: Vertices + Neighbors + Graph<W, E, UndirectedEdge>,
+        G: Vertices + Edges<W, E> + Graph<W, E, UndirectedEdge>,
     {
         if !self.is_visited.is_empty() {
             self.find_cut_vertices(graph, 0, 0.into());
         }
 
-        self.cut_vertices
+        (self.cut_vertices, self.cut_edges)
     }
 
-    fn find_cut_vertices<G>(&mut self, graph: &G, real_id: usize, depth: Magnitude<usize>)
+    fn find_cut_vertices<G>(&mut self, graph: &'a G, real_id: usize, depth: Magnitude<usize>)
     where
-        G: Vertices + Neighbors,
+        G: Vertices + Edges<W, E>,
     {
         let virt_id = self.id_map.virt_id_of(real_id);
 
@@ -56,7 +62,7 @@ impl CutVertex {
         self.depth_of[virt_id] = depth;
         self.low_of[virt_id] = depth;
 
-        for n_real_id in graph.neighbors(virt_id) {
+        for (n_real_id, edge) in graph.edges_from(virt_id) {
             let n_virt_id = self.id_map.virt_id_of(n_real_id);
 
             if !self.is_visited[n_virt_id] {
@@ -64,6 +70,9 @@ impl CutVertex {
                 self.find_cut_vertices(graph, n_real_id, depth + 1.into());
                 child_count += 1;
                 is_vertex_cut = self.low_of[n_virt_id] >= self.depth_of[virt_id];
+                if self.low_of[n_virt_id] > self.depth_of[virt_id] {
+                    self.cut_edges.push((real_id, n_real_id, edge));
+                }
                 self.low_of[virt_id] = std::cmp::min(self.low_of[virt_id], self.low_of[n_virt_id]);
             } else if self.parent_of[virt_id] != n_virt_id.into() {
                 self.low_of[virt_id] =
@@ -89,9 +98,10 @@ mod tests {
     fn empty_graph() {
         let graph = MatGraph::init(Mat::<usize>::init());
 
-        let cut_vertices = CutVertex::init(&graph).execute(&graph);
+        let (cut_vertices, cut_edges) = VertexEdgeCut::init(&graph).execute(&graph);
 
         assert!(cut_vertices.is_empty());
+        assert!(cut_edges.is_empty());
     }
 
     #[test]
@@ -99,9 +109,10 @@ mod tests {
         let mut graph = MatGraph::init(Mat::<usize>::init());
         graph.add_vertex();
 
-        let cut_vertices = CutVertex::init(&graph).execute(&graph);
+        let (cut_vertices, cut_edges) = VertexEdgeCut::init(&graph).execute(&graph);
 
         assert!(cut_vertices.is_empty());
+        assert!(cut_edges.is_empty());
     }
 
     #[test]
@@ -110,11 +121,16 @@ mod tests {
         let mut graph = MatGraph::init(Mat::<usize>::init());
         let a = graph.add_vertex();
         let b = graph.add_vertex();
-        graph.add_edge(a, b, 1.into());
+        let ab = graph.add_edge(a, b, 1.into());
 
-        let cut_vertices = CutVertex::init(&graph).execute(&graph);
+        let (cut_vertices, cut_edges) = VertexEdgeCut::init(&graph).execute(&graph);
 
         assert!(cut_vertices.is_empty());
+        assert_eq!(cut_edges.len(), 1);
+        assert!(cut_edges
+            .iter()
+            .find(|(_, _, edge)| edge.get_id() == ab)
+            .is_some());
     }
 
     #[test]
@@ -128,13 +144,18 @@ mod tests {
         let a = graph.add_vertex();
         let b = graph.add_vertex();
         let c = graph.add_vertex();
-        graph.add_edge(a, b, 1.into());
-        graph.add_edge(a, c, 1.into());
+        let ab = graph.add_edge(a, b, 1.into());
+        let ac = graph.add_edge(a, c, 1.into());
 
-        let cut_vertices = CutVertex::init(&graph).execute(&graph);
+        let (cut_vertices, cut_edges) = VertexEdgeCut::init(&graph).execute(&graph);
 
         assert_eq!(cut_vertices.len(), 1);
         assert!(cut_vertices.contains(&a));
+        assert_eq!(cut_edges.len(), 2);
+        assert!(vec![ab, ac].into_iter().all(|edge_id| cut_edges
+            .iter()
+            .find(|(_, _, edge)| edge.get_id() == edge_id)
+            .is_some()))
     }
 
     #[test]
@@ -150,16 +171,21 @@ mod tests {
         let b = graph.add_vertex();
         let c = graph.add_vertex();
         let d = graph.add_vertex();
-        graph.add_edge(a, b, 1.into());
-        graph.add_edge(a, d, 1.into());
-        graph.add_edge(b, c, 1.into());
+        let ab = graph.add_edge(a, b, 1.into());
+        let bc = graph.add_edge(a, d, 1.into());
+        let ad = graph.add_edge(b, c, 1.into());
 
-        let cut_vertices = CutVertex::init(&graph).execute(&graph);
+        let (cut_vertices, cut_edges) = VertexEdgeCut::init(&graph).execute(&graph);
 
         assert_eq!(cut_vertices.len(), 2);
         assert!(vec![a, b]
             .iter()
             .all(|vertex_id| cut_vertices.contains(vertex_id)));
+        assert_eq!(cut_edges.len(), 3);
+        assert!(vec![ab, bc, ad].into_iter().all(|edge_id| cut_edges
+            .iter()
+            .find(|(_, _, edge)| edge.get_id() == edge_id)
+            .is_some()))
     }
 
     #[test]
@@ -172,7 +198,7 @@ mod tests {
         //      c --- d --- e --- f --- h --- m --- l
         //                              |     |
         //                              g     n
-        //                              
+        //
         let mut graph = MatGraph::init(Mat::<usize>::init());
         let a = graph.add_vertex();
         let b = graph.add_vertex();
@@ -195,14 +221,14 @@ mod tests {
 
         graph.add_edge(c, d, 1.into());
 
-        graph.add_edge(d, e, 1.into());
+        let de = graph.add_edge(d, e, 1.into());
 
-        graph.add_edge(e, f, 1.into());
+        let ef = graph.add_edge(e, f, 1.into());
 
-        graph.add_edge(f, h, 1.into());
-        
+        let fh = graph.add_edge(f, h, 1.into());
+
         graph.add_edge(h, i, 1.into());
-        graph.add_edge(h, g, 1.into());
+        let hg = graph.add_edge(h, g, 1.into());
         graph.add_edge(h, m, 1.into());
 
         graph.add_edge(i, j, 1.into());
@@ -213,13 +239,50 @@ mod tests {
 
         graph.add_edge(l, m, 1.into());
 
-        graph.add_edge(m, n, 1.into());
+        let mn = graph.add_edge(m, n, 1.into());
 
-        let cut_vertices = CutVertex::init(&graph).execute(&graph);
+        let (cut_vertices, cut_edges) = VertexEdgeCut::init(&graph).execute(&graph);
 
         assert_eq!(cut_vertices.len(), 5);
         assert!(vec![d, e, f, h, m]
             .iter()
             .all(|vertex_id| cut_vertices.contains(vertex_id)));
+        assert_eq!(cut_edges.len(), 5);
+        assert!(vec![de, ef, fh, hg, mn].into_iter().all(|edge_id| cut_edges
+            .iter()
+            .find(|(_, _, edge)| edge.get_id() == edge_id)
+            .is_some()))
+    }
+
+    #[test]
+    fn non_bridge_edge_between_two_cut_vertices() {
+        // Given:
+        //            .-- c --.
+        //            |       |
+        //      a --- b ----- d --- e
+        //
+        let mut graph = MatGraph::init(Mat::<usize>::init());
+        let a = graph.add_vertex();
+        let b = graph.add_vertex();
+        let c = graph.add_vertex();
+        let d = graph.add_vertex();
+        let e = graph.add_vertex();
+        let ab = graph.add_edge(a, b, 1.into());
+        graph.add_edge(b, c, 1.into());
+        graph.add_edge(c, d, 1.into());
+        graph.add_edge(b, d, 1.into());
+        let de = graph.add_edge(d, e, 1.into());
+
+        let (cut_vertices, cut_edges) = VertexEdgeCut::init(&graph).execute(&graph);
+
+        assert_eq!(cut_vertices.len(), 2);
+        assert!(vec![b, d]
+            .iter()
+            .all(|vertex_id| cut_vertices.contains(vertex_id)));
+        assert_eq!(cut_edges.len(), 2);
+        assert!(vec![ab, de].into_iter().all(|edge_id| cut_edges
+            .iter()
+            .find(|(_, _, edge)| edge.get_id() == edge_id)
+            .is_some()))
     }
 }
