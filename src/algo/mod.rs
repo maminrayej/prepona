@@ -1,4 +1,5 @@
 mod cc;
+mod cut_vertex;
 mod has_cycle;
 mod mst;
 mod shortest_path;
@@ -13,3 +14,4 @@ pub use shortest_path::Dijkstra;
 pub use shortest_path::FloydWarshall;
 pub use topological_sort::TopologicalSort;
 pub use traversal::{Bfs, Color, Dfs, DfsListener};
+pub use cut_vertex::CutVertex;
