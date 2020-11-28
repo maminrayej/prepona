@@ -3,8 +3,8 @@ use num_traits::{Unsigned, Zero};
 use std::any::Any;
 use std::collections::HashMap;
 
-use crate::graph::{subgraph::ShortestPathSubgraph, Edge};
-use crate::provide;
+use crate::graph::{subgraph::ShortestPathSubgraph, Edge, EdgeType};
+use crate::provide::{Edges, Vertices, Graph};
 
 pub struct Dijkstra<W> {
     visited: Vec<bool>,
@@ -13,9 +13,11 @@ pub struct Dijkstra<W> {
 }
 
 impl<W: Copy + Ord + Zero + Any + Unsigned> Dijkstra<W> {
-    pub fn init<G, E: Edge<W>>(graph: &G) -> Self
+    pub fn init<E, Ty, G>(graph: &G) -> Self
     where
-        G: provide::Edges<W, E> + provide::Vertices,
+        E: Edge<W>,
+        Ty: EdgeType,
+        G: Edges<W, E> + Vertices + Graph<W, E, Ty>,
     {
         let vertex_count = graph.vertex_count();
 
@@ -35,9 +37,15 @@ impl<W: Copy + Ord + Zero + Any + Unsigned> Dijkstra<W> {
             .and_then(|(v_id, _)| Some(v_id))
     }
 
-    pub fn execute<G, E: Edge<W>>(mut self, graph: &G, src_id: usize) -> ShortestPathSubgraph<W, E>
+    pub fn execute<E, Ty, G>(
+        mut self,
+        graph: &G,
+        src_id: usize,
+    ) -> ShortestPathSubgraph<W, E, Ty, G>
     where
-        G: provide::Edges<W, E> + provide::Vertices,
+        E: Edge<W>,
+        Ty: EdgeType,
+        G: Edges<W, E> + Vertices + Graph<W, E, Ty>,
     {
         let mut edges = vec![];
 
@@ -82,7 +90,7 @@ impl<W: Copy + Ord + Zero + Any + Unsigned> Dijkstra<W> {
         vertices.sort();
         vertices.dedup();
 
-        ShortestPathSubgraph::init(edges, vertices, distance_map)
+        ShortestPathSubgraph::init(graph, edges, vertices, distance_map)
     }
 }
 
@@ -90,7 +98,6 @@ impl<W: Copy + Ord + Zero + Any + Unsigned> Dijkstra<W> {
 mod tests {
     use super::*;
     use crate::graph::MatGraph;
-    use crate::provide::*;
     use crate::storage::{DiMat, Mat};
 
     #[test]

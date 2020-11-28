@@ -29,7 +29,7 @@ impl Kruskal {
     pub fn execute<'a, G, W: Ord + std::fmt::Debug, E: Edge<W>>(
         mut self,
         graph: &'a G,
-    ) -> Subgraph<W, E>
+    ) -> Subgraph<W, E, UndirectedEdge, G>
     where
         G: provide::Edges<W, E>
             + provide::Vertices
@@ -40,11 +40,7 @@ impl Kruskal {
 
         let id_map = graph.continuos_id_map();
 
-        let mut edges = graph
-            .edges()
-            .into_iter()
-            .filter(|(src_id, dst_id, _)| src_id < dst_id)
-            .collect::<Vec<(usize, usize, &E)>>();
+        let mut edges = graph.edges();
 
         edges.sort_by(|(_, _, e1), (_, _, e2)| e1.get_weight().cmp(e2.get_weight()));
 
@@ -81,7 +77,7 @@ impl Kruskal {
         vertices.sort();
         vertices.dedup();
 
-        Subgraph::init(mst, vertices)
+        Subgraph::init(graph, mst, vertices)
     }
 }
 

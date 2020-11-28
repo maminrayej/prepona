@@ -1,6 +1,8 @@
 use std::marker::PhantomData;
 
-use crate::graph::{subgraph::Subgraph, Edge};
+use provide::{Direction, Edges, Graph, Vertices};
+
+use crate::graph::{subgraph::Subgraph, Edge, EdgeType};
 use crate::provide;
 
 pub struct HasCycle<'a, W, E: Edge<W>> {
@@ -13,9 +15,10 @@ pub struct HasCycle<'a, W, E: Edge<W>> {
 }
 
 impl<'a, W, E: Edge<W>> HasCycle<'a, W, E> {
-    pub fn init<G>(graph: &G) -> Self
+    pub fn init<Ty, G>(graph: &G) -> Self
     where
-        G: provide::Neighbors + provide::Vertices + provide::Direction,
+        Ty: EdgeType,
+        G: provide::Neighbors + Vertices + Direction + Graph<W, E, Ty>,
     {
         HasCycle {
             is_visited: vec![false; graph.vertex_count()],
@@ -27,9 +30,10 @@ impl<'a, W, E: Edge<W>> HasCycle<'a, W, E> {
         }
     }
 
-    pub fn execute<G>(mut self, graph: &'a G) -> Option<Subgraph<W, E>>
+    pub fn execute<Ty, G>(mut self, graph: &'a G) -> Option<Subgraph<W, E, Ty, G>>
     where
-        G: provide::Edges<W, E> + provide::Vertices + provide::Direction,
+        Ty: EdgeType,
+        G: provide::Neighbors + Vertices + Direction + Graph<W, E, Ty> + Edges<W, E>,
     {
         if graph.vertex_count() != 0 && self.has_cycle(graph, 0, 0) {
             let mut vertices = self
@@ -37,20 +41,21 @@ impl<'a, W, E: Edge<W>> HasCycle<'a, W, E> {
                 .iter()
                 .flat_map(|(src_id, dst_id, _)| vec![*src_id, *dst_id])
                 .collect::<Vec<usize>>();
-            
+
             // Remove duplicated vertices.
             vertices.sort();
             vertices.dedup();
 
-            Some(Subgraph::init(self.edge_stack, vertices))
+            Some(Subgraph::init(graph, self.edge_stack, vertices))
         } else {
             None
         }
     }
 
-    fn has_cycle<G>(&mut self, graph: &'a G, src_virt_id: usize, parent_virt_id: usize) -> bool
+    fn has_cycle<Ty, G>(&mut self, graph: &'a G, src_virt_id: usize, parent_virt_id: usize) -> bool
     where
-        G: provide::Edges<W, E> + provide::Vertices + provide::Direction,
+        Ty: EdgeType,
+        G: provide::Neighbors + Vertices + Direction + Graph<W, E, Ty> + Edges<W, E>,
     {
         self.is_visited[src_virt_id] = true;
 

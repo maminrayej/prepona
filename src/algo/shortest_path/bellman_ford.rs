@@ -3,18 +3,20 @@ use num_traits::Zero;
 use std::any::Any;
 use std::collections::HashMap;
 
-use crate::graph::{Edge, subgraph::ShortestPathSubgraph};
-use crate::provide;
+use crate::graph::{subgraph::ShortestPathSubgraph, Edge, EdgeType};
+use crate::provide::{Edges, Graph, Vertices};
 
 pub struct BellmanFord<W> {
     distance: Vec<Magnitude<W>>,
     prev: Vec<Magnitude<usize>>,
 }
 
-impl<W: Copy + Any + Zero + Ord + std::fmt::Debug> BellmanFord<W> {
-    pub fn init<G>(graph: &G) -> Self
+impl<W: Copy + Any + Zero + Ord> BellmanFord<W> {
+    pub fn init<E, Ty, G>(graph: &G) -> Self
     where
-        G: provide::Vertices,
+        E: Edge<W>,
+        Ty: EdgeType,
+        G: Vertices + Edges<W, E> + Graph<W, E, Ty>,
     {
         let vertex_count = graph.vertex_count();
 
@@ -24,13 +26,15 @@ impl<W: Copy + Any + Zero + Ord + std::fmt::Debug> BellmanFord<W> {
         }
     }
 
-    pub fn execute<G, E: Edge<W>>(
+    pub fn execute<E, Ty, G>(
         mut self,
         graph: &G,
         src_id: usize,
-    ) -> Result<ShortestPathSubgraph<W, E>, String>
+    ) -> Result<ShortestPathSubgraph<W, E, Ty, G>, String>
     where
-        G: provide::Vertices + provide::Edges<W, E>,
+        E: Edge<W>,
+        Ty: EdgeType,
+        G: Vertices + Edges<W, E> + Graph<W, E, Ty>,
     {
         let mut sp_edges = vec![];
 
@@ -42,7 +46,7 @@ impl<W: Copy + Any + Zero + Ord + std::fmt::Debug> BellmanFord<W> {
 
         self.distance[src_virt_id] = W::zero().into();
 
-        let edges = graph.edges();
+        let edges = graph.as_directed_edges();
 
         for _ in 0..vertex_count - 1 {
             for (u_real_id, v_real_id, edge) in &edges {
@@ -64,7 +68,7 @@ impl<W: Copy + Any + Zero + Ord + std::fmt::Debug> BellmanFord<W> {
             let u_virt_id = id_map.real_id_of(*u_real_id);
             let v_virt_id = id_map.real_id_of(*v_real_id);
 
-            let alt = self.distance[u_virt_id].clone() + edge.get_weight().clone();
+            let alt = self.distance[u_virt_id] + *edge.get_weight();
             if alt < self.distance[v_virt_id] {
                 return Err("Cycle detected".to_string());
             }
@@ -73,9 +77,8 @@ impl<W: Copy + Any + Zero + Ord + std::fmt::Debug> BellmanFord<W> {
         let mut distance_map = HashMap::new();
         for virt_id in 0..graph.vertex_count() {
             let real_id = id_map.real_id_of(virt_id);
-            distance_map.insert(real_id, self.distance[virt_id].clone());
+            distance_map.insert(real_id, self.distance[virt_id]);
         }
-
 
         let mut vertices = edges
             .iter()
@@ -87,7 +90,12 @@ impl<W: Copy + Any + Zero + Ord + std::fmt::Debug> BellmanFord<W> {
         vertices.sort();
         vertices.dedup();
 
-        Ok(ShortestPathSubgraph::init(sp_edges, vertices, distance_map))
+        Ok(ShortestPathSubgraph::init(
+            graph,
+            sp_edges,
+            vertices,
+            distance_map,
+        ))
     }
 }
 
@@ -95,7 +103,6 @@ impl<W: Copy + Any + Zero + Ord + std::fmt::Debug> BellmanFord<W> {
 mod tests {
     use super::*;
     use crate::graph::MatGraph;
-    use crate::provide::*;
     use crate::storage::{DiMat, Mat};
 
     #[test]
@@ -128,7 +135,7 @@ mod tests {
 
         let sp_subgraph = BellmanFord::init(&graph).execute(&graph, a);
 
-        // Then 
+        // Then
         assert!(sp_subgraph.is_ok());
         let sp_subgraph = sp_subgraph.unwrap();
         assert_eq!(sp_subgraph.distance_to(a).unwrap(), 0.into());

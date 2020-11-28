@@ -1,39 +1,40 @@
-use std::collections::HashMap;
-
-use magnitude::Magnitude;
-use provide::{Edges, Graph, Neighbors, Vertices};
+use crate::provide::{Edges, Graph, Neighbors, Vertices};
 
 use super::{AsSubgraph, Subgraph};
 use crate::graph::{Edge, EdgeType};
-use crate::provide;
 
-pub struct ShortestPathSubgraph<'a, W, E: Edge<W>, Ty: EdgeType, G: Graph<W, E, Ty>> {
-    distance_map: HashMap<usize, Magnitude<W>>,
+pub struct MultiRootSubgraph<'a, W, E: Edge<W>, Ty: EdgeType, G: Graph<W, E, Ty>> {
+    roots: Vec<usize>,
     subgraph: Subgraph<'a, W, E, Ty, G>,
 }
 
-impl<'a, W: Copy, E: Edge<W>, Ty: EdgeType, G: Graph<W, E, Ty>>
-    ShortestPathSubgraph<'a, W, E, Ty, G>
-{
+impl<'a, W, E: Edge<W>, Ty: EdgeType, G: Graph<W, E, Ty>> MultiRootSubgraph<'a, W, E, Ty, G> {
     pub fn init(
         graph: &'a G,
         edges: Vec<(usize, usize, &'a E)>,
         vertices: Vec<usize>,
-        distance_map: HashMap<usize, Magnitude<W>>,
+        roots: Vec<usize>,
     ) -> Self {
-        ShortestPathSubgraph {
-            distance_map,
+        MultiRootSubgraph {
+            roots,
             subgraph: Subgraph::init(graph, edges, vertices),
         }
     }
 
-    pub fn distance_to(&self, dst_id: usize) -> Option<Magnitude<W>> {
-        self.distance_map.get(&dst_id).copied()
+    pub fn roots(&self) -> &Vec<usize> {
+        &self.roots
+    }
+
+    pub fn is_root(&self, vertex_id: usize) -> bool {
+        self.roots
+            .iter()
+            .find(|root_id| **root_id == vertex_id)
+            .is_some()
     }
 }
 
 impl<'a, W, E: Edge<W>, Ty: EdgeType, G: Graph<W, E, Ty>> Neighbors
-    for ShortestPathSubgraph<'a, W, E, Ty, G>
+    for MultiRootSubgraph<'a, W, E, Ty, G>
 {
     fn neighbors(&self, src_id: usize) -> Vec<usize> {
         self.subgraph.neighbors(src_id)
@@ -41,7 +42,7 @@ impl<'a, W, E: Edge<W>, Ty: EdgeType, G: Graph<W, E, Ty>> Neighbors
 }
 
 impl<'a, W, E: Edge<W>, Ty: EdgeType, G: Graph<W, E, Ty>> Vertices
-    for ShortestPathSubgraph<'a, W, E, Ty, G>
+    for MultiRootSubgraph<'a, W, E, Ty, G>
 {
     fn vertices(&self) -> Vec<usize> {
         self.subgraph.vertices()
@@ -49,7 +50,7 @@ impl<'a, W, E: Edge<W>, Ty: EdgeType, G: Graph<W, E, Ty>> Vertices
 }
 
 impl<'a, W, E: Edge<W>, Ty: EdgeType, G: Graph<W, E, Ty>> Edges<W, E>
-    for ShortestPathSubgraph<'a, W, E, Ty, G>
+    for MultiRootSubgraph<'a, W, E, Ty, G>
 {
     fn edges_from(&self, src_id: usize) -> Vec<(usize, &E)> {
         self.subgraph.edges_from(src_id)
@@ -85,6 +86,6 @@ impl<'a, W, E: Edge<W>, Ty: EdgeType, G: Graph<W, E, Ty>> Edges<W, E>
 }
 
 impl<'a, W, E: Edge<W>, Ty: EdgeType, G: Graph<W, E, Ty>> AsSubgraph<W, E>
-    for ShortestPathSubgraph<'a, W, E, Ty, G>
+    for MultiRootSubgraph<'a, W, E, Ty, G>
 {
 }
