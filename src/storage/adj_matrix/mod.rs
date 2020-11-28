@@ -491,7 +491,7 @@ mod tests {
         assert_eq!(matrix.total_vertex_count(), 3);
         assert_eq!(matrix.vec.len(), 6);
 
-        assert_eq!(matrix.edges().len(), 6);
+        assert_eq!(matrix.edges().len(), 3);
         for (src_id, dst_id, edge) in matrix.edges() {
             match (src_id, dst_id) {
                 (0, 1) | (1, 0) => assert_eq!(edge.get_weight().unwrap(), 1),
@@ -618,7 +618,7 @@ mod tests {
         assert_eq!(matrix.total_vertex_count(), 3);
         assert_eq!(matrix.vec.len(), 6);
 
-        assert_eq!(matrix.edges().len(), 6);
+        assert_eq!(matrix.edges().len(), 3);
         for (src_id, dst_id, edge) in matrix.edges() {
             match (src_id, dst_id) {
                 (0, 1) | (1, 0) => assert_eq!(edge.get_weight().unwrap(), 2),
@@ -693,7 +693,7 @@ mod tests {
         assert_eq!(matrix.total_vertex_count(), 3);
         assert_eq!(matrix.vec.len(), 6);
 
-        assert_eq!(matrix.edges().len(), 2);
+        assert_eq!(matrix.edges().len(), 1);
         assert_eq!(matrix.edges_between(a, c)[0].get_weight().unwrap(), 3);
     }
 

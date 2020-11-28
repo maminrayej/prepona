@@ -455,7 +455,7 @@ mod tests {
         assert_eq!(list.edges_of.len(), 3);
         assert!(list.edges_of.iter().all(|edges| edges.len() == 2));
 
-        assert_eq!(list.edges().len(), 6);
+        assert_eq!(list.edges().len(), 3);
         for (src_id, dst_id, edge) in list.edges() {
             match (src_id, dst_id) {
                 (0, 1) | (1, 0) => assert_eq!(edge.get_weight().unwrap(), 1),
@@ -584,7 +584,7 @@ mod tests {
         assert_eq!(list.edges_of.len(), 3);
         assert!(list.edges_of.iter().all(|edges| edges.len() == 2));
 
-        assert_eq!(list.edges().len(), 6);
+        assert_eq!(list.edges().len(), 3);
         for (src_id, dst_id, edge) in list.edges() {
             match (src_id, dst_id) {
                 (0, 1) | (1, 0) => assert_eq!(edge.get_weight().unwrap(), 2),
@@ -662,7 +662,7 @@ mod tests {
         assert!(list.edges_of[b].is_empty());
         assert_eq!(list.edges_of[c].len(), 1);
 
-        assert_eq!(list.edges().len(), 2);
+        assert_eq!(list.edges().len(), 1);
         assert_eq!(list.edges_between(a, c)[0].get_weight().unwrap(), 3);
     }
 

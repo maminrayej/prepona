@@ -45,6 +45,8 @@ pub trait Edges<W, E: Edge<W>> {
 
     fn edges(&self) -> Vec<(usize, usize, &E)>;
 
+    fn as_directed_edges(&self) -> Vec<(usize, usize, &E)>;
+
     fn edges_count(&self) -> usize;
 }
 

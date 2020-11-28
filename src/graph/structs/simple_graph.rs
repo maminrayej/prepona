@@ -81,6 +81,10 @@ impl<W, E: Edge<W>, Ty: EdgeType, S: GraphStorage<W, E, Ty>> provide::Edges<W, E
         self.storage.edges()
     }
 
+    fn as_directed_edges(&self) -> Vec<(usize, usize, &E)> {
+        self.storage.as_directed_edges()
+    }
+
     fn edges_count(&self) -> usize {
         self.storage.edges().len()
     }

@@ -41,15 +41,26 @@ pub trait GraphStorage<W, E: Edge<W>, Ty: EdgeType> {
     }
 
     fn edges(&self) -> Vec<(usize, usize, &E)> {
+        if Ty::is_directed() {
+            self.as_directed_edges()
+        } else {
+            self.as_directed_edges()
+                .into_iter()
+                .filter(|(src_id, dst_id, _)| src_id < dst_id || src_id == dst_id)
+                .collect()
+        }
+    }
+
+    fn as_directed_edges(&self) -> Vec<(usize, usize, &E)> {
         self.vertices()
-            .into_iter()
-            .flat_map(|src_id| {
-                self.edges_from(src_id)
-                    .into_iter()
-                    .map(|(dst_id, edge)| (src_id, dst_id, edge))
-                    .collect::<Vec<(usize, usize, &E)>>()
-            })
-            .collect()
+        .into_iter()
+        .flat_map(|src_id| {
+            self.edges_from(src_id)
+                .into_iter()
+                .map(|(dst_id, edge)| (src_id, dst_id, edge))
+                .collect::<Vec<(usize, usize, &E)>>()
+        })
+        .collect()
     }
 
     fn edges_from(&self, src_id: usize) -> Vec<(usize, &E)>;
