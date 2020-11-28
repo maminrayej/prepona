@@ -1,83 +1,45 @@
-use std::marker::PhantomData;
+use crate::algo::{Dfs, DfsListener};
+use crate::graph::{Edge, UndirectedEdge};
+use crate::provide;
 
-use crate::provide::{Edges, Graph, IdMap, Vertices};
-
-use crate::graph::{subgraph::MultiRootSubgraph, Edge, UndirectedEdge};
-
-pub struct ConnectedComponents<'a, W, E: Edge<W>> {
-    visited: Vec<bool>,
-    edges: Vec<(usize, usize, &'a E)>,
-    roots: Vec<usize>,
-
-    phantom_w: PhantomData<W>,
+pub struct ConnectedComponents {
+    current_component: Vec<usize>,
+    ccs: Vec<Vec<usize>>,
 }
 
-impl<'a, W, E: Edge<W>> ConnectedComponents<'a, W, E> {
-    pub fn init<G>(graph: &'a G) -> Self
+impl DfsListener for ConnectedComponents {
+    fn on_white(&mut self, dfs: &Dfs<Self>, virt_id: usize) {
+        let real_id = dfs.get_id_map().real_id_of(virt_id);
+
+        self.current_component.push(real_id);
+    }
+
+    fn on_finish(&mut self, _: &Dfs<Self>) {
+        self.ccs.push(self.current_component.clone());
+        self.current_component.clear();
+    }
+}
+
+impl ConnectedComponents {
+    pub fn init<G, W, E: Edge<W>>(_: &G) -> Self
     where
-        G: Graph<W, E, UndirectedEdge> + Vertices + Edges<W, E>,
+        G: provide::Graph<W, E, UndirectedEdge> + provide::Vertices + provide::Neighbors,
     {
         ConnectedComponents {
-            visited: vec![false; graph.vertex_count()],
-            edges: vec![],
-            roots: vec![],
-
-            phantom_w: PhantomData,
+            ccs: vec![],
+            current_component: vec![],
         }
     }
 
-    fn next_start_id(&self) -> Option<usize> {
-        self.visited.iter().position(|visited| *visited == false)
-    }
-
-    pub fn execute<G>(mut self, graph: &'a G) -> MultiRootSubgraph<'a, W, E, UndirectedEdge, G>
+    pub fn execute<G, W, E: Edge<W>>(mut self, graph: &G) -> Vec<Vec<usize>>
     where
-        G: Graph<W, E, UndirectedEdge> + Vertices + Edges<W, E>,
+        G: provide::Graph<W, E, UndirectedEdge> + provide::Vertices + provide::Neighbors,
     {
-        let id_map = graph.continuos_id_map();
+        let mut dfs = Dfs::init(graph, &mut self);
 
-        while let Some(start_id) = self.next_start_id() {
-            self.cc_starting_with(graph, &id_map, start_id)
-        }
+        dfs.execute(graph);
 
-        let mut vertices = self
-            .edges
-            .iter()
-            .flat_map(|(src_id, dst_id, _)| vec![*src_id, *dst_id])
-            .collect::<Vec<usize>>();
-
-        // Remove duplicated vertices.
-        vertices.sort();
-        vertices.dedup();
-
-        MultiRootSubgraph::init(graph, self.edges, vertices, self.roots)
-    }
-
-    fn cc_starting_with<G>(&mut self, graph: &'a G, id_map: &IdMap, start_id: usize)
-    where
-        G: Graph<W, E, UndirectedEdge> + Vertices + Edges<W, E>,
-    {
-        self.roots.push(start_id);
-
-        let start_virt_id = id_map.virt_id_of(start_id);
-
-        let mut stack = vec![start_virt_id];
-
-        while let Some(virt_id) = stack.pop() {
-            self.visited[virt_id] = true;
-
-            let real_id = id_map.real_id_of(virt_id);
-
-            for (n_real_id, edge) in graph.edges_from(real_id) {
-                let n_virt_id = id_map.virt_id_of(n_real_id);
-
-                if self.visited[n_virt_id] == false {
-                    self.edges.push((real_id, n_real_id, edge));
-
-                    stack.push(n_virt_id);
-                }
-            }
-        }
+        self.ccs
     }
 }
 
@@ -85,6 +47,7 @@ impl<'a, W, E: Edge<W>> ConnectedComponents<'a, W, E> {
 mod tests {
     use super::*;
     use crate::graph::MatGraph;
+    use crate::provide::*;
     use crate::storage::Mat;
 
     #[test]
@@ -93,7 +56,7 @@ mod tests {
 
         let ccs = ConnectedComponents::init(&graph).execute(&graph);
 
-        assert_eq!(ccs.roots().len(), 0);
+        assert_eq!(ccs.len(), 0);
     }
 
     #[test]
@@ -120,7 +83,11 @@ mod tests {
 
         let ccs = ConnectedComponents::init(&graph).execute(&graph);
 
-        assert_eq!(ccs.roots().len(), 1);
+        assert_eq!(ccs.len(), 1);
+        assert_eq!(ccs[0].len(), 7);
+        assert!(vec![a, b, c, d, e, f, g]
+            .iter()
+            .all(|v_id| ccs[0].contains(v_id)));
     }
 
     #[test]
@@ -135,7 +102,7 @@ mod tests {
         let d = graph.add_vertex();
         let e = graph.add_vertex();
         let f = graph.add_vertex();
-        graph.add_vertex();
+        let g = graph.add_vertex();
 
         graph.add_edge(a, b, 1.into());
         graph.add_edge(a, c, 1.into());
@@ -145,8 +112,14 @@ mod tests {
 
         let ccs = ConnectedComponents::init(&graph).execute(&graph);
 
-        assert_eq!(ccs.roots().len(), 3);
-        assert_eq!(ccs.edges_count(), graph.edges_count());
+        for cc in ccs {
+            match cc.len() {
+                1 => assert!(cc.contains(&g)),
+                2 => assert!(vec![e, f].iter().all(|v_id| cc.contains(v_id))),
+                4 => assert!(vec![a, b, c, d].iter().all(|v_id| cc.contains(v_id))),
+                _ => panic!("Unknown component: {:?}", cc),
+            }
+        }
     }
 
     #[test]
@@ -154,15 +127,19 @@ mod tests {
         //      a       b       c
         //      d       e       f
         let mut graph = MatGraph::init(Mat::<usize>::init());
-        graph.add_vertex();
-        graph.add_vertex();
-        graph.add_vertex();
-        graph.add_vertex();
-        graph.add_vertex();
-        graph.add_vertex();
+        let a = graph.add_vertex();
+        let b = graph.add_vertex();
+        let c = graph.add_vertex();
+        let d = graph.add_vertex();
+        let e = graph.add_vertex();
+        let f = graph.add_vertex();
 
         let ccs = ConnectedComponents::init(&graph).execute(&graph);
 
-        assert_eq!(ccs.roots().len(), 6);
+        assert_eq!(ccs.len(), 6);
+        for cc in &ccs {
+            assert_eq!(cc.len(), 1)
+        }
+        assert_eq!(ccs.concat(), [a, b, c, d, e, f]);
     }
 }
