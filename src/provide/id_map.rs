@@ -8,7 +8,7 @@ pub struct IdMap {
 impl IdMap {
     pub fn init(vertex_count: usize) -> Self {
         IdMap {
-            real_to_virt: HashMap::new(),
+            real_to_virt: HashMap::with_capacity(vertex_count),
             virt_to_real: vec![vertex_count + 1; vertex_count],
         }
     }
