@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 
-use provide::{Direction, Edges, Graph, Vertices};
+use provide::{Edges, Graph, Vertices};
 
 use crate::graph::{subgraph::Subgraph, Edge, EdgeType};
 use crate::provide;
@@ -18,7 +18,7 @@ impl<'a, W, E: Edge<W>> HasCycle<'a, W, E> {
     pub fn init<Ty, G>(graph: &G) -> Self
     where
         Ty: EdgeType,
-        G: provide::Neighbors + Vertices + Direction + Graph<W, E, Ty>,
+        G: provide::Neighbors + Vertices + Graph<W, E, Ty>,
     {
         HasCycle {
             is_visited: vec![false; graph.vertex_count()],
@@ -33,7 +33,7 @@ impl<'a, W, E: Edge<W>> HasCycle<'a, W, E> {
     pub fn execute<Ty, G>(mut self, graph: &'a G) -> Option<Subgraph<W, E, Ty, G>>
     where
         Ty: EdgeType,
-        G: provide::Neighbors + Vertices + Direction + Graph<W, E, Ty> + Edges<W, E>,
+        G: provide::Neighbors + Vertices + Graph<W, E, Ty> + Edges<W, E>,
     {
         if graph.vertex_count() != 0 && self.has_cycle(graph, 0, 0) {
             let mut vertices = self
@@ -55,7 +55,7 @@ impl<'a, W, E: Edge<W>> HasCycle<'a, W, E> {
     fn has_cycle<Ty, G>(&mut self, graph: &'a G, src_virt_id: usize, parent_virt_id: usize) -> bool
     where
         Ty: EdgeType,
-        G: provide::Neighbors + Vertices + Direction + Graph<W, E, Ty> + Edges<W, E>,
+        G: provide::Neighbors + Vertices + Graph<W, E, Ty> + Edges<W, E>,
     {
         self.is_visited[src_virt_id] = true;
 
@@ -72,7 +72,7 @@ impl<'a, W, E: Edge<W>> HasCycle<'a, W, E> {
                     self.edge_stack.pop();
                 }
             } else if !self.is_finished[dst_virt_id]
-                && (G::is_directed() || dst_virt_id != parent_virt_id)
+                && (Ty::is_directed() || dst_virt_id != parent_virt_id)
             {
                 self.edge_stack.push((src_real_id, dst_real_id, edge));
                 return true;

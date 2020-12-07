@@ -50,12 +50,6 @@ pub trait Edges<W, E: Edge<W>> {
     fn edges_count(&self) -> usize;
 }
 
-pub trait Direction {
-    fn is_directed() -> bool;
-
-    fn is_undirected() -> bool;
-}
-
 pub trait Graph<W, E: Edge<W>, Ty: EdgeType> {
     fn add_vertex(&mut self) -> usize;
 

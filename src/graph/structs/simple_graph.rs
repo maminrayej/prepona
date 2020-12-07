@@ -7,14 +7,11 @@ use crate::storage::{FlowMat, GraphStorage, Mat, List, FlowList};
 
 pub type MatGraph<W, Ty> = SimpleGraph<W, DefaultEdge<W>, Ty, Mat<W, Ty>>;
 pub type ListGraph<W, Ty> = SimpleGraph<W, DefaultEdge<W>, Ty, List<W, Ty>>;
-// pub type DiMatGraph<W> = SimpleGraph<W, DefaultEdge<W>, DirectedEdge, DiMat<W>>;
 
 pub type FlowMatGraph<W, Ty> = SimpleGraph<W, FlowEdge<W>, Ty, FlowMat<W>>;
 pub type FlowListGraph<W, Ty> = SimpleGraph<W, DefaultEdge<W>, Ty, FlowList<W, Ty>>;
-// pub type DiFlowMatGraph<W> = SimpleGraph<W, FlowEdge<W>, DirectedEdge, DiFlowMat<W>>;
 
 pub struct SimpleGraph<W, E: Edge<W>, Ty: EdgeType, S: GraphStorage<W, E, Ty>> {
-    // Backend storage to store graph data
     storage: S,
 
     phantom_w: PhantomData<W>,
@@ -22,7 +19,7 @@ pub struct SimpleGraph<W, E: Edge<W>, Ty: EdgeType, S: GraphStorage<W, E, Ty>> {
     phantom_ty: PhantomData<Ty>,
 }
 
-impl<W: Any + Copy, E: Edge<W>, Ty: EdgeType, S: GraphStorage<W, E, Ty>> SimpleGraph<W, E, Ty, S> {
+impl<W: Any, E: Edge<W>, Ty: EdgeType, S: GraphStorage<W, E, Ty>> SimpleGraph<W, E, Ty, S> {
     pub fn init(storage: S) -> Self {
         SimpleGraph {
             storage,
@@ -119,18 +116,6 @@ impl<W, E: Edge<W>, Ty: EdgeType, S: GraphStorage<W, E, Ty>> provide::Graph<W, E
 
     fn remove_edge(&mut self, src_id: usize, dst_id: usize, edge_id: usize) -> Option<E> {
         self.storage.remove_edge(src_id, dst_id, edge_id)
-    }
-}
-
-impl<W, E: Edge<W>, Ty: EdgeType, S: GraphStorage<W, E, Ty>> provide::Direction
-    for SimpleGraph<W, E, Ty, S>
-{
-    fn is_directed() -> bool {
-        Ty::is_directed()
-    }
-
-    fn is_undirected() -> bool {
-        Ty::is_undirected()
     }
 }
 

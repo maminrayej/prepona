@@ -33,7 +33,6 @@ impl Kruskal {
     where
         G: provide::Edges<W, E>
             + provide::Vertices
-            + provide::Direction
             + provide::Graph<W, E, UndirectedEdge>,
     {
         let mut mst = Vec::<(usize, usize, &E)>::new();
