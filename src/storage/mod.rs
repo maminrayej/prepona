@@ -46,7 +46,7 @@ pub trait GraphStorage<W, E: Edge<W>, Ty: EdgeType> {
         } else {
             self.as_directed_edges()
                 .into_iter()
-                .filter(|(src_id, dst_id, _)| src_id < dst_id || src_id == dst_id)
+                .filter(|(src_id, dst_id, _)| src_id <= dst_id)
                 .collect()
         }
     }

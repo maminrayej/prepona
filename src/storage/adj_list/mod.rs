@@ -48,15 +48,9 @@ impl<W, E: Edge<W>, Ty: EdgeType> AdjList<W, E, Ty> {
             None
         }
     }
-
-    // fn is_vertex_vlid(&self, vertex_id: usize) -> bool {
-    //     !self.reusable_ids.contains(&vertex_id) && vertex_id < self.edges_of.len()
-    // }
 }
 
-impl<W: Copy, E: Edge<W> + Copy + std::fmt::Debug, Ty: EdgeType> GraphStorage<W, E, Ty>
-    for AdjList<W, E, Ty>
-{
+impl<W: Copy, E: Edge<W> + Copy, Ty: EdgeType> GraphStorage<W, E, Ty> for AdjList<W, E, Ty> {
     fn add_vertex(&mut self) -> usize {
         self.vertex_count += 1;
 
@@ -131,8 +125,7 @@ impl<W: Copy, E: Edge<W> + Copy + std::fmt::Debug, Ty: EdgeType> GraphStorage<W,
     fn edges_between(&self, src_id: usize, dst_id: usize) -> Vec<&E> {
         self.edges_of[src_id]
             .iter()
-            .filter(|(did, _)| *did == dst_id)
-            .map(|(_, edge)| edge)
+            .filter_map(|(did, edge)| if *did == dst_id { Some(edge) } else { None })
             .collect()
     }
 
