@@ -19,7 +19,7 @@ use crate::graph::{Edge, EdgeDir};
 /// As a counter example [`AdjList`](crate::storage::AdjList) uses the default implementation of `edges_between` function.
 /// Because it must iterate over all edges from a source to compute the result. Which is actually the default implementation of `edges_between`.
 ///
-/// ## Generic Parameters:
+/// ## Generic Parameters
 /// * `W`: **W**eight type associated with edges.
 /// * `E`: **E**dge type that graph uses.
 /// * `Dir`: **Dir**ection of edges: [`Directed`](crate::graph::DirectedEdge) or [`Undirected`](crate::graph::UndirectedEdge).
