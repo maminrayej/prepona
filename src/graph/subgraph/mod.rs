@@ -8,7 +8,7 @@ pub use sp_subgraph::ShortestPathSubgraph;
 use crate::graph::Edge;
 use std::marker::PhantomData;
 
-use super::EdgeType;
+use super::EdgeDir;
 
 pub trait AsSubgraph<W, E: Edge<W>>: Neighbors + Vertices + Edges<W, E> {}
 
@@ -18,7 +18,7 @@ pub trait AsMutSubgraph<W, E: Edge<W>>: AsSubgraph<W, E> {
     fn remove_vertex(&mut self, vertex_id: usize);
 }
 
-pub struct Subgraph<'a, W, E: Edge<W>, Ty: EdgeType, G: Graph<W, E, Ty>> {
+pub struct Subgraph<'a, W, E: Edge<W>, Ty: EdgeDir, G: Graph<W, E, Ty>> {
     #[allow(dead_code)]
     graph: &'a G,
 
@@ -29,7 +29,7 @@ pub struct Subgraph<'a, W, E: Edge<W>, Ty: EdgeType, G: Graph<W, E, Ty>> {
     phantom_ty: PhantomData<Ty>,
 }
 
-impl<'a, W, E: Edge<W>, Ty: EdgeType, G: Graph<W, E, Ty>> Subgraph<'a, W, E, Ty, G> {
+impl<'a, W, E: Edge<W>, Ty: EdgeDir, G: Graph<W, E, Ty>> Subgraph<'a, W, E, Ty, G> {
     pub fn init(graph: &'a G, edges: Vec<(usize, usize, &'a E)>, vertices: Vec<usize>) -> Self {
         Subgraph {
             graph,
@@ -42,7 +42,7 @@ impl<'a, W, E: Edge<W>, Ty: EdgeType, G: Graph<W, E, Ty>> Subgraph<'a, W, E, Ty,
     }
 }
 
-impl<'a, W, E: Edge<W>, Ty: EdgeType, G: Graph<W, E, Ty>> AsMutSubgraph<W, E>
+impl<'a, W, E: Edge<W>, Ty: EdgeDir, G: Graph<W, E, Ty>> AsMutSubgraph<W, E>
     for Subgraph<'a, W, E, Ty, G>
 {
     fn remove_edge(&mut self, _: usize, _: usize, edge_id: usize) {
@@ -57,7 +57,7 @@ impl<'a, W, E: Edge<W>, Ty: EdgeType, G: Graph<W, E, Ty>> AsMutSubgraph<W, E>
     }
 }
 
-impl<'a, W, E: Edge<W>, Ty: EdgeType, G: Graph<W, E, Ty>> Neighbors for Subgraph<'a, W, E, Ty, G> {
+impl<'a, W, E: Edge<W>, Ty: EdgeDir, G: Graph<W, E, Ty>> Neighbors for Subgraph<'a, W, E, Ty, G> {
     fn neighbors(&self, src_id: usize) -> Vec<usize> {
         self.edges
             .iter()
@@ -67,13 +67,13 @@ impl<'a, W, E: Edge<W>, Ty: EdgeType, G: Graph<W, E, Ty>> Neighbors for Subgraph
     }
 }
 
-impl<'a, W, E: Edge<W>, Ty: EdgeType, G: Graph<W, E, Ty>> Vertices for Subgraph<'a, W, E, Ty, G> {
+impl<'a, W, E: Edge<W>, Ty: EdgeDir, G: Graph<W, E, Ty>> Vertices for Subgraph<'a, W, E, Ty, G> {
     fn vertices(&self) -> Vec<usize> {
         self.vertices.iter().copied().collect()
     }
 }
 
-impl<'a, W, E: Edge<W>, Ty: EdgeType, G: Graph<W, E, Ty>> Edges<W, E>
+impl<'a, W, E: Edge<W>, Ty: EdgeDir, G: Graph<W, E, Ty>> Edges<W, E>
     for Subgraph<'a, W, E, Ty, G>
 {
     fn edges_from(&self, src_id: usize) -> Vec<(usize, &E)> {
@@ -127,7 +127,7 @@ impl<'a, W, E: Edge<W>, Ty: EdgeType, G: Graph<W, E, Ty>> Edges<W, E>
     }
 }
 
-impl<'a, W, E: Edge<W>, Ty: EdgeType, G: Graph<W, E, Ty>> AsSubgraph<W, E>
+impl<'a, W, E: Edge<W>, Ty: EdgeDir, G: Graph<W, E, Ty>> AsSubgraph<W, E>
     for Subgraph<'a, W, E, Ty, G>
 {
 }

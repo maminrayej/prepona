@@ -6,13 +6,13 @@ use magnitude::Magnitude;
 pub use default_edge::DefaultEdge;
 pub use flow_edge::FlowEdge;
 
-pub trait EdgeType {
+pub trait EdgeDir {
     fn is_directed() -> bool;
     fn is_undirected() -> bool;
 }
 
 pub struct DirectedEdge;
-impl EdgeType for DirectedEdge {
+impl EdgeDir for DirectedEdge {
     fn is_directed() -> bool {
         true
     }
@@ -23,7 +23,7 @@ impl EdgeType for DirectedEdge {
 }
 
 pub struct UndirectedEdge;
-impl EdgeType for UndirectedEdge {
+impl EdgeDir for UndirectedEdge {
     fn is_directed() -> bool {
         false
     }

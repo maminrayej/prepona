@@ -3,7 +3,7 @@ use num_traits::{Unsigned, Zero};
 use std::any::Any;
 use std::collections::HashMap;
 
-use crate::graph::{subgraph::ShortestPathSubgraph, Edge, EdgeType};
+use crate::graph::{subgraph::ShortestPathSubgraph, Edge, EdgeDir};
 use crate::provide::{Edges, Vertices, Graph};
 
 pub struct Dijkstra<W> {
@@ -16,7 +16,7 @@ impl<W: Copy + Ord + Zero + Any + Unsigned> Dijkstra<W> {
     pub fn init<E, Ty, G>(graph: &G) -> Self
     where
         E: Edge<W>,
-        Ty: EdgeType,
+        Ty: EdgeDir,
         G: Edges<W, E> + Vertices + Graph<W, E, Ty>,
     {
         let vertex_count = graph.vertex_count();
@@ -44,7 +44,7 @@ impl<W: Copy + Ord + Zero + Any + Unsigned> Dijkstra<W> {
     ) -> ShortestPathSubgraph<W, E, Ty, G>
     where
         E: Edge<W>,
-        Ty: EdgeType,
+        Ty: EdgeDir,
         G: Edges<W, E> + Vertices + Graph<W, E, Ty>,
     {
         let mut edges = vec![];

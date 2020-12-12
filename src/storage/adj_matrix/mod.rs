@@ -4,7 +4,7 @@ use std::any::Any;
 use std::collections::HashSet;
 use std::marker::PhantomData;
 
-use crate::graph::{DefaultEdge, DirectedEdge, Edge, EdgeType, FlowEdge, UndirectedEdge};
+use crate::graph::{DefaultEdge, DirectedEdge, Edge, EdgeDir, FlowEdge, UndirectedEdge};
 use crate::storage::GraphStorage;
 
 pub type Mat<W, Ty = UndirectedEdge> = AdjMatrix<W, DefaultEdge<W>, Ty>;
@@ -13,7 +13,7 @@ pub type DiMat<W> = AdjMatrix<W, DefaultEdge<W>, DirectedEdge>;
 pub type FlowMat<W, Ty = UndirectedEdge> = AdjMatrix<W, FlowEdge<W>, Ty>;
 pub type DiFlowMat<W> = AdjMatrix<W, FlowEdge<W>, DirectedEdge>;
 
-pub struct AdjMatrix<W, E: Edge<W>, Ty: EdgeType = UndirectedEdge> {
+pub struct AdjMatrix<W, E: Edge<W>, Ty: EdgeDir = UndirectedEdge> {
     // AdjMatrix uses a flat vector to store the adjacency matrix and uses a mapping function to map the (i,j) tuple to an index.
     // this mapping function depends on wether the matrix is used to store directed or undirected edges.
     // for more info about the mapping function, checkout utils module.
@@ -32,7 +32,7 @@ pub struct AdjMatrix<W, E: Edge<W>, Ty: EdgeType = UndirectedEdge> {
     phantom_ty: PhantomData<Ty>,
 }
 
-impl<W, E: Edge<W>, Ty: EdgeType> AdjMatrix<W, E, Ty> {
+impl<W, E: Edge<W>, Ty: EdgeDir> AdjMatrix<W, E, Ty> {
     pub fn init() -> Self {
         AdjMatrix {
             vec: vec![],
@@ -63,7 +63,7 @@ impl<W, E: Edge<W>, Ty: EdgeType> AdjMatrix<W, E, Ty> {
     }
 }
 
-impl<W: Any, E: Edge<W>, Ty: EdgeType> GraphStorage<W, E, Ty> for AdjMatrix<W, E, Ty> {
+impl<W: Any, E: Edge<W>, Ty: EdgeDir> GraphStorage<W, E, Ty> for AdjMatrix<W, E, Ty> {
     fn add_vertex(&mut self) -> usize {
         if let Some(reusable_id) = self.next_reusable_id() {
             self.vertex_count += 1;
@@ -166,7 +166,7 @@ impl<W: Any, E: Edge<W>, Ty: EdgeType> GraphStorage<W, E, Ty> for AdjMatrix<W, E
 }
 
 use std::ops::{Index, IndexMut};
-impl<W: Any, E: Edge<W>, Ty: EdgeType> Index<(usize, usize)> for AdjMatrix<W, E, Ty> {
+impl<W: Any, E: Edge<W>, Ty: EdgeDir> Index<(usize, usize)> for AdjMatrix<W, E, Ty> {
     type Output = Vec<E>;
 
     fn index(&self, (src_id, dst_id): (usize, usize)) -> &Self::Output {
@@ -176,7 +176,7 @@ impl<W: Any, E: Edge<W>, Ty: EdgeType> Index<(usize, usize)> for AdjMatrix<W, E,
     }
 }
 
-impl<W: Any, E: Edge<W>, Ty: EdgeType> IndexMut<(usize, usize)> for AdjMatrix<W, E, Ty> {
+impl<W: Any, E: Edge<W>, Ty: EdgeDir> IndexMut<(usize, usize)> for AdjMatrix<W, E, Ty> {
     fn index_mut(&mut self, (src_id, dst_id): (usize, usize)) -> &mut Self::Output {
         let index = utils::from_ij(src_id, dst_id, self.is_directed);
 

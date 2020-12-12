@@ -3,7 +3,7 @@ use num_traits::Zero;
 use std::any::Any;
 use std::collections::HashMap;
 
-use crate::graph::{subgraph::ShortestPathSubgraph, Edge, EdgeType};
+use crate::graph::{subgraph::ShortestPathSubgraph, Edge, EdgeDir};
 use crate::provide::{Edges, Graph, Vertices};
 
 pub struct BellmanFord<W> {
@@ -15,7 +15,7 @@ impl<W: Copy + Any + Zero + Ord> BellmanFord<W> {
     pub fn init<E, Ty, G>(graph: &G) -> Self
     where
         E: Edge<W>,
-        Ty: EdgeType,
+        Ty: EdgeDir,
         G: Vertices + Edges<W, E> + Graph<W, E, Ty>,
     {
         let vertex_count = graph.vertex_count();
@@ -33,7 +33,7 @@ impl<W: Copy + Any + Zero + Ord> BellmanFord<W> {
     ) -> Result<ShortestPathSubgraph<W, E, Ty, G>, String>
     where
         E: Edge<W>,
-        Ty: EdgeType,
+        Ty: EdgeDir,
         G: Vertices + Edges<W, E> + Graph<W, E, Ty>,
     {
         let mut sp_edges = vec![];

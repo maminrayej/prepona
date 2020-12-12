@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 use std::marker::PhantomData;
 
-use crate::graph::{DefaultEdge, DirectedEdge, Edge, EdgeType, FlowEdge, UndirectedEdge};
+use crate::graph::{DefaultEdge, DirectedEdge, Edge, EdgeDir, FlowEdge, UndirectedEdge};
 use crate::storage::GraphStorage;
 
 pub type List<W, Ty = UndirectedEdge> = AdjList<W, DefaultEdge<W>, Ty>;
@@ -10,7 +10,7 @@ pub type DiList<W> = AdjList<W, DefaultEdge<W>, DirectedEdge>;
 pub type FlowList<W, Ty = UndirectedEdge> = AdjList<W, FlowEdge<W>, Ty>;
 pub type DiFlowList<W> = AdjList<W, FlowEdge<W>, DirectedEdge>;
 
-pub struct AdjList<W, E: Edge<W>, Ty: EdgeType = UndirectedEdge> {
+pub struct AdjList<W, E: Edge<W>, Ty: EdgeDir = UndirectedEdge> {
     edges_of: Vec<Vec<(usize, E)>>,
     reusable_ids: HashSet<usize>,
 
@@ -23,7 +23,7 @@ pub struct AdjList<W, E: Edge<W>, Ty: EdgeType = UndirectedEdge> {
     phantom_ty: PhantomData<Ty>,
 }
 
-impl<W, E: Edge<W>, Ty: EdgeType> AdjList<W, E, Ty> {
+impl<W, E: Edge<W>, Ty: EdgeDir> AdjList<W, E, Ty> {
     pub fn init() -> Self {
         AdjList {
             edges_of: vec![],
@@ -50,7 +50,7 @@ impl<W, E: Edge<W>, Ty: EdgeType> AdjList<W, E, Ty> {
     }
 }
 
-impl<W: Copy, E: Edge<W> + Copy, Ty: EdgeType> GraphStorage<W, E, Ty> for AdjList<W, E, Ty> {
+impl<W: Copy, E: Edge<W> + Copy, Ty: EdgeDir> GraphStorage<W, E, Ty> for AdjList<W, E, Ty> {
     fn add_vertex(&mut self) -> usize {
         self.vertex_count += 1;
 

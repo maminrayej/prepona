@@ -1,11 +1,11 @@
 use std::{collections::HashSet, marker::PhantomData};
 
 use crate::{
-    graph::{Edge, EdgeType},
+    graph::{Edge, EdgeDir},
     provide::{Edges, Graph, IdMap, Vertices},
 };
 
-pub struct Eulerian<W, E: Edge<W>, Ty: EdgeType, G: Graph<W, E, Ty>> {
+pub struct Eulerian<W, E: Edge<W>, Ty: EdgeDir, G: Graph<W, E, Ty>> {
     unused_edges: HashSet<usize>,
     out_deg: Vec<u32>,
     in_deg: Vec<u32>,
@@ -22,7 +22,7 @@ pub struct Eulerian<W, E: Edge<W>, Ty: EdgeType, G: Graph<W, E, Ty>> {
 impl<W, E, Ty, G> Eulerian<W, E, Ty, G>
 where
     E: Edge<W>,
-    Ty: EdgeType,
+    Ty: EdgeDir,
     G: Graph<W, E, Ty> + Vertices + Edges<W, E>,
 {
     pub fn init(graph: &G) -> Self {

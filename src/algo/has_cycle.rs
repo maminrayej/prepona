@@ -2,7 +2,7 @@ use std::marker::PhantomData;
 
 use provide::{Edges, Graph, Vertices};
 
-use crate::graph::{subgraph::Subgraph, Edge, EdgeType};
+use crate::graph::{subgraph::Subgraph, Edge, EdgeDir};
 use crate::provide;
 
 pub struct HasCycle<'a, W, E: Edge<W>> {
@@ -17,7 +17,7 @@ pub struct HasCycle<'a, W, E: Edge<W>> {
 impl<'a, W, E: Edge<W>> HasCycle<'a, W, E> {
     pub fn init<Ty, G>(graph: &G) -> Self
     where
-        Ty: EdgeType,
+        Ty: EdgeDir,
         G: provide::Neighbors + Vertices + Graph<W, E, Ty>,
     {
         HasCycle {
@@ -32,7 +32,7 @@ impl<'a, W, E: Edge<W>> HasCycle<'a, W, E> {
 
     pub fn execute<Ty, G>(mut self, graph: &'a G) -> Option<Subgraph<W, E, Ty, G>>
     where
-        Ty: EdgeType,
+        Ty: EdgeDir,
         G: provide::Neighbors + Vertices + Graph<W, E, Ty> + Edges<W, E>,
     {
         if graph.vertex_count() != 0 && self.has_cycle(graph, 0, 0) {
@@ -54,7 +54,7 @@ impl<'a, W, E: Edge<W>> HasCycle<'a, W, E> {
 
     fn has_cycle<Ty, G>(&mut self, graph: &'a G, src_virt_id: usize, parent_virt_id: usize) -> bool
     where
-        Ty: EdgeType,
+        Ty: EdgeDir,
         G: provide::Neighbors + Vertices + Graph<W, E, Ty> + Edges<W, E>,
     {
         self.is_visited[src_virt_id] = true;

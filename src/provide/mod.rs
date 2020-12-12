@@ -2,7 +2,7 @@ mod id_map;
 
 pub use id_map::IdMap;
 
-use crate::graph::{Edge, EdgeType};
+use crate::graph::{Edge, EdgeDir};
 
 pub trait Neighbors {
     fn neighbors(&self, src_id: usize) -> Vec<usize>;
@@ -50,7 +50,7 @@ pub trait Edges<W, E: Edge<W>> {
     fn edges_count(&self) -> usize;
 }
 
-pub trait Graph<W, E: Edge<W>, Ty: EdgeType> {
+pub trait Graph<W, E: Edge<W>, Ty: EdgeDir> {
     fn add_vertex(&mut self) -> usize;
 
     fn remove_vertex(&mut self, vertex_id: usize);

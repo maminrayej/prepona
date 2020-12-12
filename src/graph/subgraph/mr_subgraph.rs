@@ -1,14 +1,14 @@
 use crate::provide::{Edges, Graph, Neighbors, Vertices};
 
 use super::{AsSubgraph, Subgraph};
-use crate::graph::{Edge, EdgeType};
+use crate::graph::{Edge, EdgeDir};
 
-pub struct MultiRootSubgraph<'a, W, E: Edge<W>, Ty: EdgeType, G: Graph<W, E, Ty>> {
+pub struct MultiRootSubgraph<'a, W, E: Edge<W>, Ty: EdgeDir, G: Graph<W, E, Ty>> {
     roots: Vec<usize>,
     subgraph: Subgraph<'a, W, E, Ty, G>,
 }
 
-impl<'a, W, E: Edge<W>, Ty: EdgeType, G: Graph<W, E, Ty>> MultiRootSubgraph<'a, W, E, Ty, G> {
+impl<'a, W, E: Edge<W>, Ty: EdgeDir, G: Graph<W, E, Ty>> MultiRootSubgraph<'a, W, E, Ty, G> {
     pub fn init(
         graph: &'a G,
         edges: Vec<(usize, usize, &'a E)>,
@@ -33,7 +33,7 @@ impl<'a, W, E: Edge<W>, Ty: EdgeType, G: Graph<W, E, Ty>> MultiRootSubgraph<'a, 
     }
 }
 
-impl<'a, W, E: Edge<W>, Ty: EdgeType, G: Graph<W, E, Ty>> Neighbors
+impl<'a, W, E: Edge<W>, Ty: EdgeDir, G: Graph<W, E, Ty>> Neighbors
     for MultiRootSubgraph<'a, W, E, Ty, G>
 {
     fn neighbors(&self, src_id: usize) -> Vec<usize> {
@@ -41,7 +41,7 @@ impl<'a, W, E: Edge<W>, Ty: EdgeType, G: Graph<W, E, Ty>> Neighbors
     }
 }
 
-impl<'a, W, E: Edge<W>, Ty: EdgeType, G: Graph<W, E, Ty>> Vertices
+impl<'a, W, E: Edge<W>, Ty: EdgeDir, G: Graph<W, E, Ty>> Vertices
     for MultiRootSubgraph<'a, W, E, Ty, G>
 {
     fn vertices(&self) -> Vec<usize> {
@@ -49,7 +49,7 @@ impl<'a, W, E: Edge<W>, Ty: EdgeType, G: Graph<W, E, Ty>> Vertices
     }
 }
 
-impl<'a, W, E: Edge<W>, Ty: EdgeType, G: Graph<W, E, Ty>> Edges<W, E>
+impl<'a, W, E: Edge<W>, Ty: EdgeDir, G: Graph<W, E, Ty>> Edges<W, E>
     for MultiRootSubgraph<'a, W, E, Ty, G>
 {
     fn edges_from(&self, src_id: usize) -> Vec<(usize, &E)> {
@@ -85,7 +85,7 @@ impl<'a, W, E: Edge<W>, Ty: EdgeType, G: Graph<W, E, Ty>> Edges<W, E>
     }
 }
 
-impl<'a, W, E: Edge<W>, Ty: EdgeType, G: Graph<W, E, Ty>> AsSubgraph<W, E>
+impl<'a, W, E: Edge<W>, Ty: EdgeDir, G: Graph<W, E, Ty>> AsSubgraph<W, E>
     for MultiRootSubgraph<'a, W, E, Ty, G>
 {
 }
