@@ -4,26 +4,77 @@ use std::marker::PhantomData;
 use crate::graph::{DefaultEdge, DirectedEdge, Edge, EdgeDir, FlowEdge, UndirectedEdge};
 use crate::storage::GraphStorage;
 
-pub type List<W, Ty = UndirectedEdge> = AdjList<W, DefaultEdge<W>, Ty>;
+pub type List<W, Dir = UndirectedEdge> = AdjList<W, DefaultEdge<W>, Dir>;
 pub type DiList<W> = AdjList<W, DefaultEdge<W>, DirectedEdge>;
 
-pub type FlowList<W, Ty = UndirectedEdge> = AdjList<W, FlowEdge<W>, Ty>;
+pub type FlowList<W, Dir = UndirectedEdge> = AdjList<W, FlowEdge<W>, Dir>;
 pub type DiFlowList<W> = AdjList<W, FlowEdge<W>, DirectedEdge>;
 
-pub struct AdjList<W, E: Edge<W>, Ty: EdgeDir = UndirectedEdge> {
+/// Is a collection of unordered lists used to represent a finite graph. Each list describes the set of neighbors of a vertex in the graph.
+///
+/// ## Note
+/// From now on
+/// * |V|: Means total number of vertices that are stored in the storage.
+/// Note that this is different from number of vertices that are present in the graph.
+/// Because even if you remove a vertex from storage, the allocated memory for that vertex will not get freed and will be reused again when adding a new vertex.
+/// You can retrieve the amount of |V| using `total_vertex_count` function(as opposed to number of vertices present in the graph which can be retrieved using `vertex_count` function).
+/// For more info and examples refer to `total_vertex_count` documentation.
+/// * |V<sup>*</sup>|: Number of vertices present in the graph.
+/// * |E|: Means number of edges present in the graph.
+/// * |E<sup>*</sup>|: Means number of edges exiting a vertex(out degree of the vertex).
+///
+/// ## Space complexity
+/// Space complexity of `AdjList` depends on wether `Dir` is [`Directed`](crate::graph::DirectedEdge) or [`Undirected`](crate::graph::UndirectedEdge). \
+/// * **Directed**: For directed graphs `AdjList` stores |V| + |E| elements.
+/// * **Undirected**: For undirected graphs `AdjList` stores each edge twice so it stores |V| + 2*|E| elements.
+///
+/// ## Generic Parameters
+/// * `W`: **W**eight type associated with edges.
+/// * `E`: **E**dge type that graph uses.
+/// * `Dir`: **Dir**ection of edges: [`Directed`](crate::graph::DirectedEdge) or [`Undirected`](crate::graph::UndirectedEdge).
+pub struct AdjList<W, E: Edge<W>, Dir: EdgeDir = UndirectedEdge> {
     edges_of: Vec<Vec<(usize, E)>>,
     reusable_ids: HashSet<usize>,
 
     edge_id: usize,
 
     vertex_count: usize,
-    is_directed: bool,
 
     phantom_w: PhantomData<W>,
-    phantom_ty: PhantomData<Ty>,
+    phantom_dir: PhantomData<Dir>,
 }
 
-impl<W, E: Edge<W>, Ty: EdgeDir> AdjList<W, E, Ty> {
+impl<W, E: Edge<W>, Dir: EdgeDir> AdjList<W, E, Dir> {
+    /// Initializes an empty adjacency list.
+    ///
+    /// `AdjList` defines multiple types with different combination of values for generic parameters.
+    /// These types are:
+    /// * [`List`](crate::storage::List): An adjacency list that uses [`undirected`](crate::graph::UndirectedEdge) [`default edges`](crate::graph::DefaultEdge). \
+    ///                                 It is equivalent to `AdjList<W, DefaultEdge<W>, UndirectedEdge>`.
+    ///
+    /// * [`DiList`](crate::storage::DiList): An adjacency list that uses [`directed`](crate::graph::DirectedEdge) [`default edges`](crate::graph::DefaultEdge). \
+    ///                                 It is equivalent to `AdjList<W, DefaultEdge<W>, DirectedEdge>`.
+    ///
+    /// * [`FlowList`](crate::storage::FlowList): An adjacency list that uses [`undirected`](crate::graph::UndirectedEdge) [`flow edges`](crate::graph::FlowEdge). \
+    ///                                 It is equivalent to `AdjList<W, FlowEdge<W>, UndirectedEdge>`.
+    ///
+    /// * [`DiFlowList`](crate::storage::DiFlowList): An adjacency list that uses [`directed`](crate::graph::DirectedEdge) [`flow edges`](crate::graph::FlowEdge). \
+    ///                                 It is equivalent to `AdjList<W, FlowEdge<W>, DirectedEdge>`.
+    ///
+    /// # Returns
+    /// An empty `AdjList`.
+    ///
+    /// # Examples
+    /// ```
+    /// use prepona::prelude::*;
+    /// use prepona::storage::{List, DiList};
+    ///
+    /// // To store an undirected graph with usize weights
+    /// let list = List::<usize>::init();
+    ///
+    /// // To store a directed graph with usize weights
+    /// let di_list = DiList::<usize>::init();
+    /// ```
     pub fn init() -> Self {
         AdjList {
             edges_of: vec![],
@@ -32,10 +83,9 @@ impl<W, E: Edge<W>, Ty: EdgeDir> AdjList<W, E, Ty> {
             edge_id: 0,
 
             vertex_count: 0,
-            is_directed: Ty::is_directed(),
 
             phantom_w: PhantomData,
-            phantom_ty: PhantomData,
+            phantom_dir: PhantomData,
         }
     }
 
@@ -48,9 +98,25 @@ impl<W, E: Edge<W>, Ty: EdgeDir> AdjList<W, E, Ty> {
             None
         }
     }
+
+    /// # Returns
+    /// Total number of vertices in the storage(|V|).
+    ///
+    /// # Complexity
+    /// O(1)
+    pub fn total_vertex_count(&self) -> usize {
+        self.edges_of.len()
+    }
 }
 
-impl<W: Copy, E: Edge<W> + Copy, Ty: EdgeDir> GraphStorage<W, E, Ty> for AdjList<W, E, Ty> {
+impl<W: Copy, E: Edge<W> + Copy, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjList<W, E, Dir> {
+    /// Adds a vertex to the graph.
+    ///
+    /// # Returns
+    /// Unique id of the newly added vertex.
+    ///
+    /// # Complexity
+    /// O(|1|)
     fn add_vertex(&mut self) -> usize {
         self.vertex_count += 1;
 
@@ -63,10 +129,17 @@ impl<W: Copy, E: Edge<W> + Copy, Ty: EdgeDir> GraphStorage<W, E, Ty> for AdjList
         }
     }
 
+    /// Removes the vertex with id: `vertex_id` from graph.
+    ///
+    /// # Arguments
+    /// `vertex_id`: Id of the vertex to be removed.
+    ///
+    /// # Complexity
+    /// O(|V| + |V<sup>\*</sup>| * |max(E<sup>\*</sup>)|)
     fn remove_vertex(&mut self, vertex_id: usize) {
         self.edges_of[vertex_id].clear();
 
-        for src_id in 0..self.vertex_count() {
+        for src_id in self.vertices() {
             self.edges_of[src_id].retain(|(dst_id, _)| *dst_id != vertex_id)
         }
 
@@ -75,6 +148,18 @@ impl<W: Copy, E: Edge<W> + Copy, Ty: EdgeDir> GraphStorage<W, E, Ty> for AdjList
         self.reusable_ids.insert(vertex_id);
     }
 
+    /// Adds `edge` from vertex with id `src_id`: to vertex with id: `dst_id`.
+    ///
+    /// # Arguments
+    /// * `src_id`: Id of the source vertex.
+    /// * `dst_id`: Id of the destination vertex.
+    /// * `edge`: Edge to be added from source to destination.
+    ///
+    /// # Returns
+    /// Unique id of the newly added edge.
+    ///
+    /// # Complexity
+    /// O(1)
     fn add_edge(&mut self, src_id: usize, dst_id: usize, mut edge: E) -> usize {
         edge.set_id(self.edge_id);
 
@@ -89,6 +174,16 @@ impl<W: Copy, E: Edge<W> + Copy, Ty: EdgeDir> GraphStorage<W, E, Ty> for AdjList
         self.edge_id - 1
     }
 
+    /// Replaces the edge with id: `edge_id` with `edge`.
+    ///
+    /// # Arguments
+    /// * `src_id`: Id of source vertex.
+    /// * `dst_id`: Id of destination vertex.
+    /// * `edge_id`: Id of the to be updated edge.
+    /// * `edge`: New edge to replace the old one.
+    ///
+    /// # Complexity
+    /// O(*removing an edge* + *adding an edge*)
     fn update_edge(&mut self, src_id: usize, dst_id: usize, edge_id: usize, mut edge: E) {
         if let Some(removed_edge) = self.remove_edge(src_id, dst_id, edge_id) {
             edge.set_id(removed_edge.get_id());
@@ -97,6 +192,20 @@ impl<W: Copy, E: Edge<W> + Copy, Ty: EdgeDir> GraphStorage<W, E, Ty> for AdjList
         }
     }
 
+    /// Removes the edge with id: `edge_id`.
+    ///
+    /// # Arguments
+    /// * `src_id`: Id of source vertex.
+    /// * `dst_id`: Id of destination vertex.
+    /// * `edge_id`: Id of edge to be removed.
+    ///
+    /// # Returns
+    /// * `Some`: Containing the removed edge.
+    /// * `None`: If edge with `edge_id` does not exist in the graph.
+    ///
+    /// # Complexity
+    /// * Directed: O(E<sup>\*</sup><sub>src</sub>)
+    /// * Undirected: O(E<sup>\*</sup><sub>src</sub> + E<sup>\*</sup><sub>dst</sub>)
     fn remove_edge(&mut self, src_id: usize, dst_id: usize, edge_id: usize) -> Option<E> {
         if let Some(index) = self.edges_of[src_id]
             .iter()
@@ -112,39 +221,39 @@ impl<W: Copy, E: Edge<W> + Copy, Ty: EdgeDir> GraphStorage<W, E, Ty> for AdjList
         }
     }
 
+    /// # Returns
+    /// Number of vertices in the graph.
+    ///
+    /// # Complexity
+    /// O(1)
     fn vertex_count(&self) -> usize {
         self.vertex_count
     }
 
+    /// # Returns
+    /// Id of vertices that are present in the graph.
+    ///
+    /// # Complexity
+    /// O(|V|)
     fn vertices(&self) -> Vec<usize> {
         (0..self.edges_of.len())
             .filter(|vertex_id| !self.reusable_ids.contains(vertex_id))
             .collect()
     }
 
-    fn edges_between(&self, src_id: usize, dst_id: usize) -> Vec<&E> {
-        self.edges_of[src_id]
-            .iter()
-            .filter_map(|(did, edge)| if *did == dst_id { Some(edge) } else { None })
-            .collect()
-    }
-
+    /// # Arguments
+    /// `src_id`: Id of the source vertex.
+    ///
+    /// # Returns
+    /// * All edges from the source vertex in the format of: (`dst_id`, `edge`)
+    ///
+    /// # Complexity
+    /// O(|E<sup>\*</sup>|)
     fn edges_from(&self, src_id: usize) -> Vec<(usize, &E)> {
         self.edges_of[src_id]
             .iter()
             .map(|(dst_id, edge)| (*dst_id, edge))
             .collect()
-    }
-
-    fn neighbors(&self, src_id: usize) -> Vec<usize> {
-        self.edges_of[src_id]
-            .iter()
-            .map(|(dst_id, _)| *dst_id)
-            .collect()
-    }
-
-    fn is_directed(&self) -> bool {
-        self.is_directed
     }
 }
 
