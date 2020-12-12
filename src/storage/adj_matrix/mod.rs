@@ -28,13 +28,13 @@ pub type DiFlowMat<W> = AdjMatrix<W, FlowEdge<W>, DirectedEdge>;
 ///
 /// ## Space complexity
 /// Space complexity of `AdjMatrix` depends on wether `Dir` is [`Directed`](crate::graph::DirectedEdge) or [`Undirected`](crate::graph::UndirectedEdge). \
-/// * **Directed**: For directed graphs `AdjMatrix` stores matrix with |V|<sup>2</sup> elements.
-/// * **Undirected**: For undirected graphs `AdjMatrix` stores a lower triangle matrix with (|V|<sup>2</sup> + |V|)/2 elements.
+/// * **Directed**: For directed graphs `AdjMatrix` stores matrix with |V|<sup>2</sup> + |E| elements.
+/// * **Undirected**: For undirected graphs `AdjMatrix` stores a lower triangle matrix with (|V|<sup>2</sup> + |V|)/2 + |E| elements.
 ///
 /// ## Generic Parameters
 /// * `W`: **W**eight type associated with edges.
 /// * `E`: **E**dge type that graph uses.
-/// * `Dir`: **Dir**ection of edges: [`Directed`](crate::graph::DirectedEdge) or [`Undirected`](crate::graph::UndirectedEdge)
+/// * `Dir`: **Dir**ection of edges: [`Directed`](crate::graph::DirectedEdge) or [`Undirected`](crate::graph::UndirectedEdge).
 pub struct AdjMatrix<W, E: Edge<W>, Dir: EdgeDir = UndirectedEdge> {
     vec: Vec<Vec<E>>,
 
@@ -107,7 +107,7 @@ impl<W, E: Edge<W>, Dir: EdgeDir> AdjMatrix<W, E, Dir> {
     /// # Returns
     /// Total number of vertices in the storage(|V|).
     ///
-    /// Complexity
+    /// # Complexity
     /// O(1)
     pub fn total_vertex_count(&self) -> usize {
         self.vertex_count + self.reusable_ids.len()
@@ -214,7 +214,7 @@ impl<W: Any, E: Edge<W>, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjMatrix<W, 
     /// * `None`: If edge with `edge_id` does not exist in the graph.
     ///
     /// # Complexity
-    /// O(1)
+    /// O(E<sup>*</sup>)
     fn remove_edge(&mut self, src_id: usize, dst_id: usize, edge_id: usize) -> Option<E> {
         if let Some(index) = self[(src_id, dst_id)]
             .iter()
