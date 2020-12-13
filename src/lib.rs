@@ -1,6 +1,13 @@
 pub mod prelude;
 pub mod algo;
 pub mod graph;
+
+/// Collection of traits that each define a set of functionalities exposed by a graph.
+///
+/// Algorithms only depend on functionalities that are defined in this module and not on specific structures like graphs.
+/// This enables us to decouple algorithms from data structures that they receive as input.
+/// So you can define your own structure wether it's a graph, subgraph or an augmented graph and run algorithms defined in `algo` module on them.
+/// All you have to do is to implement the traits that are needed by the algorithm you want to use.
 pub mod provide;
 
 /// Storages are structures that graphs use to store information about vertices and edges.
