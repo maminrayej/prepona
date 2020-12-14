@@ -1,3 +1,4 @@
+/// Re-exports traits and structs that are necessary to accomplish basic tasks with prepona. 
 pub mod prelude;
 pub mod algo;
 
