@@ -1,5 +1,16 @@
 pub mod prelude;
 pub mod algo;
+
+/// Graphs sit on top of storages defined in [`storage`](crate::storage) module and provide logic about how a storage should be used.
+///
+/// For example [`SimpleGraph`](crate::graph::SimpleGraph) makes sure that no more than one edge is added between two vertices.
+/// It also prevents from adding loops to graph. For more information checkout [`SimpleGraph`](crate::graph::SimpleGraph) documentation.
+///
+/// Subgraphs are immutable views of graphs. Note that subgraphs themselves are mutable but you can not modify the graph through them.
+/// Subgraphs may carry more information than just a view of the graph. For example [ShortestPathSubgraph](crate::graph::subgraph::ShortestPathSubgraph) carries a distance map,
+/// in addition to the edges and vertices that participate in the shortest path tree.
+/// Subgraphs also implements traits defined in [`provide`](crate::provide) module. 
+/// So you can treat them like graphs and all algorithms that are applicable to a graph, is also applicable to a subgraph.
 pub mod graph;
 
 /// Collection of traits that each define a set of functionalities exposed by a graph.
