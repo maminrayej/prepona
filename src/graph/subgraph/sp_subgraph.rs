@@ -8,6 +8,7 @@ use crate::graph::{Edge, EdgeDir};
 use crate::provide;
 
 /// Subgraph containing edges and vertices that participate in the shortest path tree.
+///
 /// It also carries a distance map to answer queries about shortest paths from source vertex to any destination vertex in O(1).
 /// This subgraph will be returned from algorithms like [`Dijkstra`](crate::algo::Dijkstra) or [BellmanFord](crate::algo::BellmanFord).
 pub struct ShortestPathSubgraph<'a, W, E: Edge<W>, Dir: EdgeDir, G: Graph<W, E, Dir>> {

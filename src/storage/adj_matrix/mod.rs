@@ -53,17 +53,10 @@ impl<W, E: Edge<W>, Dir: EdgeDir> AdjMatrix<W, E, Dir> {
     ///
     /// `AdjMatrix` defines multiple types with different combination of values for generic parameters.
     /// These types are:
-    /// * [`Mat`](crate::storage::Mat): An adjacency matrix that uses [`undirected`](crate::graph::UndirectedEdge) [`default edges`](crate::graph::DefaultEdge). \
-    ///                                 It is equivalent to `AdjMatrix<W, DefaultEdge<W>, UndirectedEdge>`.
-    ///
-    /// * [`DiMat`](crate::storage::DiMat): An adjacency matrix that uses [`directed`](crate::graph::DirectedEdge) [`default edges`](crate::graph::DefaultEdge). \
-    ///                                 It is equivalent to `AdjMatrix<W, DefaultEdge<W>, DirectedEdge>`.
-    ///
-    /// * [`FlowMat`](crate::storage::FlowMat): An adjacency matrix that uses [`undirected`](crate::graph::UndirectedEdge) [`flow edges`](crate::graph::FlowEdge). \
-    ///                                 It is equivalent to `AdjMatrix<W, FlowEdge<W>, UndirectedEdge>`.
-    ///
-    /// * [`DiFlowMat`](crate::storage::DiFlowMat): An adjacency matrix that uses [`directed`](crate::graph::DirectedEdge) [`flow edges`](crate::graph::FlowEdge). \
-    ///                                 It is equivalent to `AdjMatrix<W, FlowEdge<W>, DirectedEdge>`.
+    /// * [`Mat`](crate::storage::Mat): An adjacency matrix that uses [`undirected`](crate::graph::UndirectedEdge) [`default edges`](crate::graph::DefaultEdge).
+    /// * [`DiMat`](crate::storage::DiMat): An adjacency matrix that uses [`directed`](crate::graph::DirectedEdge) [`default edges`](crate::graph::DefaultEdge).
+    /// * [`FlowMat`](crate::storage::FlowMat): An adjacency matrix that uses [`undirected`](crate::graph::UndirectedEdge) [`flow edges`](crate::graph::FlowEdge).
+    /// * [`DiFlowMat`](crate::storage::DiFlowMat): An adjacency matrix that uses [`directed`](crate::graph::DirectedEdge) [`flow edges`](crate::graph::FlowEdge).
     ///
     ///
     /// # Returns

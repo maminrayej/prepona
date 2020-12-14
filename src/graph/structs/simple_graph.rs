@@ -1,46 +1,92 @@
 use std::any::Any;
 use std::marker::PhantomData;
 
+use provide::{Edges, Graph, Neighbors, Vertices};
+
 use crate::graph::{DefaultEdge, Edge, EdgeDir, FlowEdge};
 use crate::provide;
-use crate::storage::{FlowMat, GraphStorage, Mat, List, FlowList};
+use crate::storage::{FlowList, FlowMat, GraphStorage, List, Mat};
 
-pub type MatGraph<W, Ty> = SimpleGraph<W, DefaultEdge<W>, Ty, Mat<W, Ty>>;
-pub type ListGraph<W, Ty> = SimpleGraph<W, DefaultEdge<W>, Ty, List<W, Ty>>;
+/// A `SimpleGraph` that uses [`Mat`](crate::storage::Mat) as its storage.
+pub type MatGraph<W, Dir> = SimpleGraph<W, DefaultEdge<W>, Dir, Mat<W, Dir>>;
 
-pub type FlowMatGraph<W, Ty> = SimpleGraph<W, FlowEdge<W>, Ty, FlowMat<W>>;
-pub type FlowListGraph<W, Ty> = SimpleGraph<W, DefaultEdge<W>, Ty, FlowList<W, Ty>>;
+/// A `SimpleGraph` that uses [`List`](crate::storage::List) as its storage.
+pub type ListGraph<W, Dir> = SimpleGraph<W, DefaultEdge<W>, Dir, List<W, Dir>>;
 
-pub struct SimpleGraph<W, E: Edge<W>, Ty: EdgeDir, S: GraphStorage<W, E, Ty>> {
+/// A `SimpleGraph` that uses [`FlowMat`](crate::storage::FlowMat) as its storage.
+pub type FlowMatGraph<W, Dir> = SimpleGraph<W, FlowEdge<W>, Dir, FlowMat<W>>;
+
+/// A `SimpleGraph` that uses [`FlowList`](crate::storage::FlowList) as its storage.
+pub type FlowListGraph<W, Dir> = SimpleGraph<W, DefaultEdge<W>, Dir, FlowList<W, Dir>>;
+
+/// Representing a graph with no loops and multiple edges.
+///
+/// ## Note
+/// `SimpleGraph` forwards most of its function calls to its underlying storage. So the complexities of its functions are dependent to what storage you use to initialize the graph.
+/// Therefore `SimpleGraph` only documents complexity of functions that it adds some additional logic to. For `SimpleGraph`, only `add_edge` function adds additional logic.
+///
+/// ## Generic Parameters
+/// * `W`: **W**eight type associated with edges.
+/// * `E`: **E**dge type that graph uses.
+/// * `Dir`: **Dir**ection of edges: [`Directed`](crate::graph::DirectedEdge) or [`Undirected`](crate::graph::UndirectedEdge).
+/// * `S`: **S**torage to use: one of the storages defined in [`storage`](crate::storage) module or your custom storage.
+pub struct SimpleGraph<W, E: Edge<W>, Dir: EdgeDir, S: GraphStorage<W, E, Dir>> {
     storage: S,
 
     phantom_w: PhantomData<W>,
     phantom_e: PhantomData<E>,
-    phantom_ty: PhantomData<Ty>,
+    phantom_dir: PhantomData<Dir>,
 }
 
-impl<W: Any, E: Edge<W>, Ty: EdgeDir, S: GraphStorage<W, E, Ty>> SimpleGraph<W, E, Ty, S> {
+impl<W: Any, E: Edge<W>, Dir: EdgeDir, S: GraphStorage<W, E, Dir>> SimpleGraph<W, E, Dir, S> {
+    /// `SimpleGraph` defines multiple types with different combination of values for generic parameters.
+    /// These types are:
+    /// * [`MatGraph`](crate::graph::MatGraph): A simple graph using [`Mat`](crate::storage::Mat) as its storage.
+    /// * [`FlowMatGraph`](crate::graph::FlowMatGraph): A simple graph using [`FlowMat`](crate::storage::FlowMat) as its storage.
+    /// * [`ListGraph`](crate::graph::ListGraph): A simple graph using [`List`](crate::storage::List) as its storage.
+    /// * [`FlowListGraph`](crate::graph::FlowListGraph): A simple graph using [`FlowList`](crate::storage::FlowList) as its storage.
+    ///
+    /// # Arguments
+    /// `storage`: Storage to use.
+    ///
+    /// # Returns
+    /// An empty simple graph.
+    ///
+    /// # Examples
+    /// ```
+    /// use prepona::prelude::*;
+    /// use prepona::storage::{Mat, DiList};
+    /// use prepona::graph::{MatGraph, ListGraph};
+    ///
+    /// // A simple graph that uses a adjacency matrix as its storage with undirected edges of type usize.
+    /// let mat_graph = MatGraph::init(Mat::<usize>::init());
+    ///
+    /// // A simple graph that uses adjacency list as its storage with directed edges of type u32.
+    /// let list_graph = ListGraph::init(DiList::<u32>::init());
+    /// ```
     pub fn init(storage: S) -> Self {
         SimpleGraph {
             storage,
 
             phantom_e: PhantomData,
             phantom_w: PhantomData,
-            phantom_ty: PhantomData,
+            phantom_dir: PhantomData,
         }
     }
 }
 
-impl<W, E: Edge<W>, Ty: EdgeDir, S: GraphStorage<W, E, Ty>> provide::Neighbors
-    for SimpleGraph<W, E, Ty, S>
+/// For documentation about each function checkout [`Neighbors`](crate::provide::Neighbors) trait.
+impl<W, E: Edge<W>, Dir: EdgeDir, S: GraphStorage<W, E, Dir>> Neighbors
+    for SimpleGraph<W, E, Dir, S>
 {
     fn neighbors(&self, src_id: usize) -> Vec<usize> {
         self.storage.neighbors(src_id)
     }
 }
 
-impl<W, E: Edge<W>, Ty: EdgeDir, S: GraphStorage<W, E, Ty>> provide::Vertices
-    for SimpleGraph<W, E, Ty, S>
+/// For documentation about each function checkout [`Vertices`](crate::provide::Vertices) trait.
+impl<W, E: Edge<W>, Dir: EdgeDir, S: GraphStorage<W, E, Dir>> Vertices
+    for SimpleGraph<W, E, Dir, S>
 {
     fn vertices(&self) -> Vec<usize> {
         self.storage.vertices()
@@ -51,8 +97,9 @@ impl<W, E: Edge<W>, Ty: EdgeDir, S: GraphStorage<W, E, Ty>> provide::Vertices
     }
 }
 
-impl<W, E: Edge<W>, Ty: EdgeDir, S: GraphStorage<W, E, Ty>> provide::Edges<W, E>
-    for SimpleGraph<W, E, Ty, S>
+/// For documentation about each function checkout [`Edges`](crate::provide::Edges) trait.
+impl<W, E: Edge<W>, Dir: EdgeDir, S: GraphStorage<W, E, Dir>> Edges<W, E>
+    for SimpleGraph<W, E, Dir, S>
 {
     fn edges_from(&self, src_id: usize) -> Vec<(usize, &E)> {
         self.storage.edges_from(src_id)
@@ -87,8 +134,9 @@ impl<W, E: Edge<W>, Ty: EdgeDir, S: GraphStorage<W, E, Ty>> provide::Edges<W, E>
     }
 }
 
-impl<W, E: Edge<W>, Ty: EdgeDir, S: GraphStorage<W, E, Ty>> provide::Graph<W, E, Ty>
-    for SimpleGraph<W, E, Ty, S>
+/// For documentation about each function checkout [`Graph`](crate::provide::Graph) trait.
+impl<W, E: Edge<W>, Dir: EdgeDir, S: GraphStorage<W, E, Dir>> Graph<W, E, Dir>
+    for SimpleGraph<W, E, Dir, S>
 {
     fn add_vertex(&mut self) -> usize {
         self.storage.add_vertex()
@@ -98,6 +146,8 @@ impl<W, E: Edge<W>, Ty: EdgeDir, S: GraphStorage<W, E, Ty>> provide::Graph<W, E,
         self.storage.remove_vertex(vertex_id);
     }
 
+    /// # Complexity
+    /// Calls *has_any_edge* then *add_edge* on underlying storage so O(*has_any_edge* + *add_edge*)
     fn add_edge(&mut self, src_id: usize, dst_id: usize, edge: E) -> usize {
         if src_id == dst_id {
             panic!("Can not create loop in simple graph")
