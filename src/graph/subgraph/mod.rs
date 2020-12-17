@@ -1,5 +1,7 @@
 mod mr_subgraph;
 mod sp_subgraph;
+mod def_subgraph;
+mod def_mut_subgraph;
 
 use crate::provide::{Edges, Graph, Neighbors, Vertices};
 pub use mr_subgraph::MultiRootSubgraph;
@@ -28,6 +30,14 @@ pub trait AsMutSubgraph<W, E: Edge<W>>: AsSubgraph<W, E> {
     /// # Arguments
     /// `vertex_id`: Id of the vertex to be removed.
     fn remove_vertex(&mut self, vertex_id: usize);
+
+    fn remove_vertex_from_graph(&mut self, vertex_id: usize);
+
+    fn remove_edge_from_graph(&mut self, src_id: usize, dst_id: usize, edge_id: usize);
+
+    fn add_vertex(&mut self) -> usize;
+
+    fn add_edge(&mut self, src_id: usize, dst_id: usize, edge: E) -> usize;
 }
 
 /// Default subgraph struct.
@@ -75,24 +85,24 @@ impl<'a, W, E: Edge<W>, Dir: EdgeDir, G: Graph<W, E, Dir>> Subgraph<'a, W, E, Di
 
 /// For documentation about each function checkout [`AsMutSubgraph`](crate::graph::subgraph::AsMutSubgraph) trait.
 /// Here only complexity of each function is provided.
-impl<'a, W, E: Edge<W>, Dir: EdgeDir, G: Graph<W, E, Dir>> AsMutSubgraph<W, E>
-    for Subgraph<'a, W, E, Dir, G>
-{
-    /// # Complexity
-    /// O(|E|)
-    fn remove_edge(&mut self, _: usize, _: usize, edge_id: usize) {
-        self.edges.retain(|(_, _, edge)| edge.get_id() != edge_id);
-    }
+// impl<'a, W, E: Edge<W>, Dir: EdgeDir, G: Graph<W, E, Dir>> AsMutSubgraph<W, E>
+//     for Subgraph<'a, W, E, Dir, G>
+// {
+//     /// # Complexity
+//     /// O(|E|)
+//     fn remove_edge(&mut self, _: usize, _: usize, edge_id: usize) {
+//         self.edges.retain(|(_, _, edge)| edge.get_id() != edge_id);
+//     }
 
-    /// # Complexity
-    /// O(|V| + |E|)
-    fn remove_vertex(&mut self, vertex_id: usize) {
-        self.edges
-            .retain(|(src_id, dst_id, _)| *src_id != vertex_id && *dst_id != vertex_id);
+//     /// # Complexity
+//     /// O(|V| + |E|)
+//     fn remove_vertex(&mut self, vertex_id: usize) {
+//         self.edges
+//             .retain(|(src_id, dst_id, _)| *src_id != vertex_id && *dst_id != vertex_id);
 
-        self.vertices.retain(|v_id| *v_id != vertex_id);
-    }
-}
+//         self.vertices.retain(|v_id| *v_id != vertex_id);
+//     }
+// }
 
 /// For documentation about each function checkout [`Neighbors`](crate::provide::Neighbors) trait.
 /// Here only complexity of each function is provided.
