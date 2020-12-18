@@ -3,8 +3,11 @@ use num_traits::{Unsigned, Zero};
 use std::any::Any;
 use std::collections::HashMap;
 
-use crate::graph::{subgraph::ShortestPathSubgraph, Edge, EdgeDir};
-use crate::provide::{Edges, Vertices, Graph};
+use crate::provide::{Edges, Graph, Vertices};
+use crate::{
+    graph::{subgraph::ShortestPathSubgraph, Edge, EdgeDir},
+    prelude::Neighbors,
+};
 
 pub struct Dijkstra<W> {
     visited: Vec<bool>,
@@ -45,7 +48,7 @@ impl<W: Copy + Ord + Zero + Any + Unsigned> Dijkstra<W> {
     where
         E: Edge<W>,
         Ty: EdgeDir,
-        G: Edges<W, E> + Vertices + Graph<W, E, Ty>,
+        G: Edges<W, E> + Neighbors + Vertices + Graph<W, E, Ty>,
     {
         let mut edges = vec![];
 
@@ -69,7 +72,7 @@ impl<W: Copy + Ord + Zero + Any + Unsigned> Dijkstra<W> {
                     self.prev[n_virt_id] = virt_id.into();
 
                     edges.retain(|(_, dst_id, _)| *dst_id != n_id); // remove edge to neighbor
-                    edges.push((real_id, n_id, edge)); // add new edge
+                    edges.push((real_id, n_id, edge.get_id())); // add new edge
                 }
             }
         }

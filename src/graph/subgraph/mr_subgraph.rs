@@ -1,6 +1,6 @@
 use crate::provide::{Edges, Graph, Neighbors, Vertices};
 
-use super::{AsSubgraph, Subgraph};
+use super::{AsFrozenSubgraph, AsSubgraph, Subgraph};
 use crate::graph::{Edge, EdgeDir};
 
 /// A subgraph with some vertices elected as root.
@@ -14,12 +14,22 @@ use crate::graph::{Edge, EdgeDir};
 /// * `E`: **E**dge type that graph uses.
 /// * `Dir`: **Dir**ection of edges: [`Directed`](crate::graph::DirectedEdge) or [`Undirected`](crate::graph::UndirectedEdge).
 /// * `G`: **G**raph type that subgraph is representing.
-pub struct MultiRootSubgraph<'a, W, E: Edge<W>, Dir: EdgeDir, G: Graph<W, E, Dir>> {
+pub struct MultiRootSubgraph<'a, W, E, Dir, G>
+where
+    E: Edge<W>,
+    Dir: EdgeDir,
+    G: Graph<W, E, Dir> + Edges<W, E> + Neighbors,
+{
     roots: Vec<usize>,
     subgraph: Subgraph<'a, W, E, Dir, G>,
 }
 
-impl<'a, W, E: Edge<W>, Dir: EdgeDir, G: Graph<W, E, Dir>> MultiRootSubgraph<'a, W, E, Dir, G> {
+impl<'a, W, E, Dir, G> MultiRootSubgraph<'a, W, E, Dir, G>
+where
+    E: Edge<W>,
+    Dir: EdgeDir,
+    G: Graph<W, E, Dir> + Edges<W, E> + Neighbors + Vertices,
+{
     /// # Arguments
     /// * `graph`: Graph that owns the `edges` and `vertices`.
     /// * `edges`: Edges that are in the subgraph in the format of: (src_id, dst_id, edge).
@@ -30,7 +40,7 @@ impl<'a, W, E: Edge<W>, Dir: EdgeDir, G: Graph<W, E, Dir>> MultiRootSubgraph<'a,
     /// Initialized subgraph containing the specified `edges` and `vertices` and `roots` as roots of the subgraph.
     pub fn init(
         graph: &'a G,
-        edges: Vec<(usize, usize, &'a E)>,
+        edges: Vec<(usize, usize, usize)>,
         vertices: Vec<usize>,
         roots: Vec<usize>,
     ) -> Self {
@@ -64,12 +74,23 @@ impl<'a, W, E: Edge<W>, Dir: EdgeDir, G: Graph<W, E, Dir>> MultiRootSubgraph<'a,
             .find(|root_id| **root_id == vertex_id)
             .is_some()
     }
+
+    pub fn add_root(&mut self, vertex_id: usize) {
+        if !self.roots.contains(&vertex_id) {
+            self.subgraph.add_vertex_from_graph(vertex_id);
+
+            self.roots.push(vertex_id);
+        }
+    }
 }
 
 /// For documentation about each function checkout [`Neighbors`](crate::provide::Neighbors) trait.
 /// `MultiRootSubgraph` uses `Subgraph` internally so for complexity of each function checkout [`Subgraph`](crate::graph::subgraph::Subgraph).
-impl<'a, W, E: Edge<W>, Dir: EdgeDir, G: Graph<W, E, Dir>> Neighbors
-    for MultiRootSubgraph<'a, W, E, Dir, G>
+impl<'a, W, E, Dir, G> Neighbors for MultiRootSubgraph<'a, W, E, Dir, G>
+where
+    E: Edge<W>,
+    Dir: EdgeDir,
+    G: Graph<W, E, Dir> + Edges<W, E> + Neighbors,
 {
     fn neighbors(&self, src_id: usize) -> Vec<usize> {
         self.subgraph.neighbors(src_id)
@@ -78,8 +99,11 @@ impl<'a, W, E: Edge<W>, Dir: EdgeDir, G: Graph<W, E, Dir>> Neighbors
 
 /// For documentation about each function checkout [`Vertices`](crate::provide::Vertices) trait.
 /// `MultiRootSubgraph` uses `Subgraph` internally so for complexity of each function checkout [`Subgraph`](crate::graph::subgraph::Subgraph).
-impl<'a, W, E: Edge<W>, Dir: EdgeDir, G: Graph<W, E, Dir>> Vertices
-    for MultiRootSubgraph<'a, W, E, Dir, G>
+impl<'a, W, E, Dir, G> Vertices for MultiRootSubgraph<'a, W, E, Dir, G>
+where
+    E: Edge<W>,
+    Dir: EdgeDir,
+    G: Graph<W, E, Dir> + Edges<W, E> + Neighbors,
 {
     fn vertices(&self) -> Vec<usize> {
         self.subgraph.vertices()
@@ -88,8 +112,11 @@ impl<'a, W, E: Edge<W>, Dir: EdgeDir, G: Graph<W, E, Dir>> Vertices
 
 /// For documentation about each function checkout [`Edges`](crate::provide::Edges) trait.
 /// `MultiRootSubgraph` uses `Subgraph` internally so for complexity of each function checkout [`Subgraph`](crate::graph::subgraph::Subgraph).
-impl<'a, W, E: Edge<W>, Dir: EdgeDir, G: Graph<W, E, Dir>> Edges<W, E>
-    for MultiRootSubgraph<'a, W, E, Dir, G>
+impl<'a, W, E, Dir, G> Edges<W, E> for MultiRootSubgraph<'a, W, E, Dir, G>
+where
+    E: Edge<W>,
+    Dir: EdgeDir,
+    G: Graph<W, E, Dir> + Edges<W, E> + Neighbors,
 {
     fn edges_from(&self, src_id: usize) -> Vec<(usize, &E)> {
         self.subgraph.edges_from(src_id)
@@ -124,7 +151,41 @@ impl<'a, W, E: Edge<W>, Dir: EdgeDir, G: Graph<W, E, Dir>> Edges<W, E>
     }
 }
 
-impl<'a, W, E: Edge<W>, Dir: EdgeDir, G: Graph<W, E, Dir>> AsSubgraph<W, E>
-    for MultiRootSubgraph<'a, W, E, Dir, G>
+impl<'a, W, E, Dir, G> AsFrozenSubgraph<W, E> for MultiRootSubgraph<'a, W, E, Dir, G>
+where
+    E: Edge<W>,
+    Dir: EdgeDir,
+    G: Graph<W, E, Dir> + Edges<W, E> + Neighbors,
 {
+    fn has_vertex(&self, vertex_id: usize) -> bool {
+        self.subgraph.has_vertex(vertex_id)
+    }
+
+    fn has_edge(&self, edge_id: usize) -> bool {
+        self.subgraph.has_edge(edge_id)
+    }
+}
+
+impl<'a, W, E, Dir, G> AsSubgraph<W, E> for MultiRootSubgraph<'a, W, E, Dir, G>
+where
+    E: Edge<W>,
+    Dir: EdgeDir,
+    G: Graph<W, E, Dir> + Edges<W, E> + Neighbors + Vertices,
+{
+    fn remove_edge(&mut self, src_id: usize, dst_id: usize, edge_id: usize) {
+        self.subgraph.remove_edge(src_id, dst_id, edge_id);
+    }
+
+    fn remove_vertex(&mut self, vertex_id: usize) {
+        self.subgraph.remove_vertex(vertex_id);
+        self.roots.retain(|root_id| *root_id != vertex_id);
+    }
+
+    fn add_vertex_from_graph(&mut self, vertex_id: usize) {
+        self.subgraph.add_vertex_from_graph(vertex_id)
+    }
+
+    fn add_edge_from_graph(&mut self, src_id: usize, dst_id: usize, edge_id: usize) {
+        self.subgraph.add_edge_from_graph(src_id, dst_id, edge_id)
+    }
 }

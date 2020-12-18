@@ -1,39 +1,35 @@
-use std::marker::PhantomData;
-
 use provide::{Edges, Graph, Vertices};
 
 use crate::graph::{subgraph::Subgraph, Edge, EdgeDir};
 use crate::provide;
 
-pub struct HasCycle<'a, W, E: Edge<W>> {
+pub struct HasCycle {
     is_visited: Vec<bool>,
     is_finished: Vec<bool>,
-    edge_stack: Vec<(usize, usize, &'a E)>,
+    edge_stack: Vec<(usize, usize, usize)>,
     id_map: provide::IdMap,
-
-    phantom_w: PhantomData<W>,
 }
 
-impl<'a, W, E: Edge<W>> HasCycle<'a, W, E> {
-    pub fn init<Ty, G>(graph: &G) -> Self
+impl HasCycle {
+    pub fn init<W, E, Dir, G>(graph: &G) -> Self
     where
-        Ty: EdgeDir,
-        G: provide::Neighbors + Vertices + Graph<W, E, Ty>,
+        E: Edge<W>,
+        Dir: EdgeDir,
+        G: provide::Neighbors + Vertices + Graph<W, E, Dir>,
     {
         HasCycle {
             is_visited: vec![false; graph.vertex_count()],
             is_finished: vec![false; graph.vertex_count()],
             edge_stack: vec![],
             id_map: graph.continuos_id_map(),
-
-            phantom_w: PhantomData,
         }
     }
 
-    pub fn execute<Ty, G>(mut self, graph: &'a G) -> Option<Subgraph<W, E, Ty, G>>
+    pub fn execute<W, E, Dir, G>(mut self, graph: &G) -> Option<Subgraph<W, E, Dir, G>>
     where
-        Ty: EdgeDir,
-        G: provide::Neighbors + Vertices + Graph<W, E, Ty> + Edges<W, E>,
+        E: Edge<W>,
+        Dir: EdgeDir,
+        G: provide::Neighbors + Vertices + Graph<W, E, Dir> + Edges<W, E>,
     {
         if graph.vertex_count() != 0 && self.has_cycle(graph, 0, 0) {
             let mut vertices = self
@@ -52,10 +48,16 @@ impl<'a, W, E: Edge<W>> HasCycle<'a, W, E> {
         }
     }
 
-    fn has_cycle<Ty, G>(&mut self, graph: &'a G, src_virt_id: usize, parent_virt_id: usize) -> bool
+    fn has_cycle<W, E, Dir, G>(
+        &mut self,
+        graph: &G,
+        src_virt_id: usize,
+        parent_virt_id: usize,
+    ) -> bool
     where
-        Ty: EdgeDir,
-        G: provide::Neighbors + Vertices + Graph<W, E, Ty> + Edges<W, E>,
+        E: Edge<W>,
+        Dir: EdgeDir,
+        G: provide::Neighbors + Vertices + Graph<W, E, Dir> + Edges<W, E>,
     {
         self.is_visited[src_virt_id] = true;
 
@@ -65,16 +67,16 @@ impl<'a, W, E: Edge<W>> HasCycle<'a, W, E> {
             let dst_virt_id = self.id_map.virt_id_of(dst_real_id);
 
             if !self.is_visited[dst_virt_id] {
-                self.edge_stack.push((src_real_id, dst_real_id, edge));
+                self.edge_stack.push((src_real_id, dst_real_id, edge.get_id()));
                 if self.has_cycle(graph, dst_virt_id, src_virt_id) {
                     return true;
                 } else {
                     self.edge_stack.pop();
                 }
             } else if !self.is_finished[dst_virt_id]
-                && (Ty::is_directed() || dst_virt_id != parent_virt_id)
+                && (Dir::is_directed() || dst_virt_id != parent_virt_id)
             {
-                self.edge_stack.push((src_real_id, dst_real_id, edge));
+                self.edge_stack.push((src_real_id, dst_real_id, edge.get_id()));
                 return true;
             }
         }

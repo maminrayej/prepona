@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use magnitude::Magnitude;
 use provide::{Edges, Graph, Neighbors, Vertices};
 
-use super::{AsSubgraph, Subgraph};
+use super::{AsFrozenSubgraph, Subgraph};
 use crate::graph::{Edge, EdgeDir};
 use crate::provide;
 
@@ -11,13 +11,22 @@ use crate::provide;
 ///
 /// It also carries a distance map to answer queries about shortest paths from source vertex to any destination vertex in O(1).
 /// This subgraph will be returned from algorithms like [`Dijkstra`](crate::algo::Dijkstra) or [BellmanFord](crate::algo::BellmanFord).
-pub struct ShortestPathSubgraph<'a, W, E: Edge<W>, Dir: EdgeDir, G: Graph<W, E, Dir>> {
+pub struct ShortestPathSubgraph<'a, W, E, Dir, G>
+where
+    E: Edge<W>,
+    Dir: EdgeDir,
+    G: Graph<W, E, Dir> + Edges<W, E> + Neighbors,
+{
     distance_map: HashMap<usize, Magnitude<W>>,
     subgraph: Subgraph<'a, W, E, Dir, G>,
 }
 
-impl<'a, W: Copy, E: Edge<W>, Dir: EdgeDir, G: Graph<W, E, Dir>>
-    ShortestPathSubgraph<'a, W, E, Dir, G>
+impl<'a, W, E, Dir, G> ShortestPathSubgraph<'a, W, E, Dir, G>
+where
+    W: Copy,
+    E: Edge<W>,
+    Dir: EdgeDir,
+    G: Graph<W, E, Dir> + Edges<W, E> + Neighbors,
 {
     /// # Arguments
     /// * `graph`: Graph that owns the `edges` and `vertices`.
@@ -29,7 +38,7 @@ impl<'a, W: Copy, E: Edge<W>, Dir: EdgeDir, G: Graph<W, E, Dir>>
     /// Initialized subgraph containing the specified `edges` and `vertices`.
     pub fn init(
         graph: &'a G,
-        edges: Vec<(usize, usize, &'a E)>,
+        edges: Vec<(usize, usize, usize)>,
         vertices: Vec<usize>,
         distance_map: HashMap<usize, Magnitude<W>>,
     ) -> Self {
@@ -55,8 +64,11 @@ impl<'a, W: Copy, E: Edge<W>, Dir: EdgeDir, G: Graph<W, E, Dir>>
 
 /// For documentation about each function checkout [`Neighbors`](crate::provide::Neighbors) trait.
 /// `ShortestPathSubgraph` uses `Subgraph` internally so for complexity of each function checkout [`Subgraph`](crate::graph::subgraph::Subgraph).
-impl<'a, W, E: Edge<W>, Dir: EdgeDir, G: Graph<W, E, Dir>> Neighbors
-    for ShortestPathSubgraph<'a, W, E, Dir, G>
+impl<'a, W, E, Dir, G> Neighbors for ShortestPathSubgraph<'a, W, E, Dir, G>
+where
+    E: Edge<W>,
+    Dir: EdgeDir,
+    G: Graph<W, E, Dir> + Edges<W, E> + Neighbors,
 {
     fn neighbors(&self, src_id: usize) -> Vec<usize> {
         self.subgraph.neighbors(src_id)
@@ -65,8 +77,11 @@ impl<'a, W, E: Edge<W>, Dir: EdgeDir, G: Graph<W, E, Dir>> Neighbors
 
 /// For documentation about each function checkout [`Vertices`](crate::provide::Vertices) trait.
 /// `ShortestPathSubgraph` uses `Subgraph` internally so for complexity of each function checkout [`Subgraph`](crate::graph::subgraph::Subgraph).
-impl<'a, W, E: Edge<W>, Dir: EdgeDir, G: Graph<W, E, Dir>> Vertices
-    for ShortestPathSubgraph<'a, W, E, Dir, G>
+impl<'a, W, E, Dir, G> Vertices for ShortestPathSubgraph<'a, W, E, Dir, G>
+where
+    E: Edge<W>,
+    Dir: EdgeDir,
+    G: Graph<W, E, Dir> + Edges<W, E> + Neighbors,
 {
     fn vertices(&self) -> Vec<usize> {
         self.subgraph.vertices()
@@ -75,8 +90,11 @@ impl<'a, W, E: Edge<W>, Dir: EdgeDir, G: Graph<W, E, Dir>> Vertices
 
 /// For documentation about each function checkout [`Edges`](crate::provide::Edges) trait.
 /// `ShortestPathSubgraph` uses `Subgraph` internally so for complexity of each function checkout [`Subgraph`](crate::graph::subgraph::Subgraph).
-impl<'a, W, E: Edge<W>, Dir: EdgeDir, G: Graph<W, E, Dir>> Edges<W, E>
-    for ShortestPathSubgraph<'a, W, E, Dir, G>
+impl<'a, W, E, Dir, G> Edges<W, E> for ShortestPathSubgraph<'a, W, E, Dir, G>
+where
+    E: Edge<W>,
+    Dir: EdgeDir,
+    G: Graph<W, E, Dir> + Edges<W, E> + Neighbors,
 {
     fn edges_from(&self, src_id: usize) -> Vec<(usize, &E)> {
         self.subgraph.edges_from(src_id)
@@ -111,7 +129,17 @@ impl<'a, W, E: Edge<W>, Dir: EdgeDir, G: Graph<W, E, Dir>> Edges<W, E>
     }
 }
 
-impl<'a, W, E: Edge<W>, Dir: EdgeDir, G: Graph<W, E, Dir>> AsSubgraph<W, E>
-    for ShortestPathSubgraph<'a, W, E, Dir, G>
+impl<'a, W, E, Dir, G> AsFrozenSubgraph<W, E> for ShortestPathSubgraph<'a, W, E, Dir, G>
+where
+    E: Edge<W>,
+    Dir: EdgeDir,
+    G: Graph<W, E, Dir> + Edges<W, E> + Neighbors,
 {
+    fn has_vertex(&self, vertex_id: usize) -> bool {
+        self.subgraph.has_vertex(vertex_id)
+    }
+
+    fn has_edge(&self, edge_id: usize) -> bool {
+        self.subgraph.has_edge(edge_id)
+    }
 }

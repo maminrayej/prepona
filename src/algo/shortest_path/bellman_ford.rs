@@ -3,7 +3,7 @@ use num_traits::Zero;
 use std::any::Any;
 use std::collections::HashMap;
 
-use crate::graph::{subgraph::ShortestPathSubgraph, Edge, EdgeDir};
+use crate::{graph::{subgraph::ShortestPathSubgraph, Edge, EdgeDir}, prelude::Neighbors};
 use crate::provide::{Edges, Graph, Vertices};
 
 pub struct BellmanFord<W> {
@@ -34,7 +34,7 @@ impl<W: Copy + Any + Zero + Ord> BellmanFord<W> {
     where
         E: Edge<W>,
         Ty: EdgeDir,
-        G: Vertices + Edges<W, E> + Graph<W, E, Ty>,
+        G: Vertices + Edges<W, E> + Neighbors + Graph<W, E, Ty>,
     {
         let mut sp_edges = vec![];
 
@@ -59,7 +59,7 @@ impl<W: Copy + Any + Zero + Ord> BellmanFord<W> {
                     self.prev[v_virt_id] = u_virt_id.into();
 
                     sp_edges.retain(|(_, dst_id, _)| dst_id != v_real_id); // remove edge to neighbor
-                    sp_edges.push((*u_real_id, *v_real_id, *edge)); // add new edge
+                    sp_edges.push((*u_real_id, *v_real_id, edge.get_id())); // add new edge
                 }
             }
         }

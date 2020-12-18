@@ -32,10 +32,11 @@ impl Kruskal {
     ) -> Subgraph<W, E, UndirectedEdge, G>
     where
         G: provide::Edges<W, E>
+            + provide::Neighbors
             + provide::Vertices
             + provide::Graph<W, E, UndirectedEdge>,
     {
-        let mut mst = Vec::<(usize, usize, &E)>::new();
+        let mut mst = Vec::<(usize, usize, usize)>::new();
 
         let id_map = graph.continuos_id_map();
 
@@ -51,7 +52,7 @@ impl Kruskal {
                 .borrow()
                 .eq(&*self.sets[u_virt_id].borrow())
             {
-                mst.push((v_real_id, u_real_id, edge));
+                mst.push((v_real_id, u_real_id, edge.get_id()));
 
                 let union_set = self.sets[v_virt_id]
                     .borrow()
