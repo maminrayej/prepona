@@ -86,6 +86,10 @@ where
     fn vertices(&self) -> Vec<usize> {
         self.subgraph.vertices()
     }
+
+    fn contains_vertex(&self, vertex_id: usize) -> bool {
+        self.subgraph.contains_vertex(vertex_id)
+    }
 }
 
 /// For documentation about each function checkout [`Edges`](crate::provide::Edges) trait.
@@ -126,6 +130,10 @@ where
 
     fn edges_count(&self) -> usize {
         self.subgraph.edges_count()
+    }
+
+    fn contains_edge(&self, edge_id: usize) -> bool {
+        self.subgraph.contains_edge(edge_id)
     }
 }
 

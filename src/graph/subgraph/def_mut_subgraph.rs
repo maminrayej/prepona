@@ -65,6 +65,10 @@ where
     fn vertices(&self) -> Vec<usize> {
         self.vertex_ids.iter().copied().collect()
     }
+
+    fn contains_vertex(&self, vertex_id: usize) -> bool {
+        self.vertex_ids.contains(&vertex_id)
+    }
 }
 
 impl<'a, W, E, Dir, G> Edges<W, E> for MutSubgraph<'a, W, E, Dir, G>
@@ -130,6 +134,13 @@ where
 
     fn edges_count(&self) -> usize {
         self.edges.len()
+    }
+
+    fn contains_edge(&self, edge_id: usize) -> bool {
+        self.edges
+            .iter()
+            .find(|(_, _, e_id)| *e_id == edge_id)
+            .is_some()
     }
 }
 

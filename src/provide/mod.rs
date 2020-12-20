@@ -47,6 +47,8 @@ pub trait Vertices {
 
         id_map
     }
+
+    fn contains_vertex(&self, vertex_id: usize) -> bool;
 }
 
 /// Provides access to edges of the graph.
@@ -118,6 +120,8 @@ pub trait Edges<W, E: Edge<W>> {
     /// # Returns
     /// Number of edges in the graph.
     fn edges_count(&self) -> usize;
+
+    fn contains_edge(&self, edge_id: usize) -> bool;
 }
 
 /// Provides basic functionalities to store graph information.

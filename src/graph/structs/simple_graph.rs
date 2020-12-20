@@ -95,6 +95,10 @@ impl<W, E: Edge<W>, Dir: EdgeDir, S: GraphStorage<W, E, Dir>> Vertices
     fn vertex_count(&self) -> usize {
         self.storage.vertex_count()
     }
+
+    fn contains_vertex(&self, vertex_id: usize) -> bool {
+        self.storage.contains_vertex(vertex_id)
+    }
 }
 
 /// For documentation about each function checkout [`Edges`](crate::provide::Edges) trait.
@@ -131,6 +135,10 @@ impl<W, E: Edge<W>, Dir: EdgeDir, S: GraphStorage<W, E, Dir>> Edges<W, E>
 
     fn edges_count(&self) -> usize {
         self.storage.edges().len()
+    }
+
+    fn contains_edge(&self, edge_id: usize) -> bool {
+        self.storage.contains_edge(edge_id)
     }
 }
 
