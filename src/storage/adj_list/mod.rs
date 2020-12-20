@@ -34,9 +34,10 @@ pub type DiFlowList<W> = AdjList<W, FlowEdge<W>, DirectedEdge>;
 /// * `Dir`: **Dir**ection of edges: [`Directed`](crate::graph::DirectedEdge) or [`Undirected`](crate::graph::UndirectedEdge).
 pub struct AdjList<W, E: Edge<W>, Dir: EdgeDir = UndirectedEdge> {
     edges_of: Vec<Vec<(usize, E)>>,
-    reusable_ids: HashSet<usize>,
+    reusable_vertex_ids: HashSet<usize>,
 
-    edge_id: usize,
+    max_edge_id: usize,
+    reusable_edge_ids: HashSet<usize>,
 
     vertex_count: usize,
 
@@ -78,9 +79,10 @@ impl<W, E: Edge<W>, Dir: EdgeDir> AdjList<W, E, Dir> {
     pub fn init() -> Self {
         AdjList {
             edges_of: vec![],
-            reusable_ids: HashSet::new(),
+            reusable_vertex_ids: HashSet::new(),
 
-            edge_id: 0,
+            max_edge_id: 0,
+            reusable_edge_ids: HashSet::new(),
 
             vertex_count: 0,
 
@@ -89,9 +91,19 @@ impl<W, E: Edge<W>, Dir: EdgeDir> AdjList<W, E, Dir> {
         }
     }
 
-    fn next_reusable_id(&mut self) -> Option<usize> {
-        if let Some(id) = self.reusable_ids.iter().take(1).next().copied() {
-            self.reusable_ids.remove(&id);
+    fn next_reusable_vertex_id(&mut self) -> Option<usize> {
+        if let Some(id) = self.reusable_vertex_ids.iter().take(1).next().copied() {
+            self.reusable_vertex_ids.remove(&id);
+
+            Some(id)
+        } else {
+            None
+        }
+    }
+
+    fn next_reusable_edge_id(&mut self) -> Option<usize> {
+        if let Some(id) = self.reusable_edge_ids.iter().take(1).next().copied() {
+            self.reusable_edge_ids.remove(&id);
 
             Some(id)
         } else {
@@ -120,7 +132,7 @@ impl<W: Copy, E: Edge<W> + Copy, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjLi
     fn add_vertex(&mut self) -> usize {
         self.vertex_count += 1;
 
-        if let Some(reusable_id) = self.next_reusable_id() {
+        if let Some(reusable_id) = self.next_reusable_vertex_id() {
             reusable_id
         } else {
             self.edges_of.push(vec![]);
@@ -145,7 +157,7 @@ impl<W: Copy, E: Edge<W> + Copy, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjLi
 
         self.vertex_count -= 1;
 
-        self.reusable_ids.insert(vertex_id);
+        self.reusable_vertex_ids.insert(vertex_id);
     }
 
     /// Adds `edge` from vertex with id `src_id`: to vertex with id: `dst_id`.
@@ -161,17 +173,23 @@ impl<W: Copy, E: Edge<W> + Copy, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjLi
     /// # Complexity
     /// O(1)
     fn add_edge(&mut self, src_id: usize, dst_id: usize, mut edge: E) -> usize {
-        edge.set_id(self.edge_id);
+        let edge_id = if let Some(id) = self.next_reusable_edge_id() {
+            id
+        } else {
+            self.max_edge_id += 1;
+
+            self.max_edge_id - 1
+        };
+
+        edge.set_id(edge_id);
 
         self.edges_of[src_id].push((dst_id, edge));
 
         if self.is_undirected() {
             self.edges_of[dst_id].push((src_id, edge));
         }
-
-        self.edge_id += 1;
-
-        self.edge_id - 1
+        
+        edge_id
     }
 
     /// Replaces the edge with id: `edge_id` with `edge`.
@@ -211,6 +229,8 @@ impl<W: Copy, E: Edge<W> + Copy, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjLi
             .iter()
             .position(|(_, edge)| edge.get_id() == edge_id)
         {
+            self.reusable_edge_ids.insert(edge_id);
+
             if self.is_undirected() {
                 self.edges_of[dst_id].retain(|(_, edge)| edge.get_id() != edge_id);
             }
@@ -220,6 +240,8 @@ impl<W: Copy, E: Edge<W> + Copy, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjLi
             None
         }
     }
+
+    
 
     /// # Returns
     /// Number of vertices in the graph.
@@ -237,7 +259,7 @@ impl<W: Copy, E: Edge<W> + Copy, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjLi
     /// O(|V|)
     fn vertices(&self) -> Vec<usize> {
         (0..self.edges_of.len())
-            .filter(|vertex_id| !self.reusable_ids.contains(vertex_id))
+            .filter(|vertex_id| !self.reusable_vertex_ids.contains(vertex_id))
             .collect()
     }
 
@@ -254,6 +276,14 @@ impl<W: Copy, E: Edge<W> + Copy, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjLi
             .iter()
             .map(|(dst_id, edge)| (*dst_id, edge))
             .collect()
+    }
+
+    fn contains_vertex(&self, vertex_id: usize) -> bool {
+        vertex_id < self.total_vertex_count() && !self.reusable_vertex_ids.contains(&vertex_id)
+    }
+
+    fn contains_edge(&self, edge_id: usize) -> bool {
+        edge_id < self.max_edge_id && !self.reusable_edge_ids.contains(&edge_id)
     }
 }
 
@@ -272,7 +302,7 @@ mod tests {
         assert_eq!(list.edges().len(), 0);
         assert_eq!(list.vertex_count(), 0);
         assert_eq!(list.edges_of.len(), 0);
-        assert_eq!(list.reusable_ids.len(), 0);
+        assert_eq!(list.reusable_vertex_ids.len(), 0);
         assert_eq!(list.is_directed(), true);
     }
 
@@ -287,7 +317,7 @@ mod tests {
         assert_eq!(list.edges().len(), 0);
         assert_eq!(list.vertex_count(), 0);
         assert_eq!(list.edges_of.len(), 0);
-        assert_eq!(list.reusable_ids.len(), 0);
+        assert_eq!(list.reusable_vertex_ids.len(), 0);
         assert_eq!(list.is_directed(), false);
     }
 
@@ -306,7 +336,7 @@ mod tests {
         assert_eq!(list.vertex_count(), 3);
         assert_eq!(list.edges_of.len(), 3);
         assert!(list.edges_of.iter().all(|edges| edges.is_empty()));
-        assert_eq!(list.reusable_ids.len(), 0);
+        assert_eq!(list.reusable_vertex_ids.len(), 0);
 
         assert_eq!(list.vertices().len(), 3);
         assert!(vec![a, b, c]
@@ -335,7 +365,7 @@ mod tests {
         assert_eq!(list.edges().len(), 0);
         assert_eq!(list.vertex_count(), 3);
         assert_eq!(list.edges_of.len(), 3);
-        assert_eq!(list.reusable_ids.len(), 0);
+        assert_eq!(list.reusable_vertex_ids.len(), 0);
 
         assert_eq!(list.vertices().len(), 3);
         assert!(vec![a, b, c]
@@ -371,10 +401,10 @@ mod tests {
         assert_eq!(list.edges_of.len(), 3);
 
         // Vertices a and b must be reusable.
-        assert_eq!(list.reusable_ids.len(), 2);
+        assert_eq!(list.reusable_vertex_ids.len(), 2);
         assert!(vec![a, b]
             .iter()
-            .all(|vertex_id| list.reusable_ids.contains(vertex_id)));
+            .all(|vertex_id| list.reusable_vertex_ids.contains(vertex_id)));
 
         // list must only contain c.
         assert_eq!(list.vertices().len(), 1);
@@ -404,10 +434,10 @@ mod tests {
         assert_eq!(list.edges_of.len(), 3);
 
         // Vertices a and b must be reusable.
-        assert_eq!(list.reusable_ids.len(), 2);
+        assert_eq!(list.reusable_vertex_ids.len(), 2);
         assert!(vec![a, b]
             .iter()
-            .all(|vertex_id| list.reusable_ids.contains(vertex_id)));
+            .all(|vertex_id| list.reusable_vertex_ids.contains(vertex_id)));
 
         // list must only contain c.
         assert_eq!(list.vertices().len(), 1);
@@ -439,7 +469,7 @@ mod tests {
         assert_eq!(list.edges_of.len(), 3);
 
         // There must be no reusable id.
-        assert_eq!(list.reusable_ids.len(), 0);
+        assert_eq!(list.reusable_vertex_ids.len(), 0);
 
         // Vertex ids a and b must be reused.
         assert_eq!(list.vertices().len(), 3);
@@ -478,7 +508,7 @@ mod tests {
         assert_eq!(list.edges_of.len(), 3);
 
         // There must be no reusable id.
-        assert_eq!(list.reusable_ids.len(), 0);
+        assert_eq!(list.reusable_vertex_ids.len(), 0);
 
         // Vertex ids a and b must be reused.
         assert_eq!(list.vertices().len(), 3);

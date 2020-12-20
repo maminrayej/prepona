@@ -38,9 +38,10 @@ pub type DiFlowMat<W> = AdjMatrix<W, FlowEdge<W>, DirectedEdge>;
 pub struct AdjMatrix<W, E: Edge<W>, Dir: EdgeDir = UndirectedEdge> {
     vec: Vec<Vec<E>>,
 
-    reusable_ids: HashSet<usize>,
+    reusable_vertex_ids: HashSet<usize>,
 
-    edge_id: usize,
+    max_edge_id: usize,
+    reusable_edge_ids: HashSet<usize>,
 
     vertex_count: usize,
 
@@ -76,9 +77,10 @@ impl<W, E: Edge<W>, Dir: EdgeDir> AdjMatrix<W, E, Dir> {
     pub fn init() -> Self {
         AdjMatrix {
             vec: vec![],
-            reusable_ids: HashSet::new(),
+            reusable_vertex_ids: HashSet::new(),
 
-            edge_id: 0,
+            max_edge_id: 0,
+            reusable_edge_ids: HashSet::new(),
 
             vertex_count: 0,
 
@@ -87,9 +89,19 @@ impl<W, E: Edge<W>, Dir: EdgeDir> AdjMatrix<W, E, Dir> {
         }
     }
 
-    fn next_reusable_id(&mut self) -> Option<usize> {
-        if let Some(id) = self.reusable_ids.iter().take(1).next().copied() {
-            self.reusable_ids.remove(&id);
+    fn next_reusable_vertex_id(&mut self) -> Option<usize> {
+        if let Some(id) = self.reusable_vertex_ids.iter().take(1).next().copied() {
+            self.reusable_vertex_ids.remove(&id);
+
+            Some(id)
+        } else {
+            None
+        }
+    }
+
+    fn next_reusable_edge_id(&mut self) -> Option<usize> {
+        if let Some(id) = self.reusable_edge_ids.iter().take(1).next().copied() {
+            self.reusable_edge_ids.remove(&id);
 
             Some(id)
         } else {
@@ -103,7 +115,7 @@ impl<W, E: Edge<W>, Dir: EdgeDir> AdjMatrix<W, E, Dir> {
     /// # Complexity
     /// O(1)
     pub fn total_vertex_count(&self) -> usize {
-        self.vertex_count + self.reusable_ids.len()
+        self.vertex_count + self.reusable_vertex_ids.len()
     }
 }
 
@@ -116,7 +128,7 @@ impl<W: Any, E: Edge<W>, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjMatrix<W, 
     /// # Complexity
     /// O(|V|)
     fn add_vertex(&mut self) -> usize {
-        if let Some(reusable_id) = self.next_reusable_id() {
+        if let Some(reusable_id) = self.next_reusable_vertex_id() {
             self.vertex_count += 1;
 
             reusable_id
@@ -148,7 +160,7 @@ impl<W: Any, E: Edge<W>, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjMatrix<W, 
             self[(other_id, vertex_id)].clear();
         }
 
-        self.reusable_ids.insert(vertex_id);
+        self.reusable_vertex_ids.insert(vertex_id);
 
         self.vertex_count -= 1;
     }
@@ -166,13 +178,19 @@ impl<W: Any, E: Edge<W>, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjMatrix<W, 
     /// # Complexity
     /// O(1)
     fn add_edge(&mut self, src_id: usize, dst_id: usize, mut edge: E) -> usize {
-        edge.set_id(self.edge_id);
+        let edge_id = if let Some(id) = self.next_reusable_edge_id() {
+            id
+        } else {
+            self.max_edge_id += 1;
+
+            self.max_edge_id - 1
+        };
+
+        edge.set_id(edge_id);
 
         self[(src_id, dst_id)].push(edge);
 
-        self.edge_id += 1;
-
-        self.edge_id - 1
+        edge_id
     }
 
     /// Replaces the edge with id: `edge_id` with `edge`.
@@ -213,6 +231,8 @@ impl<W: Any, E: Edge<W>, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjMatrix<W, 
             .iter()
             .position(|edge| edge.get_id() == edge_id)
         {
+            self.reusable_edge_ids.insert(edge_id);
+
             Some(self[(src_id, dst_id)].swap_remove(index))
         } else {
             None
@@ -236,7 +256,7 @@ impl<W: Any, E: Edge<W>, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjMatrix<W, 
     fn vertices(&self) -> Vec<usize> {
         (0..self.total_vertex_count())
             .into_iter()
-            .filter(|v_id| !self.reusable_ids.contains(v_id))
+            .filter(|v_id| !self.reusable_vertex_ids.contains(v_id))
             .collect()
     }
 
@@ -287,6 +307,14 @@ impl<W: Any, E: Edge<W>, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjMatrix<W, 
     fn edges_between(&self, src_id: usize, dst_id: usize) -> Vec<&E> {
         self[(src_id, dst_id)].iter().collect()
     }
+
+    fn contains_vertex(&self, vertex_id: usize) -> bool {
+        vertex_id < self.total_vertex_count() && !self.reusable_vertex_ids.contains(&vertex_id)
+    }
+
+    fn contains_edge(&self, edge_id: usize) -> bool {
+        edge_id < self.max_edge_id && !self.reusable_edge_ids.contains(&edge_id)
+    }
 }
 
 use std::ops::{Index, IndexMut};
@@ -334,7 +362,7 @@ mod tests {
         assert_eq!(matrix.vertex_count(), 0);
         assert_eq!(matrix.total_vertex_count(), 0);
         assert_eq!(matrix.vec.len(), 0);
-        assert_eq!(matrix.reusable_ids.len(), 0);
+        assert_eq!(matrix.reusable_vertex_ids.len(), 0);
         assert_eq!(matrix.is_directed(), true);
     }
 
@@ -350,7 +378,7 @@ mod tests {
         assert_eq!(matrix.vertex_count(), 0);
         assert_eq!(matrix.total_vertex_count(), 0);
         assert_eq!(matrix.vec.len(), 0);
-        assert_eq!(matrix.reusable_ids.len(), 0);
+        assert_eq!(matrix.reusable_vertex_ids.len(), 0);
         assert_eq!(matrix.is_directed(), false);
     }
 
@@ -369,7 +397,7 @@ mod tests {
         assert_eq!(matrix.vertex_count(), 3);
         assert_eq!(matrix.total_vertex_count(), 3);
         assert_eq!(matrix.vec.len(), 9);
-        assert_eq!(matrix.reusable_ids.len(), 0);
+        assert_eq!(matrix.reusable_vertex_ids.len(), 0);
 
         assert_eq!(matrix.vertices().len(), 3);
         assert!(vec![a, b, c]
@@ -399,7 +427,7 @@ mod tests {
         assert_eq!(matrix.vertex_count(), 3);
         assert_eq!(matrix.total_vertex_count(), 3);
         assert_eq!(matrix.vec.len(), 6);
-        assert_eq!(matrix.reusable_ids.len(), 0);
+        assert_eq!(matrix.reusable_vertex_ids.len(), 0);
 
         assert_eq!(matrix.vertices().len(), 3);
         assert!(vec![a, b, c]
@@ -436,10 +464,10 @@ mod tests {
         assert_eq!(matrix.vec.len(), 9);
 
         // Vertices a and b must be reusable.
-        assert_eq!(matrix.reusable_ids.len(), 2);
+        assert_eq!(matrix.reusable_vertex_ids.len(), 2);
         assert!(vec![a, b]
             .iter()
-            .all(|vertex_id| matrix.reusable_ids.contains(vertex_id)));
+            .all(|vertex_id| matrix.reusable_vertex_ids.contains(vertex_id)));
 
         // Matrix must only contain c.
         assert_eq!(matrix.vertices().len(), 1);
@@ -470,10 +498,10 @@ mod tests {
         assert_eq!(matrix.vec.len(), 6);
 
         // Vertices a and b must be reusable.
-        assert_eq!(matrix.reusable_ids.len(), 2);
+        assert_eq!(matrix.reusable_vertex_ids.len(), 2);
         assert!(vec![a, b]
             .iter()
-            .all(|vertex_id| matrix.reusable_ids.contains(vertex_id)));
+            .all(|vertex_id| matrix.reusable_vertex_ids.contains(vertex_id)));
 
         // Matrix must only contain c.
         assert_eq!(matrix.vertices().len(), 1);
@@ -506,7 +534,7 @@ mod tests {
         assert_eq!(matrix.vec.len(), 9);
 
         // There must be no reusable id.
-        assert_eq!(matrix.reusable_ids.len(), 0);
+        assert_eq!(matrix.reusable_vertex_ids.len(), 0);
 
         // Vertex ids a and b must be reused.
         assert_eq!(matrix.vertices().len(), 3);
@@ -546,7 +574,7 @@ mod tests {
         assert_eq!(matrix.vec.len(), 6);
 
         // There must be no reusable id.
-        assert_eq!(matrix.reusable_ids.len(), 0);
+        assert_eq!(matrix.reusable_vertex_ids.len(), 0);
 
         // Vertex ids a and b must be reused.
         assert_eq!(matrix.vertices().len(), 3);

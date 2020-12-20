@@ -36,6 +36,8 @@ pub trait GraphStorage<W, E: Edge<W>, Dir: EdgeDir> {
     /// `vertex_id`: Id of the vertex to be removed.
     fn remove_vertex(&mut self, vertex_id: usize);
 
+    fn contains_vertex(&self, vertex_id: usize) -> bool;
+
     /// Adds `edge` from vertex with id `src_id`: to vertex with id: `dst_id`.
     ///
     /// # Arguments
@@ -73,6 +75,8 @@ pub trait GraphStorage<W, E: Edge<W>, Dir: EdgeDir> {
     /// * `Some`: Containing the removed edge.
     /// * `None`: If edge with `edge_id` does not exist in the graph.
     fn remove_edge(&mut self, src_id: usize, dst_id: usize, edge_id: usize) -> Option<E>;
+
+    fn contains_edge(&self, edge_id: usize) -> bool;
 
     /// # Returns
     /// Number of vertices in the graph.
