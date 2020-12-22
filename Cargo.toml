@@ -15,3 +15,4 @@ documentation = "https://docs.rs/prepona"
 [dependencies]
 num-traits = "0.2.14"
 magnitude = "0.3.2"
+anyhow = "1.0.36"

@@ -3,15 +3,6 @@ pub enum ErrorKind {
     EdgeNotFound,
 }
 
-impl ErrorKind {
-    pub fn to_string(&self) -> String {
-        match self {
-            ErrorKind::VertexNotFound => "Vertex not found".to_string(),
-            ErrorKind::EdgeNotFound => "Edge not found".to_string(),
-        }
-    }
-}
-
 pub struct Error {
     kind: ErrorKind,
     msg: String,
@@ -20,6 +11,20 @@ pub struct Error {
 impl Error {
     pub fn new(kind: ErrorKind, msg: String) -> Self {
         Error { kind, msg }
+    }
+
+    pub fn new_vnf(vertex_id: usize) -> Self {
+        Error {
+            kind: ErrorKind::VertexNotFound,
+            msg: format!("Vertex with id: {} not found", vertex_id),
+        }
+    }
+
+    pub fn new_enf(edge_id: usize) -> Self {
+        Error {
+            kind: ErrorKind::EdgeNotFound,
+            msg: format!("Edge with id: {} not found", edge_id),
+        }
     }
 
     pub fn msg(&self) -> &str {
@@ -31,16 +36,16 @@ impl Error {
     }
 }
 
-impl From<(ErrorKind, usize)> for Error {
-    fn from((kind, id): (ErrorKind, usize)) -> Self {
-        Error {
-            msg: match kind {
-                ErrorKind::VertexNotFound => format!("Vertex not found: {}", id),
-                ErrorKind::EdgeNotFound => format!("Edge not found: {}", id),
-            },
-            kind,
-        }
+impl std::fmt::Debug for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.msg())
     }
 }
 
-pub type Result<T> = std::result::Result<T, Error>;
+impl std::fmt::Display for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.msg())
+    }
+}
+
+impl std::error::Error for Error {}

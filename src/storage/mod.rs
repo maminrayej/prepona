@@ -4,10 +4,11 @@ mod error;
 
 pub use adj_list::{AdjList, DiFlowList, DiList, FlowList, List};
 pub use adj_matrix::{AdjMatrix, DiFlowMat, DiMat, FlowMat, Mat};
-pub use error::{Error, ErrorKind, Result};
-use ErrorKind::{EdgeNotFound, VertexNotFound};
+pub use error::{Error, ErrorKind};
 
 use crate::graph::{Edge, EdgeDir};
+
+use anyhow::Result;
 
 /// Defines the api that a storage must provide in order to be usable for storing graph data.
 ///
@@ -39,7 +40,7 @@ pub trait GraphStorage<W, E: Edge<W>, Dir: EdgeDir> {
     /// `vertex_id`: Id of the vertex to be removed.
     fn remove_vertex(&mut self, vertex_id: usize) -> Result<()> {
         if !self.contains_vertex(vertex_id) {
-            Err((VertexNotFound, vertex_id).into())
+            Err(Error::new_vnf(vertex_id))?
         } else {
             Ok(self.remove_vertex_unchecked(vertex_id))
         }
@@ -60,9 +61,9 @@ pub trait GraphStorage<W, E: Edge<W>, Dir: EdgeDir> {
     /// Unique id of the newly added edge.
     fn add_edge(&mut self, src_id: usize, dst_id: usize, edge: E) -> Result<usize> {
         if !self.contains_vertex(src_id) {
-            Err((VertexNotFound, src_id).into())
+            Err(Error::new_vnf(src_id))?
         } else if !self.contains_vertex(dst_id) {
-            Err((VertexNotFound, dst_id).into())
+            Err(Error::new_vnf(dst_id))?
         } else {
             Ok(self.add_edge_unchecked(src_id, dst_id, edge))
         }
@@ -85,9 +86,9 @@ pub trait GraphStorage<W, E: Edge<W>, Dir: EdgeDir> {
         mut edge: E,
     ) -> Result<()> {
         if !self.contains_vertex(src_id) {
-            Err((VertexNotFound, src_id).into())
+            Err(Error::new_vnf(src_id))?
         } else if !self.contains_vertex(dst_id) {
-            Err((VertexNotFound, dst_id).into())
+            Err(Error::new_vnf(dst_id))?
         } else {
             Ok(self.update_edge_unchecked(src_id, dst_id, edge_id, edge))
         }
@@ -113,11 +114,11 @@ pub trait GraphStorage<W, E: Edge<W>, Dir: EdgeDir> {
     /// * `None`: If edge with `edge_id` does not exist in the graph.
     fn remove_edge(&mut self, src_id: usize, dst_id: usize, edge_id: usize) -> Result<Option<E>> {
         if !self.contains_vertex(src_id) {
-            Err((VertexNotFound, src_id).into())
+            Err(Error::new_vnf(src_id))?
         } else if !self.contains_vertex(dst_id) {
-            Err((VertexNotFound, dst_id).into())
+            Err(Error::new_vnf(dst_id))?
         } else if !self.contains_edge(edge_id) {
-            Err((EdgeNotFound, edge_id).into())
+            Err(Error::new_enf(edge_id))?
         } else {
             Ok(self.remove_edge_unchecked(src_id, dst_id, edge_id))
         }
@@ -145,9 +146,9 @@ pub trait GraphStorage<W, E: Edge<W>, Dir: EdgeDir> {
     /// Edges from source vertex to destination vertex.
     fn edges_between(&self, src_id: usize, dst_id: usize) -> Result<Vec<&E>> {
         if !self.contains_vertex(src_id) {
-            Err((VertexNotFound, src_id).into())
+            Err(Error::new_vnf(src_id))?
         } else if !self.contains_vertex(dst_id) {
-            Err((EdgeNotFound, dst_id).into())
+            Err(Error::new_vnf(dst_id))?
         } else {
             Ok(self.edges_between_unchecked(src_id, dst_id))
         }
@@ -170,11 +171,11 @@ pub trait GraphStorage<W, E: Edge<W>, Dir: EdgeDir> {
     /// * `None`: If edge with id: `edge_id` does not exist from source vertex to destination vertex.
     fn edge_between(&self, src_id: usize, dst_id: usize, edge_id: usize) -> Result<Option<&E>> {
         if !self.contains_vertex(src_id) {
-            Err((VertexNotFound, src_id).into())
+            Err(Error::new_vnf(src_id))?
         } else if !self.contains_vertex(dst_id) {
-            Err((VertexNotFound, dst_id).into())
+            Err(Error::new_vnf(dst_id))?
         } else if !self.contains_edge(edge_id) {
-            Err((EdgeNotFound, edge_id).into())
+            Err(Error::new_enf(edge_id))?
         } else {
             Ok(self.edge_between_unchecked(src_id, dst_id, edge_id))
         }
@@ -215,9 +216,9 @@ pub trait GraphStorage<W, E: Edge<W>, Dir: EdgeDir> {
     /// * `false`: Otherwise.
     fn has_any_edge(&self, src_id: usize, dst_id: usize) -> Result<bool> {
         if !self.contains_vertex(src_id) {
-            Err((VertexNotFound, src_id).into())
+            Err(Error::new_vnf(src_id))?
         } else if !self.contains_vertex(dst_id) {
-            Err((VertexNotFound, dst_id).into())
+            Err(Error::new_vnf(dst_id))?
         } else {
             Ok(self.has_any_edge_unchecked(src_id, dst_id))
         }
@@ -268,7 +269,7 @@ pub trait GraphStorage<W, E: Edge<W>, Dir: EdgeDir> {
     /// * All edges from the source vertex in the format of: (`dst_id`, `edge`)
     fn edges_from(&self, src_id: usize) -> Result<Vec<(usize, &E)>> {
         if !self.contains_vertex(src_id) {
-            Err((VertexNotFound, src_id).into())
+            Err(Error::new_vnf(src_id))?
         } else {
             Ok(self.edges_from_unchecked(src_id))
         }
@@ -283,7 +284,7 @@ pub trait GraphStorage<W, E: Edge<W>, Dir: EdgeDir> {
     /// Id of vertices accessible from source vertex using one edge.
     fn neighbors(&self, src_id: usize) -> Result<Vec<usize>> {
         if !self.contains_vertex(src_id) {
-            Err((VertexNotFound, src_id).into())
+            Err(Error::new_vnf(src_id))?
         } else {
             Ok(self.neighbors_unchecked(src_id))
         }
