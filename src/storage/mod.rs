@@ -1,8 +1,11 @@
 mod adj_list;
 mod adj_matrix;
+mod error;
 
 pub use adj_list::{AdjList, DiFlowList, DiList, FlowList, List};
 pub use adj_matrix::{AdjMatrix, DiFlowMat, DiMat, FlowMat, Mat};
+pub use error::{Error, ErrorKind, Result};
+use ErrorKind::{EdgeNotFound, VertexNotFound};
 
 use crate::graph::{Edge, EdgeDir};
 
@@ -34,7 +37,15 @@ pub trait GraphStorage<W, E: Edge<W>, Dir: EdgeDir> {
     ///
     /// # Arguments
     /// `vertex_id`: Id of the vertex to be removed.
-    fn remove_vertex(&mut self, vertex_id: usize);
+    fn remove_vertex(&mut self, vertex_id: usize) -> Result<()> {
+        if !self.contains_vertex(vertex_id) {
+            Err((VertexNotFound, vertex_id).into())
+        } else {
+            Ok(self.remove_vertex_unchecked(vertex_id))
+        }
+    }
+
+    fn remove_vertex_unchecked(&mut self, vertex_id: usize);
 
     fn contains_vertex(&self, vertex_id: usize) -> bool;
 
@@ -47,7 +58,17 @@ pub trait GraphStorage<W, E: Edge<W>, Dir: EdgeDir> {
     ///
     /// # Returns
     /// Unique id of the newly added edge.
-    fn add_edge(&mut self, src_id: usize, dst_id: usize, edge: E) -> usize;
+    fn add_edge(&mut self, src_id: usize, dst_id: usize, edge: E) -> Result<usize> {
+        if !self.contains_vertex(src_id) {
+            Err((VertexNotFound, src_id).into())
+        } else if !self.contains_vertex(dst_id) {
+            Err((VertexNotFound, dst_id).into())
+        } else {
+            Ok(self.add_edge_unchecked(src_id, dst_id, edge))
+        }
+    }
+
+    fn add_edge_unchecked(&mut self, src_id: usize, dst_id: usize, edge: E) -> usize;
 
     /// Replaces the edge with id: `edge_id` with `edge`.
     ///
@@ -56,10 +77,26 @@ pub trait GraphStorage<W, E: Edge<W>, Dir: EdgeDir> {
     /// * `dst_id`: Id of destination vertex.
     /// * `edge_id`: Id of the to be updated edge.
     /// * `edge`: New edge to replace the old one.
-    fn update_edge(&mut self, src_id: usize, dst_id: usize, edge_id: usize, mut edge: E) {
+    fn update_edge(
+        &mut self,
+        src_id: usize,
+        dst_id: usize,
+        edge_id: usize,
+        mut edge: E,
+    ) -> Result<()> {
+        if !self.contains_vertex(src_id) {
+            Err((VertexNotFound, src_id).into())
+        } else if !self.contains_vertex(dst_id) {
+            Err((VertexNotFound, dst_id).into())
+        } else {
+            Ok(self.update_edge_unchecked(src_id, dst_id, edge_id, edge))
+        }
+    }
+
+    fn update_edge_unchecked(&mut self, src_id: usize, dst_id: usize, edge_id: usize, edge: E) {
         edge.set_id(edge_id);
 
-        if let Some(_) = self.remove_edge(src_id, dst_id, edge_id) {
+        if let Some(_) = self.remove_edge_unchecked(src_id, dst_id, edge_id) {
             self.add_edge(src_id, dst_id, edge);
         }
     }
@@ -74,7 +111,19 @@ pub trait GraphStorage<W, E: Edge<W>, Dir: EdgeDir> {
     /// # Returns
     /// * `Some`: Containing the removed edge.
     /// * `None`: If edge with `edge_id` does not exist in the graph.
-    fn remove_edge(&mut self, src_id: usize, dst_id: usize, edge_id: usize) -> Option<E>;
+    fn remove_edge(&mut self, src_id: usize, dst_id: usize, edge_id: usize) -> Result<Option<E>> {
+        if !self.contains_vertex(src_id) {
+            Err((VertexNotFound, src_id).into())
+        } else if !self.contains_vertex(dst_id) {
+            Err((VertexNotFound, dst_id).into())
+        } else if !self.contains_edge(edge_id) {
+            Err((EdgeNotFound, edge_id).into())
+        } else {
+            Ok(self.remove_edge_unchecked(src_id, dst_id, edge_id))
+        }
+    }
+
+    fn remove_edge_unchecked(&mut self, src_id: usize, dst_id: usize, edge_id: usize) -> Option<E>;
 
     fn contains_edge(&self, edge_id: usize) -> bool;
 
@@ -94,8 +143,18 @@ pub trait GraphStorage<W, E: Edge<W>, Dir: EdgeDir> {
     ///
     /// # Returns
     /// Edges from source vertex to destination vertex.
-    fn edges_between(&self, src_id: usize, dst_id: usize) -> Vec<&E> {
-        self.edges_from(src_id)
+    fn edges_between(&self, src_id: usize, dst_id: usize) -> Result<Vec<&E>> {
+        if !self.contains_vertex(src_id) {
+            Err((VertexNotFound, src_id).into())
+        } else if !self.contains_vertex(dst_id) {
+            Err((EdgeNotFound, dst_id).into())
+        } else {
+            Ok(self.edges_between_unchecked(src_id, dst_id))
+        }
+    }
+
+    fn edges_between_unchecked(&self, src_id: usize, dst_id: usize) -> Vec<&E> {
+        self.edges_from_unchecked(src_id)
             .into_iter()
             .filter_map(|(d_id, edge)| if d_id == dst_id { Some(edge) } else { None })
             .collect()
@@ -109,8 +168,20 @@ pub trait GraphStorage<W, E: Edge<W>, Dir: EdgeDir> {
     /// # Returns
     /// * `Some`: Containing reference to the retrieved edge.
     /// * `None`: If edge with id: `edge_id` does not exist from source vertex to destination vertex.
-    fn edge_between(&self, src_id: usize, dst_id: usize, edge_id: usize) -> Option<&E> {
-        self.edges_between(src_id, dst_id)
+    fn edge_between(&self, src_id: usize, dst_id: usize, edge_id: usize) -> Result<Option<&E>> {
+        if !self.contains_vertex(src_id) {
+            Err((VertexNotFound, src_id).into())
+        } else if !self.contains_vertex(dst_id) {
+            Err((VertexNotFound, dst_id).into())
+        } else if !self.contains_edge(edge_id) {
+            Err((EdgeNotFound, edge_id).into())
+        } else {
+            Ok(self.edge_between_unchecked(src_id, dst_id, edge_id))
+        }
+    }
+
+    fn edge_between_unchecked(&self, src_id: usize, dst_id: usize, edge_id: usize) -> Option<&E> {
+        self.edges_between_unchecked(src_id, dst_id)
             .into_iter()
             .find(|edge| edge.get_id() == edge_id)
     }
@@ -142,8 +213,18 @@ pub trait GraphStorage<W, E: Edge<W>, Dir: EdgeDir> {
     /// # Returns
     /// * `true`: If there is any edge from source to destination.
     /// * `false`: Otherwise.
-    fn has_any_edge(&self, src_id: usize, dst_id: usize) -> bool {
-        !self.edges_between(src_id, dst_id).is_empty()
+    fn has_any_edge(&self, src_id: usize, dst_id: usize) -> Result<bool> {
+        if !self.contains_vertex(src_id) {
+            Err((VertexNotFound, src_id).into())
+        } else if !self.contains_vertex(dst_id) {
+            Err((VertexNotFound, dst_id).into())
+        } else {
+            Ok(self.has_any_edge_unchecked(src_id, dst_id))
+        }
+    }
+
+    fn has_any_edge_unchecked(&self, src_id: usize, dst_id: usize) -> bool {
+        !self.edges_between_unchecked(src_id, dst_id).is_empty()
     }
 
     /// # Returns
@@ -172,7 +253,7 @@ pub trait GraphStorage<W, E: Edge<W>, Dir: EdgeDir> {
         self.vertices()
             .into_iter()
             .flat_map(|src_id| {
-                self.edges_from(src_id)
+                self.edges_from_unchecked(src_id)
                     .into_iter()
                     .map(|(dst_id, edge)| (src_id, dst_id, edge))
                     .collect::<Vec<(usize, usize, &E)>>()
@@ -185,15 +266,31 @@ pub trait GraphStorage<W, E: Edge<W>, Dir: EdgeDir> {
     ///
     /// # Returns
     /// * All edges from the source vertex in the format of: (`dst_id`, `edge`)
-    fn edges_from(&self, src_id: usize) -> Vec<(usize, &E)>;
+    fn edges_from(&self, src_id: usize) -> Result<Vec<(usize, &E)>> {
+        if !self.contains_vertex(src_id) {
+            Err((VertexNotFound, src_id).into())
+        } else {
+            Ok(self.edges_from_unchecked(src_id))
+        }
+    }
+
+    fn edges_from_unchecked(&self, src_id: usize) -> Vec<(usize, &E)>;
 
     /// # Arguments:
     /// `src_id`: Id of the source vertex.
     ///
     /// # Returns
     /// Id of vertices accessible from source vertex using one edge.
-    fn neighbors(&self, src_id: usize) -> Vec<usize> {
-        self.edges_from(src_id)
+    fn neighbors(&self, src_id: usize) -> Result<Vec<usize>> {
+        if !self.contains_vertex(src_id) {
+            Err((VertexNotFound, src_id).into())
+        } else {
+            Ok(self.neighbors_unchecked(src_id))
+        }
+    }
+
+    fn neighbors_unchecked(&self, src_id: usize) -> Vec<usize> {
+        self.edges_from_unchecked(src_id)
             .into_iter()
             .map(|(dst_id, _)| dst_id)
             .collect()

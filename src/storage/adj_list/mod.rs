@@ -10,7 +10,7 @@ pub type DiList<W> = AdjList<W, DefaultEdge<W>, DirectedEdge>;
 pub type FlowList<W, Dir = UndirectedEdge> = AdjList<W, FlowEdge<W>, Dir>;
 pub type DiFlowList<W> = AdjList<W, FlowEdge<W>, DirectedEdge>;
 
-/// Is a collection of unordered lists used to represent a finite graph. Each list describes the set of neighbors of a vertex in the graph.
+/// Is a collection of unordered lists used to represent a finite graph. Each list describes the set of neighbors_unchecked of a vertex in the graph.
 ///
 /// ## Note
 /// From now on
@@ -148,7 +148,7 @@ impl<W: Copy, E: Edge<W> + Copy, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjLi
     ///
     /// # Complexity
     /// O(|V| + |V<sup>\*</sup>| * |max(E<sup>\*</sup>)|)
-    fn remove_vertex(&mut self, vertex_id: usize) {
+    fn remove_vertex_unchecked(&mut self, vertex_id: usize) {
         self.edges_of[vertex_id].clear();
 
         for src_id in self.vertices() {
@@ -172,7 +172,7 @@ impl<W: Copy, E: Edge<W> + Copy, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjLi
     ///
     /// # Complexity
     /// O(1)
-    fn add_edge(&mut self, src_id: usize, dst_id: usize, mut edge: E) -> usize {
+    fn add_edge_unchecked(&mut self, src_id: usize, dst_id: usize, mut edge: E) -> usize {
         let edge_id = if let Some(id) = self.next_reusable_edge_id() {
             id
         } else {
@@ -188,7 +188,7 @@ impl<W: Copy, E: Edge<W> + Copy, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjLi
         if self.is_undirected() {
             self.edges_of[dst_id].push((src_id, edge));
         }
-        
+
         edge_id
     }
 
@@ -202,11 +202,11 @@ impl<W: Copy, E: Edge<W> + Copy, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjLi
     ///
     /// # Complexity
     /// O(*removing an edge* + *adding an edge*)
-    fn update_edge(&mut self, src_id: usize, dst_id: usize, edge_id: usize, mut edge: E) {
-        if let Some(removed_edge) = self.remove_edge(src_id, dst_id, edge_id) {
+    fn update_edge_unchecked(&mut self, src_id: usize, dst_id: usize, edge_id: usize, mut edge: E) {
+        if let Some(removed_edge) = self.remove_edge_unchecked(src_id, dst_id, edge_id) {
             edge.set_id(removed_edge.get_id());
 
-            self.add_edge(src_id, dst_id, edge);
+            self.add_edge_unchecked(src_id, dst_id, edge);
         }
     }
 
@@ -224,7 +224,7 @@ impl<W: Copy, E: Edge<W> + Copy, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjLi
     /// # Complexity
     /// * Directed: O(E<sup>\*</sup><sub>src</sub>)
     /// * Undirected: O(E<sup>\*</sup><sub>src</sub> + E<sup>\*</sup><sub>dst</sub>)
-    fn remove_edge(&mut self, src_id: usize, dst_id: usize, edge_id: usize) -> Option<E> {
+    fn remove_edge_unchecked(&mut self, src_id: usize, dst_id: usize, edge_id: usize) -> Option<E> {
         if let Some(index) = self.edges_of[src_id]
             .iter()
             .position(|(_, edge)| edge.get_id() == edge_id)
@@ -240,8 +240,6 @@ impl<W: Copy, E: Edge<W> + Copy, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjLi
             None
         }
     }
-
-    
 
     /// # Returns
     /// Number of vertices in the graph.
@@ -271,7 +269,7 @@ impl<W: Copy, E: Edge<W> + Copy, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjLi
     ///
     /// # Complexity
     /// O(|E<sup>\*</sup>|)
-    fn edges_from(&self, src_id: usize) -> Vec<(usize, &E)> {
+    fn edges_from_unchecked(&self, src_id: usize) -> Vec<(usize, &E)> {
         self.edges_of[src_id]
             .iter()
             .map(|(dst_id, edge)| (*dst_id, edge))
@@ -348,7 +346,7 @@ mod tests {
         assert!(vec![a, b, c]
             .into_iter()
             .flat_map(|vertex_id| vec![(vertex_id, a), (vertex_id, b), (vertex_id, c)])
-            .all(|(src_id, dst_id)| !list.has_any_edge(src_id, dst_id)));
+            .all(|(src_id, dst_id)| !list.has_any_edge_unchecked(src_id, dst_id)));
     }
 
     #[test]
@@ -377,7 +375,7 @@ mod tests {
         assert!(vec![a, b, c]
             .into_iter()
             .flat_map(|vertex_id| vec![(vertex_id, a), (vertex_id, b), (vertex_id, c)])
-            .all(|(src_id, dst_id)| !list.has_any_edge(src_id, dst_id)));
+            .all(|(src_id, dst_id)| !list.has_any_edge_unchecked(src_id, dst_id)));
     }
 
     #[test]
@@ -410,7 +408,7 @@ mod tests {
         assert_eq!(list.vertices().len(), 1);
         assert!(list.vertices().contains(&c));
 
-        assert!(!list.has_any_edge(c, c));
+        assert!(!list.has_any_edge_unchecked(c, c));
     }
 
     #[test]
@@ -443,7 +441,7 @@ mod tests {
         assert_eq!(list.vertices().len(), 1);
         assert!(list.vertices().contains(&c));
 
-        assert!(!list.has_any_edge(c, c));
+        assert!(!list.has_any_edge_unchecked(c, c));
     }
 
     #[test]
@@ -482,7 +480,7 @@ mod tests {
         assert!(vec![a, b, c]
             .into_iter()
             .flat_map(|vertex_id| vec![(vertex_id, a), (vertex_id, b), (vertex_id, c)])
-            .all(|(src_id, dst_id)| !list.has_any_edge(src_id, dst_id)));
+            .all(|(src_id, dst_id)| !list.has_any_edge_unchecked(src_id, dst_id)));
     }
 
     #[test]
@@ -521,7 +519,7 @@ mod tests {
         assert!(vec![a, b, c]
             .into_iter()
             .flat_map(|vertex_id| vec![(vertex_id, a), (vertex_id, b), (vertex_id, c)])
-            .all(|(src_id, dst_id)| !list.has_any_edge(src_id, dst_id)));
+            .all(|(src_id, dst_id)| !list.has_any_edge_unchecked(src_id, dst_id)));
     }
 
     #[test]
@@ -541,9 +539,9 @@ mod tests {
         //      ^               |
         //      '----------------
         //
-        list.add_edge(a, b, 1.into());
-        list.add_edge(b, c, 2.into());
-        list.add_edge(c, a, 3.into());
+        list.add_edge_unchecked(a, b, 1.into());
+        list.add_edge_unchecked(b, c, 2.into());
+        list.add_edge_unchecked(c, a, 3.into());
 
         // Then:
         assert_eq!(list.vertex_count(), 3);
@@ -578,9 +576,9 @@ mod tests {
         //      |               |
         //      '----------------
         //
-        list.add_edge(a, b, 1.into());
-        list.add_edge(b, c, 2.into());
-        list.add_edge(c, a, 3.into());
+        list.add_edge_unchecked(a, b, 1.into());
+        list.add_edge_unchecked(b, c, 2.into());
+        list.add_edge_unchecked(c, a, 3.into());
 
         // Then:
         assert_eq!(list.vertex_count(), 3);
@@ -610,16 +608,16 @@ mod tests {
         let a = list.add_vertex();
         let b = list.add_vertex();
         let c = list.add_vertex();
-        list.add_edge(a, b, 1.into());
-        list.add_edge(b, c, 2.into());
-        list.add_edge(c, a, 3.into());
+        list.add_edge_unchecked(a, b, 1.into());
+        list.add_edge_unchecked(b, c, 2.into());
+        list.add_edge_unchecked(c, a, 3.into());
 
         // When: Doing nothing.
 
         // Then:
-        assert!(list.has_any_edge(a, b));
-        assert!(list.has_any_edge(b, c));
-        assert!(list.has_any_edge(c, a));
+        assert!(list.has_any_edge_unchecked(a, b));
+        assert!(list.has_any_edge_unchecked(b, c));
+        assert!(list.has_any_edge_unchecked(c, a));
     }
 
     #[test]
@@ -634,21 +632,21 @@ mod tests {
         let a = list.add_vertex();
         let b = list.add_vertex();
         let c = list.add_vertex();
-        list.add_edge(a, b, 1.into());
-        list.add_edge(b, c, 2.into());
-        list.add_edge(c, a, 3.into());
+        list.add_edge_unchecked(a, b, 1.into());
+        list.add_edge_unchecked(b, c, 2.into());
+        list.add_edge_unchecked(c, a, 3.into());
 
         // When: Doing nothing.
 
         // Then:
-        assert!(list.has_any_edge(a, b));
-        assert!(list.has_any_edge(b, a));
+        assert!(list.has_any_edge_unchecked(a, b));
+        assert!(list.has_any_edge_unchecked(b, a));
 
-        assert!(list.has_any_edge(b, c));
-        assert!(list.has_any_edge(c, b));
+        assert!(list.has_any_edge_unchecked(b, c));
+        assert!(list.has_any_edge_unchecked(c, b));
 
-        assert!(list.has_any_edge(c, a));
-        assert!(list.has_any_edge(a, c));
+        assert!(list.has_any_edge_unchecked(c, a));
+        assert!(list.has_any_edge_unchecked(a, c));
     }
 
     #[test]
@@ -664,14 +662,14 @@ mod tests {
         let b = list.add_vertex();
         let c = list.add_vertex();
 
-        let ab = list.add_edge(a, b, 1.into());
-        let bc = list.add_edge(b, c, 2.into());
-        let ca = list.add_edge(c, a, 3.into());
+        let ab = list.add_edge_unchecked(a, b, 1.into());
+        let bc = list.add_edge_unchecked(b, c, 2.into());
+        let ca = list.add_edge_unchecked(c, a, 3.into());
 
         // When: Incrementing edge of each edge by 1.
-        list.update_edge(a, b, ab, 2.into());
-        list.update_edge(b, c, bc, 3.into());
-        list.update_edge(c, a, ca, 4.into());
+        list.update_edge_unchecked(a, b, ab, 2.into());
+        list.update_edge_unchecked(b, c, bc, 3.into());
+        list.update_edge_unchecked(c, a, ca, 4.into());
 
         // Then:
         assert_eq!(list.vertex_count(), 3);
@@ -702,14 +700,14 @@ mod tests {
         let b = list.add_vertex();
         let c = list.add_vertex();
 
-        let ab = list.add_edge(a, b, 1.into());
-        let bc = list.add_edge(b, c, 2.into());
-        let ca = list.add_edge(c, a, 3.into());
+        let ab = list.add_edge_unchecked(a, b, 1.into());
+        let bc = list.add_edge_unchecked(b, c, 2.into());
+        let ca = list.add_edge_unchecked(c, a, 3.into());
 
         // When: Incrementing edge of each edge by 1.
-        list.update_edge(a, b, ab, 2.into());
-        list.update_edge(b, c, bc, 3.into());
-        list.update_edge(c, a, ca, 4.into());
+        list.update_edge_unchecked(a, b, ab, 2.into());
+        list.update_edge_unchecked(b, c, bc, 3.into());
+        list.update_edge_unchecked(c, a, ca, 4.into());
 
         // Then:
         assert_eq!(list.vertex_count(), 3);
@@ -739,9 +737,9 @@ mod tests {
         let a = list.add_vertex();
         let b = list.add_vertex();
         let c = list.add_vertex();
-        let ab = list.add_edge(a, b, 1.into());
-        let bc = list.add_edge(b, c, 2.into());
-        list.add_edge(c, a, 3.into());
+        let ab = list.add_edge_unchecked(a, b, 1.into());
+        let bc = list.add_edge_unchecked(b, c, 2.into());
+        list.add_edge_unchecked(c, a, 3.into());
 
         // When: Removing edges a --> b and b --> c
         //
@@ -760,7 +758,7 @@ mod tests {
         assert_eq!(list.edges_of[c].len(), 1);
 
         assert_eq!(list.edges().len(), 1);
-        assert_eq!(list.edges_between(c, a)[0].get_weight().unwrap(), 3);
+        assert_eq!(list.edges_between_unchecked(c, a)[0].get_weight().unwrap(), 3);
     }
 
     #[test]
@@ -775,9 +773,9 @@ mod tests {
         let a = list.add_vertex();
         let b = list.add_vertex();
         let c = list.add_vertex();
-        let ab = list.add_edge(a, b, 1.into());
-        let bc = list.add_edge(b, c, 2.into());
-        list.add_edge(c, a, 3.into());
+        let ab = list.add_edge_unchecked(a, b, 1.into());
+        let bc = list.add_edge_unchecked(b, c, 2.into());
+        list.add_edge_unchecked(c, a, 3.into());
 
         // When: Removing edges a --- b and b --- c
         //
@@ -795,7 +793,7 @@ mod tests {
         assert_eq!(list.edges_of[c].len(), 1);
 
         assert_eq!(list.edges().len(), 1);
-        assert_eq!(list.edges_between(a, c)[0].get_weight().unwrap(), 3);
+        assert_eq!(list.edges_between_unchecked(a, c)[0].get_weight().unwrap(), 3);
     }
 
     #[test]
@@ -810,9 +808,9 @@ mod tests {
         let a = list.add_vertex();
         let b = list.add_vertex();
         let c = list.add_vertex();
-        list.add_edge(a, b, 1.into());
-        list.add_edge(b, c, 2.into());
-        list.add_edge(c, a, 3.into());
+        list.add_edge_unchecked(a, b, 1.into());
+        list.add_edge_unchecked(b, c, 2.into());
+        list.add_edge_unchecked(c, a, 3.into());
 
         // When: Doing nothing.
 
@@ -821,14 +819,14 @@ mod tests {
         assert_eq!(list.edges_of.len(), 3);
         assert!(list.edges_of.iter().all(|edges| edges.len() == 1));
 
-        assert_eq!(list.neighbors(a).len(), 1);
-        assert_eq!(*list.neighbors(a).get(0).unwrap(), b);
+        assert_eq!(list.neighbors_unchecked(a).len(), 1);
+        assert_eq!(*list.neighbors_unchecked(a).get(0).unwrap(), b);
 
-        assert_eq!(list.neighbors(b).len(), 1);
-        assert_eq!(*list.neighbors(b).get(0).unwrap(), c);
+        assert_eq!(list.neighbors_unchecked(b).len(), 1);
+        assert_eq!(*list.neighbors_unchecked(b).get(0).unwrap(), c);
 
-        assert_eq!(list.neighbors(c).len(), 1);
-        assert_eq!(*list.neighbors(c).get(0).unwrap(), a);
+        assert_eq!(list.neighbors_unchecked(c).len(), 1);
+        assert_eq!(*list.neighbors_unchecked(c).get(0).unwrap(), a);
     }
 
     #[test]
@@ -843,9 +841,9 @@ mod tests {
         let a = list.add_vertex();
         let b = list.add_vertex();
         let c = list.add_vertex();
-        list.add_edge(a, b, 1.into());
-        list.add_edge(b, c, 2.into());
-        list.add_edge(c, a, 3.into());
+        list.add_edge_unchecked(a, b, 1.into());
+        list.add_edge_unchecked(b, c, 2.into());
+        list.add_edge_unchecked(c, a, 3.into());
 
         // When: Doing nothing.
 
@@ -854,20 +852,20 @@ mod tests {
         assert_eq!(list.edges_of.len(), 3);
         assert!(list.edges_of.iter().all(|edges| edges.len() == 2));
 
-        assert_eq!(list.neighbors(a).len(), 2);
+        assert_eq!(list.neighbors_unchecked(a).len(), 2);
         assert!(vec![b, c]
             .iter()
-            .all(|vertex_id| list.neighbors(a).contains(vertex_id)));
+            .all(|vertex_id| list.neighbors_unchecked(a).contains(vertex_id)));
 
-        assert_eq!(list.neighbors(b).len(), 2);
+        assert_eq!(list.neighbors_unchecked(b).len(), 2);
         assert!(vec![a, c]
             .iter()
-            .all(|vertex_id| list.neighbors(b).contains(vertex_id)));
+            .all(|vertex_id| list.neighbors_unchecked(b).contains(vertex_id)));
 
-        assert_eq!(list.neighbors(c).len(), 2);
+        assert_eq!(list.neighbors_unchecked(c).len(), 2);
         assert!(vec![a, b]
             .iter()
-            .all(|vertex_id| list.neighbors(c).contains(vertex_id)));
+            .all(|vertex_id| list.neighbors_unchecked(c).contains(vertex_id)));
     }
 
     // #[test]

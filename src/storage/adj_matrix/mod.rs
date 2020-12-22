@@ -154,7 +154,7 @@ impl<W: Any, E: Edge<W>, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjMatrix<W, 
     ///
     /// # Complexity
     /// O(|V|)
-    fn remove_vertex(&mut self, vertex_id: usize) {
+    fn remove_vertex_unchecked(&mut self, vertex_id: usize) {
         for other_id in 0..self.total_vertex_count() {
             self[(vertex_id, other_id)].clear();
             self[(other_id, vertex_id)].clear();
@@ -177,7 +177,7 @@ impl<W: Any, E: Edge<W>, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjMatrix<W, 
     ///
     /// # Complexity
     /// O(1)
-    fn add_edge(&mut self, src_id: usize, dst_id: usize, mut edge: E) -> usize {
+    fn add_edge_unchecked(&mut self, src_id: usize, dst_id: usize, mut edge: E) -> usize {
         let edge_id = if let Some(id) = self.next_reusable_edge_id() {
             id
         } else {
@@ -203,7 +203,7 @@ impl<W: Any, E: Edge<W>, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjMatrix<W, 
     ///
     /// # Complexity
     /// O(E<sup>*</sup>)
-    fn update_edge(&mut self, src_id: usize, dst_id: usize, edge_id: usize, mut edge: E) {
+    fn update_edge_unchecked(&mut self, src_id: usize, dst_id: usize, edge_id: usize, mut edge: E) {
         if let Some(index) = self[(src_id, dst_id)]
             .iter()
             .position(|edge| edge.get_id() == edge_id)
@@ -226,7 +226,7 @@ impl<W: Any, E: Edge<W>, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjMatrix<W, 
     ///
     /// # Complexity
     /// O(E<sup>*</sup>)
-    fn remove_edge(&mut self, src_id: usize, dst_id: usize, edge_id: usize) -> Option<E> {
+    fn remove_edge_unchecked(&mut self, src_id: usize, dst_id: usize, edge_id: usize) -> Option<E> {
         if let Some(index) = self[(src_id, dst_id)]
             .iter()
             .position(|edge| edge.get_id() == edge_id)
@@ -268,11 +268,11 @@ impl<W: Any, E: Edge<W>, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjMatrix<W, 
     ///
     /// # Complexity
     /// O(|V|*|E<sup>\*</sup>|)
-    fn edges_from(&self, src_id: usize) -> Vec<(usize, &E)> {
+    fn edges_from_unchecked(&self, src_id: usize) -> Vec<(usize, &E)> {
         (0..self.total_vertex_count())
             .into_iter()
             .flat_map(|dst_id| {
-                self.edges_between(src_id, dst_id)
+                self.edges_between_unchecked(src_id, dst_id)
                     .into_iter()
                     .map(|edge| (dst_id, edge))
                     .collect::<Vec<(usize, &E)>>()
@@ -288,7 +288,7 @@ impl<W: Any, E: Edge<W>, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjMatrix<W, 
     ///
     /// Complexity
     /// O(|V|)
-    fn neighbors(&self, src_id: usize) -> Vec<usize> {
+    fn neighbors_unchecked(&self, src_id: usize) -> Vec<usize> {
         (0..self.total_vertex_count())
             .into_iter()
             .filter(|dst_id| !self[(src_id, *dst_id)].is_empty())
@@ -304,7 +304,7 @@ impl<W: Any, E: Edge<W>, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjMatrix<W, 
     ///
     /// # Complexity
     /// O(|E<sup>*</sup>|)
-    fn edges_between(&self, src_id: usize, dst_id: usize) -> Vec<&E> {
+    fn edges_between_unchecked(&self, src_id: usize, dst_id: usize) -> Vec<&E> {
         self[(src_id, dst_id)].iter().collect()
     }
 
@@ -409,7 +409,7 @@ mod tests {
         assert!(vec![a, b, c]
             .into_iter()
             .flat_map(|vertex_id| vec![(vertex_id, a), (vertex_id, b), (vertex_id, c)])
-            .all(|(src_id, dst_id)| !matrix.has_any_edge(src_id, dst_id)));
+            .all(|(src_id, dst_id)| !matrix.has_any_edge_unchecked(src_id, dst_id)));
     }
 
     #[test]
@@ -439,7 +439,7 @@ mod tests {
         assert!(vec![a, b, c]
             .into_iter()
             .flat_map(|vertex_id| vec![(vertex_id, a), (vertex_id, b), (vertex_id, c)])
-            .all(|(src_id, dst_id)| !matrix.has_any_edge(src_id, dst_id)));
+            .all(|(src_id, dst_id)| !matrix.has_any_edge_unchecked(src_id, dst_id)));
     }
 
     #[test]
@@ -473,7 +473,7 @@ mod tests {
         assert_eq!(matrix.vertices().len(), 1);
         assert!(matrix.vertices().contains(&c));
 
-        assert!(!matrix.has_any_edge(c, c));
+        assert!(!matrix.has_any_edge_unchecked(c, c));
     }
 
     #[test]
@@ -507,7 +507,7 @@ mod tests {
         assert_eq!(matrix.vertices().len(), 1);
         assert!(matrix.vertices().contains(&c));
 
-        assert!(!matrix.has_any_edge(c, c));
+        assert!(!matrix.has_any_edge_unchecked(c, c));
     }
 
     #[test]
@@ -547,7 +547,7 @@ mod tests {
         assert!(vec![a, b, c]
             .into_iter()
             .flat_map(|vertex_id| vec![(vertex_id, a), (vertex_id, b), (vertex_id, c)])
-            .all(|(src_id, dst_id)| !matrix.has_any_edge(src_id, dst_id)));
+            .all(|(src_id, dst_id)| !matrix.has_any_edge_unchecked(src_id, dst_id)));
     }
 
     #[test]
@@ -587,7 +587,7 @@ mod tests {
         assert!(vec![a, b, c]
             .into_iter()
             .flat_map(|vertex_id| vec![(vertex_id, a), (vertex_id, b), (vertex_id, c)])
-            .all(|(src_id, dst_id)| !matrix.has_any_edge(src_id, dst_id)));
+            .all(|(src_id, dst_id)| !matrix.has_any_edge_unchecked(src_id, dst_id)));
     }
 
     #[test]
@@ -607,9 +607,9 @@ mod tests {
         //      ^               |
         //      '----------------
         //
-        matrix.add_edge(a, b, 1.into());
-        matrix.add_edge(b, c, 2.into());
-        matrix.add_edge(c, a, 3.into());
+        matrix.add_edge_unchecked(a, b, 1.into());
+        matrix.add_edge_unchecked(b, c, 2.into());
+        matrix.add_edge_unchecked(c, a, 3.into());
 
         // Then:
         assert_eq!(matrix.vertex_count(), 3);
@@ -644,9 +644,9 @@ mod tests {
         //      |               |
         //      '----------------
         //
-        matrix.add_edge(a, b, 1.into());
-        matrix.add_edge(b, c, 2.into());
-        matrix.add_edge(c, a, 3.into());
+        matrix.add_edge_unchecked(a, b, 1.into());
+        matrix.add_edge_unchecked(b, c, 2.into());
+        matrix.add_edge_unchecked(c, a, 3.into());
 
         // Then:
         assert_eq!(matrix.vertex_count(), 3);
@@ -676,16 +676,16 @@ mod tests {
         let a = matrix.add_vertex();
         let b = matrix.add_vertex();
         let c = matrix.add_vertex();
-        matrix.add_edge(a, b, 1.into());
-        matrix.add_edge(b, c, 2.into());
-        matrix.add_edge(c, a, 3.into());
+        matrix.add_edge_unchecked(a, b, 1.into());
+        matrix.add_edge_unchecked(b, c, 2.into());
+        matrix.add_edge_unchecked(c, a, 3.into());
 
         // When: Doing nothing.
 
         // Then:
-        assert!(matrix.has_any_edge(a, b));
-        assert!(matrix.has_any_edge(b, c));
-        assert!(matrix.has_any_edge(c, a));
+        assert!(matrix.has_any_edge_unchecked(a, b));
+        assert!(matrix.has_any_edge_unchecked(b, c));
+        assert!(matrix.has_any_edge_unchecked(c, a));
     }
 
     #[test]
@@ -700,21 +700,21 @@ mod tests {
         let a = matrix.add_vertex();
         let b = matrix.add_vertex();
         let c = matrix.add_vertex();
-        matrix.add_edge(a, b, 1.into());
-        matrix.add_edge(b, c, 2.into());
-        matrix.add_edge(c, a, 3.into());
+        matrix.add_edge_unchecked(a, b, 1.into());
+        matrix.add_edge_unchecked(b, c, 2.into());
+        matrix.add_edge_unchecked(c, a, 3.into());
 
         // When: Doing nothing.
 
         // Then:
-        assert!(matrix.has_any_edge(a, b));
-        assert!(matrix.has_any_edge(b, a));
+        assert!(matrix.has_any_edge_unchecked(a, b));
+        assert!(matrix.has_any_edge_unchecked(b, a));
 
-        assert!(matrix.has_any_edge(b, c));
-        assert!(matrix.has_any_edge(c, b));
+        assert!(matrix.has_any_edge_unchecked(b, c));
+        assert!(matrix.has_any_edge_unchecked(c, b));
 
-        assert!(matrix.has_any_edge(c, a));
-        assert!(matrix.has_any_edge(a, c));
+        assert!(matrix.has_any_edge_unchecked(c, a));
+        assert!(matrix.has_any_edge_unchecked(a, c));
     }
 
     #[test]
@@ -729,9 +729,9 @@ mod tests {
         let a = matrix.add_vertex();
         let b = matrix.add_vertex();
         let c = matrix.add_vertex();
-        let ab = matrix.add_edge(a, b, 1.into());
-        let bc = matrix.add_edge(b, c, 2.into());
-        let ca = matrix.add_edge(c, a, 3.into());
+        let ab = matrix.add_edge_unchecked(a, b, 1.into());
+        let bc = matrix.add_edge_unchecked(b, c, 2.into());
+        let ca = matrix.add_edge_unchecked(c, a, 3.into());
 
         // When: Incrementing edge of each edge by 1.
         matrix.update_edge(a, b, ab, 2.into());
@@ -766,9 +766,9 @@ mod tests {
         let a = matrix.add_vertex();
         let b = matrix.add_vertex();
         let c = matrix.add_vertex();
-        let ab = matrix.add_edge(a, b, 1.into());
-        let bc = matrix.add_edge(b, c, 2.into());
-        let ca = matrix.add_edge(c, a, 3.into());
+        let ab = matrix.add_edge_unchecked(a, b, 1.into());
+        let bc = matrix.add_edge_unchecked(b, c, 2.into());
+        let ca = matrix.add_edge_unchecked(c, a, 3.into());
 
         // When: Incrementing edge of each edge by 1.
         matrix.update_edge(a, b, ab, 2.into());
@@ -803,9 +803,9 @@ mod tests {
         let a = matrix.add_vertex();
         let b = matrix.add_vertex();
         let c = matrix.add_vertex();
-        let ab = matrix.add_edge(a, b, 1.into());
-        let bc = matrix.add_edge(b, c, 2.into());
-        matrix.add_edge(c, a, 3.into());
+        let ab = matrix.add_edge_unchecked(a, b, 1.into());
+        let bc = matrix.add_edge_unchecked(b, c, 2.into());
+        matrix.add_edge_unchecked(c, a, 3.into());
 
         // When: Removing edges a --> b and b --> c
         //
@@ -822,7 +822,7 @@ mod tests {
         assert_eq!(matrix.vec.len(), 9);
 
         assert_eq!(matrix.edges().len(), 1);
-        assert_eq!(matrix.edges_between(c, a)[0].get_weight().unwrap(), 3);
+        assert_eq!(matrix.edges_between_unchecked(c, a)[0].get_weight().unwrap(), 3);
     }
 
     #[test]
@@ -837,9 +837,9 @@ mod tests {
         let a = matrix.add_vertex();
         let b = matrix.add_vertex();
         let c = matrix.add_vertex();
-        let ab = matrix.add_edge(a, b, 1.into());
-        let bc = matrix.add_edge(b, c, 2.into());
-        matrix.add_edge(c, a, 3.into());
+        let ab = matrix.add_edge_unchecked(a, b, 1.into());
+        let bc = matrix.add_edge_unchecked(b, c, 2.into());
+        matrix.add_edge_unchecked(c, a, 3.into());
 
         // When: Removing edges a --- b and b --- c
         //
@@ -856,7 +856,7 @@ mod tests {
         assert_eq!(matrix.vec.len(), 6);
 
         assert_eq!(matrix.edges().len(), 1);
-        assert_eq!(matrix.edges_between(a, c)[0].get_weight().unwrap(), 3);
+        assert_eq!(matrix.edges_between_unchecked(a, c)[0].get_weight().unwrap(), 3);
     }
 
     #[test]
@@ -871,9 +871,9 @@ mod tests {
         let a = matrix.add_vertex();
         let b = matrix.add_vertex();
         let c = matrix.add_vertex();
-        matrix.add_edge(a, b, 1.into());
-        matrix.add_edge(b, c, 2.into());
-        matrix.add_edge(c, a, 3.into());
+        matrix.add_edge_unchecked(a, b, 1.into());
+        matrix.add_edge_unchecked(b, c, 2.into());
+        matrix.add_edge_unchecked(c, a, 3.into());
 
         // When: Doing nothing.
 
@@ -882,14 +882,14 @@ mod tests {
         assert_eq!(matrix.total_vertex_count(), 3);
         assert_eq!(matrix.vec.len(), 9);
 
-        assert_eq!(matrix.neighbors(a).len(), 1);
-        assert_eq!(*matrix.neighbors(a).get(0).unwrap(), b);
+        assert_eq!(matrix.neighbors_unchecked(a).len(), 1);
+        assert_eq!(*matrix.neighbors_unchecked(a).get(0).unwrap(), b);
 
-        assert_eq!(matrix.neighbors(b).len(), 1);
-        assert_eq!(*matrix.neighbors(b).get(0).unwrap(), c);
+        assert_eq!(matrix.neighbors_unchecked(b).len(), 1);
+        assert_eq!(*matrix.neighbors_unchecked(b).get(0).unwrap(), c);
 
-        assert_eq!(matrix.neighbors(c).len(), 1);
-        assert_eq!(*matrix.neighbors(c).get(0).unwrap(), a);
+        assert_eq!(matrix.neighbors_unchecked(c).len(), 1);
+        assert_eq!(*matrix.neighbors_unchecked(c).get(0).unwrap(), a);
     }
 
     #[test]
@@ -904,9 +904,9 @@ mod tests {
         let a = matrix.add_vertex();
         let b = matrix.add_vertex();
         let c = matrix.add_vertex();
-        matrix.add_edge(a, b, 1.into());
-        matrix.add_edge(b, c, 2.into());
-        matrix.add_edge(c, a, 3.into());
+        matrix.add_edge_unchecked(a, b, 1.into());
+        matrix.add_edge_unchecked(b, c, 2.into());
+        matrix.add_edge_unchecked(c, a, 3.into());
 
         // When: Doing nothing.
 
@@ -915,19 +915,19 @@ mod tests {
         assert_eq!(matrix.total_vertex_count(), 3);
         assert_eq!(matrix.vec.len(), 6);
 
-        assert_eq!(matrix.neighbors(a).len(), 2);
+        assert_eq!(matrix.neighbors_unchecked(a).len(), 2);
         assert!(vec![b, c]
             .iter()
-            .all(|vertex_id| matrix.neighbors(a).contains(vertex_id)));
+            .all(|vertex_id| matrix.neighbors_unchecked(a).contains(vertex_id)));
 
-        assert_eq!(matrix.neighbors(b).len(), 2);
+        assert_eq!(matrix.neighbors_unchecked(b).len(), 2);
         assert!(vec![a, c]
             .iter()
-            .all(|vertex_id| matrix.neighbors(b).contains(vertex_id)));
+            .all(|vertex_id| matrix.neighbors_unchecked(b).contains(vertex_id)));
 
-        assert_eq!(matrix.neighbors(c).len(), 2);
+        assert_eq!(matrix.neighbors_unchecked(c).len(), 2);
         assert!(vec![a, b]
             .iter()
-            .all(|vertex_id| matrix.neighbors(c).contains(vertex_id)));
+            .all(|vertex_id| matrix.neighbors_unchecked(c).contains(vertex_id)));
     }
 }
