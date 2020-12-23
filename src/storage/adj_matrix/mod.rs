@@ -248,6 +248,10 @@ impl<W: Any, E: Edge<W>, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjMatrix<W, 
         self.vertex_count
     }
 
+    fn edge_count(&self) -> usize {
+        self.max_edge_id - self.reusable_edge_ids.len()
+    }
+
     /// # Returns
     /// Id of vertices that are present in the graph.
     ///

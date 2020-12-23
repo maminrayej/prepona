@@ -200,7 +200,15 @@ pub trait GraphStorage<W, E: Edge<W>, Dir: EdgeDir> {
     /// # Returns
     /// * `Some`: Containing reference to the retrieved edge.
     /// * `None`: If edge with id: `edge_id` does not exist in the graph.
-    fn edge(&self, edge_id: usize) -> Option<&E> {
+    fn edge(&self, edge_id: usize) -> Result<Option<&E>> {
+        if !self.contains_edge(edge_id) {
+            Err(Error::new_enf(edge_id))?
+        } else {
+            Ok(self.edge_unchecked(edge_id))
+        }
+    }
+
+    fn edge_unchecked(&self, edge_id: usize) -> Option<&E> {
         self.edges()
             .into_iter()
             .find(|(_, _, edge)| edge.get_id() == edge_id)
@@ -239,6 +247,10 @@ pub trait GraphStorage<W, E: Edge<W>, Dir: EdgeDir> {
                 .filter(|(src_id, dst_id, _)| src_id <= dst_id)
                 .collect()
         }
+    }
+
+    fn edge_count(&self) -> usize {
+        self.edges().len()
     }
 
     /// Difference between this function and `edges` is that this function treats each edge as a directed edge. \
