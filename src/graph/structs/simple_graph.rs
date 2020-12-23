@@ -1,9 +1,10 @@
 use std::any::Any;
 use std::marker::PhantomData;
 
+use anyhow::{Context, Result};
 use provide::{Edges, Graph, Neighbors, Vertices};
 
-use crate::graph::{DefaultEdge, Edge, EdgeDir, FlowEdge};
+use crate::graph::{error::Error, DefaultEdge, Edge, EdgeDir, FlowEdge};
 use crate::provide;
 use crate::storage::{FlowList, FlowMat, GraphStorage, List, Mat};
 
@@ -79,8 +80,12 @@ impl<W: Any, E: Edge<W>, Dir: EdgeDir, S: GraphStorage<W, E, Dir>> SimpleGraph<W
 impl<W, E: Edge<W>, Dir: EdgeDir, S: GraphStorage<W, E, Dir>> Neighbors
     for SimpleGraph<W, E, Dir, S>
 {
-    fn neighbors(&self, src_id: usize) -> Vec<usize> {
+    fn neighbors(&self, src_id: usize) -> Result<Vec<usize>> {
         self.storage.neighbors(src_id)
+    }
+
+    fn neighbors_unchecked(&self, src_id: usize) -> Vec<usize> {
+        self.neighbors_unchecked(src_id)
     }
 }
 
@@ -105,24 +110,44 @@ impl<W, E: Edge<W>, Dir: EdgeDir, S: GraphStorage<W, E, Dir>> Vertices
 impl<W, E: Edge<W>, Dir: EdgeDir, S: GraphStorage<W, E, Dir>> Edges<W, E>
     for SimpleGraph<W, E, Dir, S>
 {
-    fn edges_from(&self, src_id: usize) -> Vec<(usize, &E)> {
+    fn edges_from(&self, src_id: usize) -> Result<Vec<(usize, &E)>> {
         self.storage.edges_from(src_id)
     }
 
-    fn edges_between(&self, src_id: usize, dst_id: usize) -> Vec<&E> {
+    fn edges_from_unchecked(&self, src_id: usize) -> Vec<(usize, &E)> {
+        self.storage.edges_from_unchecked(src_id)
+    }
+
+    fn edges_between(&self, src_id: usize, dst_id: usize) -> Result<Vec<&E>> {
         self.storage.edges_between(src_id, dst_id)
     }
 
-    fn edge_between(&self, src_id: usize, dst_id: usize, edge_id: usize) -> Option<&E> {
+    fn edges_between_unchecked(&self, src_id: usize, dst_id: usize) -> Vec<&E> {
+        self.storage.edges_between_unchecked(src_id, dst_id)
+    }
+
+    fn edge_between(&self, src_id: usize, dst_id: usize, edge_id: usize) -> Result<Option<&E>> {
         self.storage.edge_between(src_id, dst_id, edge_id)
     }
 
-    fn edge(&self, edge_id: usize) -> Option<&E> {
+    fn edge_between_unchecked(&self, src_id: usize, dst_id: usize, edge_id: usize) -> Option<&E> {
+        self.storage.edge_between_unchecked(src_id, dst_id, edge_id)
+    }
+
+    fn edge(&self, edge_id: usize) -> Result<Option<&E>> {
         self.storage.edge(edge_id)
     }
 
-    fn has_any_edge(&self, src_id: usize, dst_id: usize) -> bool {
+    fn edge_unchecked(&self, edge_id: usize) -> Option<&E> {
+        self.storage.edge_unchecked(edge_id)
+    }
+
+    fn has_any_edge(&self, src_id: usize, dst_id: usize) -> Result<bool> {
         self.storage.has_any_edge(src_id, dst_id)
+    }
+
+    fn has_any_edge_unchecked(&self, src_id: usize, dst_id: usize) -> bool {
+        self.storage.has_any_edge_unchecked(src_id, dst_id)
     }
 
     fn edges(&self) -> Vec<(usize, usize, &E)> {
@@ -134,7 +159,7 @@ impl<W, E: Edge<W>, Dir: EdgeDir, S: GraphStorage<W, E, Dir>> Edges<W, E>
     }
 
     fn edges_count(&self) -> usize {
-        self.storage.edges().len()
+        self.storage.edge_count()
     }
 
     fn contains_edge(&self, edge_id: usize) -> bool {
@@ -150,30 +175,46 @@ impl<W, E: Edge<W>, Dir: EdgeDir, S: GraphStorage<W, E, Dir>> Graph<W, E, Dir>
         self.storage.add_vertex()
     }
 
-    fn remove_vertex(&mut self, vertex_id: usize) {
-        self.storage.remove_vertex(vertex_id);
+    fn remove_vertex(&mut self, vertex_id: usize) -> Result<()> {
+        self.remove_vertex(vertex_id)
     }
 
-    /// # Complexity
-    /// Calls *has_any_edge* then *add_edge* on underlying storage so O(*has_any_edge* + *add_edge*)
-    fn add_edge(&mut self, src_id: usize, dst_id: usize, edge: E) -> usize {
-        if src_id == dst_id {
-            panic!("Can not create loop in simple graph")
+    fn remove_vertex_unchecked(&mut self, vertex_id: usize) {
+        self.remove_vertex_unchecked(vertex_id)
+    }
+
+    fn add_edge(&mut self, src_id: usize, dst_id: usize, edge: E) -> Result<usize> {
+        if self
+            .has_any_edge(src_id, dst_id)
+            .with_context(|| "Invalid arguments")?
+        {
+            Err(Error::new_me(src_id, dst_id))?
+        } else if src_id == dst_id {
+            Err(Error::new_l(src_id))?
+        } else {
+            self.add_edge(src_id, dst_id, edge)
         }
-
-        if self.storage.has_any_edge(src_id, dst_id) {
-            panic!("Can not add multiple edges between two vertices in simple graph");
-        }
-
-        self.storage.add_edge(src_id, dst_id, edge)
     }
 
-    fn update_edge(&mut self, src_id: usize, dst_id: usize, edge_id: usize, edge: E) {
-        self.storage.update_edge(src_id, dst_id, edge_id, edge);
+    fn add_edge_unchecked(&mut self, src_id: usize, dst_id: usize, edge: E) -> usize {
+        self.add_edge_unchecked(src_id, dst_id, edge)
     }
 
-    fn remove_edge(&mut self, src_id: usize, dst_id: usize, edge_id: usize) -> Option<E> {
-        self.storage.remove_edge(src_id, dst_id, edge_id)
+    fn update_edge(&mut self, src_id: usize, dst_id: usize, edge_id: usize, edge: E) -> Result<()> {
+        self.storage.update_edge(src_id, dst_id, edge_id, edge)
+    }
+
+    fn update_edge_unchecked(&mut self, src_id: usize, dst_id: usize, edge_id: usize, edge: E) {
+        self.storage
+            .update_edge_unchecked(src_id, dst_id, edge_id, edge)
+    }
+
+    fn remove_edge(&mut self, src_id: usize, dst_id: usize, edge_id: usize) -> Result<Option<E>> {
+        self.remove_edge(src_id, dst_id, edge_id)
+    }
+
+    fn remove_edge_unchecked(&mut self, src_id: usize, dst_id: usize, edge_id: usize) -> Option<E> {
+        self.remove_edge_unchecked(src_id, dst_id, edge_id)
     }
 }
 

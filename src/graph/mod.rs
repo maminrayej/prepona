@@ -1,5 +1,6 @@
 mod edge;
 mod structs;
+mod error;
 
 /// Each subgraph must implement [`AsSubgraph`](crate::graph::subgraph::AsSubgraph) trait.
 /// This makes sure that from point of view of algorithms, there is no difference from graph and subgraphs.
