@@ -2,7 +2,9 @@ pub enum ErrorKind {
     Loop,
     MultiEdge,
     VertexNotFound,
-    EdgeNotFound
+    EdgeNotFound,
+    EdgeAlreadyExists,
+    RootAlreadyExists
 }
 
 pub struct Error {
@@ -40,6 +42,20 @@ impl Error {
         Error {
             kind: ErrorKind::EdgeNotFound,
             msg: format!("Edge with id: {} does not exist", edge_id)
+        }
+    }
+
+    pub fn new_eae(edge_id: usize) -> Self {
+        Error {
+            kind: ErrorKind::EdgeAlreadyExists,
+            msg: format!("Edge with id: {} already exists", edge_id)
+        }
+    }
+
+    pub fn new_rae(vertex_id: usize) -> Self {
+        Error {
+            kind: ErrorKind::RootAlreadyExists,
+            msg: format!("Vertex with id: {} is already a root", vertex_id)
         }
     }
 
