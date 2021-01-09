@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use provide::{Edges, Graph, Vertices};
 
 use crate::graph::{subgraph::Subgraph, Edge, EdgeDir};
@@ -32,15 +34,11 @@ impl HasCycle {
         G: provide::Neighbors + Vertices + Graph<W, E, Dir> + Edges<W, E>,
     {
         if graph.vertex_count() != 0 && self.has_cycle(graph, 0, 0) {
-            let mut vertices = self
+            let vertices = self
                 .edge_stack
                 .iter()
                 .flat_map(|(src_id, dst_id, _)| vec![*src_id, *dst_id])
-                .collect::<Vec<usize>>();
-
-            // Remove duplicated vertices.
-            vertices.sort();
-            vertices.dedup();
+                .collect::<HashSet<usize>>();
 
             Some(Subgraph::init(graph, self.edge_stack, vertices))
         } else {
@@ -63,7 +61,7 @@ impl HasCycle {
 
         let src_real_id = self.id_map.real_id_of(src_virt_id);
 
-        for (dst_real_id, edge) in graph.edges_from(src_real_id) {
+        for (dst_real_id, edge) in graph.edges_from_unchecked(src_real_id) {
             let dst_virt_id = self.id_map.virt_id_of(dst_real_id);
 
             if !self.is_visited[dst_virt_id] {
@@ -129,8 +127,8 @@ mod tests {
         let mut graph = MatGraph::init(DiMat::<usize>::init());
         let a = graph.add_vertex();
         let b = graph.add_vertex();
-        let ab = graph.add_edge(a, b, 1.into());
-        let ba = graph.add_edge(b, a, 2.into());
+        let ab = graph.add_edge_unchecked(a, b, 1.into());
+        let ba = graph.add_edge_unchecked(b, a, 2.into());
 
         // When: Performing cycle detection.
         let cycle = HasCycle::init(&graph).execute(&graph);
@@ -166,7 +164,7 @@ mod tests {
         let mut graph = MatGraph::init(Mat::<usize>::init());
         let a = graph.add_vertex();
         let b = graph.add_vertex();
-        let _ = graph.add_edge(a, b, 1.into());
+        let _ = graph.add_edge_unchecked(a, b, 1.into());
 
         // When: Performing cycle detection.
         let cycle = HasCycle::init(&graph).execute(&graph);
@@ -190,11 +188,11 @@ mod tests {
         let c = graph.add_vertex();
         let d = graph.add_vertex();
         let e = graph.add_vertex();
-        graph.add_edge(a, b, 1.into());
-        graph.add_edge(a, d, 1.into());
-        graph.add_edge(b, c, 1.into());
-        graph.add_edge(b, e, 1.into());
-        graph.add_edge(d, e, 1.into());
+        graph.add_edge_unchecked(a, b, 1.into());
+        graph.add_edge_unchecked(a, d, 1.into());
+        graph.add_edge_unchecked(b, c, 1.into());
+        graph.add_edge_unchecked(b, e, 1.into());
+        graph.add_edge_unchecked(d, e, 1.into());
 
         // When: Performing cycle detection.
         let cycle = HasCycle::init(&graph).execute(&graph);
@@ -217,10 +215,10 @@ mod tests {
         let c = graph.add_vertex();
         let d = graph.add_vertex();
         let e = graph.add_vertex();
-        graph.add_edge(a, b, 1.into());
-        graph.add_edge(b, c, 1.into());
-        graph.add_edge(b, e, 1.into());
-        graph.add_edge(d, e, 1.into());
+        graph.add_edge_unchecked(a, b, 1.into());
+        graph.add_edge_unchecked(b, c, 1.into());
+        graph.add_edge_unchecked(b, e, 1.into());
+        graph.add_edge_unchecked(d, e, 1.into());
 
         // When: Performing cycle detection.
         let cycle = HasCycle::init(&graph).execute(&graph);
@@ -247,12 +245,12 @@ mod tests {
         let d = graph.add_vertex();
         let e = graph.add_vertex();
 
-        let ab = graph.add_edge(a, b, 1.into());
-        graph.add_edge(b, c, 1.into());
-        graph.add_edge(c, d, 1.into());
-        let be = graph.add_edge(b, e, 1.into());
-        graph.add_edge(e, d, 1.into());
-        let ea = graph.add_edge(e, a, 1.into());
+        let ab = graph.add_edge_unchecked(a, b, 1.into());
+        graph.add_edge_unchecked(b, c, 1.into());
+        graph.add_edge_unchecked(c, d, 1.into());
+        let be = graph.add_edge_unchecked(b, e, 1.into());
+        graph.add_edge_unchecked(e, d, 1.into());
+        let ea = graph.add_edge_unchecked(e, a, 1.into());
 
         // When: Performing cycle detection.
         let cycle = HasCycle::init(&graph).execute(&graph);
@@ -268,7 +266,7 @@ mod tests {
         assert_eq!(cycle.edges_count(), 3);
         assert!(vec![ab, be, ea]
             .iter()
-            .all(|edge_id| cycle.edge(*edge_id).is_some()));
+            .all(|edge_id| cycle.edge(*edge_id).is_ok()));
     }
 
     #[test]
@@ -289,11 +287,11 @@ mod tests {
         let d = graph.add_vertex();
         let e = graph.add_vertex();
 
-        let ab = graph.add_edge(a, b, 1.into());
-        graph.add_edge(b, c, 1.into());
-        graph.add_edge(c, d, 1.into());
-        let be = graph.add_edge(b, e, 1.into());
-        let ea = graph.add_edge(e, a, 1.into());
+        let ab = graph.add_edge_unchecked(a, b, 1.into());
+        graph.add_edge_unchecked(b, c, 1.into());
+        graph.add_edge_unchecked(c, d, 1.into());
+        let be = graph.add_edge_unchecked(b, e, 1.into());
+        let ea = graph.add_edge_unchecked(e, a, 1.into());
 
         // When: Performing cycle detection.
         let cycle = HasCycle::init(&graph).execute(&graph);
@@ -308,6 +306,6 @@ mod tests {
         assert_eq!(cycle.edges_count(), 3);
         assert!(vec![ab, be, ea]
             .iter()
-            .all(|edge_id| cycle.edge(*edge_id).is_some()));
+            .all(|edge_id| cycle.edge(*edge_id).is_ok()));
     }
 }

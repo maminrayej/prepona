@@ -68,14 +68,10 @@ impl Kruskal {
             }
         }
 
-        let mut vertices = mst
+        let vertices = mst
             .iter()
             .flat_map(|(src_id, dst_id, _)| vec![*src_id, *dst_id])
-            .collect::<Vec<usize>>();
-
-        // Remove duplicated vertices.
-        vertices.sort();
-        vertices.dedup();
+            .collect::<HashSet<usize>>();
 
         Subgraph::init(graph, mst, vertices)
     }
@@ -116,18 +112,18 @@ mod tests {
         let e = graph.add_vertex();
         let f = graph.add_vertex();
 
-        let ab = graph.add_edge(a, b, 1.into());
-        graph.add_edge(a, c, 3.into());
-        let af = graph.add_edge(a, f, 3.into());
+        let ab = graph.add_edge_unchecked(a, b, 1.into());
+        graph.add_edge_unchecked(a, c, 3.into());
+        let af = graph.add_edge_unchecked(a, f, 3.into());
 
-        graph.add_edge(b, c, 5.into());
-        let bd = graph.add_edge(b, d, 1.into());
+        graph.add_edge_unchecked(b, c, 5.into());
+        let bd = graph.add_edge_unchecked(b, d, 1.into());
 
-        let dc = graph.add_edge(d, c, 2.into());
-        graph.add_edge(d, e, 4.into());
+        let dc = graph.add_edge_unchecked(d, c, 2.into());
+        graph.add_edge_unchecked(d, e, 4.into());
 
-        let ec = graph.add_edge(e, c, 1.into());
-        graph.add_edge(e, f, 5.into());
+        let ec = graph.add_edge_unchecked(e, c, 1.into());
+        graph.add_edge_unchecked(e, f, 5.into());
 
         let mut tags = std::collections::HashMap::<usize, &'static str>::new();
         tags.insert(a, "a");
@@ -143,6 +139,6 @@ mod tests {
         assert_eq!(mst.edges_count(), 5);
         assert!(vec![ab, af, bd, dc, ec]
             .into_iter()
-            .all(|edge_id| mst.edge(edge_id).is_some()))
+            .all(|edge_id| mst.edge(edge_id).is_ok()))
     }
 }

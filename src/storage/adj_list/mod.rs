@@ -394,8 +394,8 @@ mod tests {
         let c = list.add_vertex();
 
         // When: Removing vertices a and b.
-        list.remove_vertex(a);
-        list.remove_vertex(b);
+        list.remove_vertex_unchecked(a);
+        list.remove_vertex_unchecked(b);
 
         // Then:
         assert_eq!(list.edges().len(), 0);
@@ -427,8 +427,8 @@ mod tests {
         let c = list.add_vertex();
 
         // When: Removing vertices a and b.
-        list.remove_vertex(a);
-        list.remove_vertex(b);
+        list.remove_vertex_unchecked(a);
+        list.remove_vertex_unchecked(b);
 
         // Then:
         assert_eq!(list.edges().len(), 0);
@@ -460,8 +460,8 @@ mod tests {
         let c = list.add_vertex();
 
         // When: Removing vertices a and b and afterwards adding two new vertices.
-        list.remove_vertex(a);
-        list.remove_vertex(b);
+        list.remove_vertex_unchecked(a);
+        list.remove_vertex_unchecked(b);
         let _ = list.add_vertex();
         let _ = list.add_vertex();
 
@@ -499,8 +499,8 @@ mod tests {
         let c = list.add_vertex();
 
         // When: Removing vertices a and b and afterwards adding two new vertices.
-        list.remove_vertex(a);
-        list.remove_vertex(b);
+        list.remove_vertex_unchecked(a);
+        list.remove_vertex_unchecked(b);
         let _ = list.add_vertex();
         let _ = list.add_vertex();
 
@@ -751,8 +751,8 @@ mod tests {
         //      ^       |
         //      '--------
         //
-        list.remove_edge(a, b, ab);
-        list.remove_edge(b, c, bc);
+        list.remove_edge_unchecked(a, b, ab);
+        list.remove_edge_unchecked(b, c, bc);
 
         // Then:
         assert_eq!(list.vertex_count(), 3);
@@ -787,8 +787,8 @@ mod tests {
         //      |       |
         //      '--------
         //
-        list.remove_edge(a, b, ab);
-        list.remove_edge(b, c, bc);
+        list.remove_edge_unchecked(a, b, ab);
+        list.remove_edge_unchecked(b, c, bc);
 
         // Then:
         assert_eq!(list.vertex_count(), 3);
@@ -884,7 +884,7 @@ mod tests {
     //     let b = list.add_vertex();
 
     //     // When: Removing vertex a and try to pass it as valid vertex id.
-    //     list.remove_vertex(a);
+    //     list.remove_vertex_unchecked(a);
     //     list.edge(a, b);
 
     //     // Then: Code should panic.
@@ -902,7 +902,7 @@ mod tests {
     //     let b = list.add_vertex();
 
     //     // When: Removing vertex b and try to pass it as valid vertex id.
-    //     list.remove_vertex(b);
+    //     list.remove_vertex_unchecked(b);
     //     list.edge(a, b);
 
     //     // Then: Code should panic.
@@ -937,7 +937,7 @@ mod tests {
     //     let b = list.add_vertex();
 
     //     // When: Trying to remove non existent edge between a and b.
-    //     list.remove_edge(a, b);
+    //     list.remove_edge_unchecked(a, b);
 
     //     // Then: Code should panic.
     // }

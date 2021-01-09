@@ -83,7 +83,7 @@ pub trait GraphStorage<W, E: Edge<W>, Dir: EdgeDir> {
         src_id: usize,
         dst_id: usize,
         edge_id: usize,
-        mut edge: E,
+        edge: E,
     ) -> Result<()> {
         if !self.contains_vertex(src_id) {
             Err(Error::new_vnf(src_id))?
@@ -94,11 +94,11 @@ pub trait GraphStorage<W, E: Edge<W>, Dir: EdgeDir> {
         }
     }
 
-    fn update_edge_unchecked(&mut self, src_id: usize, dst_id: usize, edge_id: usize, edge: E) {
+    fn update_edge_unchecked(&mut self, src_id: usize, dst_id: usize, edge_id: usize, mut edge: E) {
         edge.set_id(edge_id);
 
         if let Some(_) = self.remove_edge_unchecked(src_id, dst_id, edge_id) {
-            self.add_edge(src_id, dst_id, edge);
+            self.add_edge(src_id, dst_id, edge).unwrap();
         }
     }
 

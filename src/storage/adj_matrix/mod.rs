@@ -458,8 +458,8 @@ mod tests {
         let c = matrix.add_vertex();
 
         // When: Removing vertices a and b.
-        matrix.remove_vertex(a);
-        matrix.remove_vertex(b);
+        matrix.remove_vertex_unchecked(a);
+        matrix.remove_vertex_unchecked(b);
 
         // Then:
         assert_eq!(matrix.edges().len(), 0);
@@ -492,8 +492,8 @@ mod tests {
         let c = matrix.add_vertex();
 
         // When: Removing vertices a and b.
-        matrix.remove_vertex(a);
-        matrix.remove_vertex(b);
+        matrix.remove_vertex_unchecked(a);
+        matrix.remove_vertex_unchecked(b);
 
         // Then:
         assert_eq!(matrix.edges().len(), 0);
@@ -526,8 +526,8 @@ mod tests {
         let c = matrix.add_vertex();
 
         // When: Removing vertices a and b and afterwards adding two new vertices.
-        matrix.remove_vertex(a);
-        matrix.remove_vertex(b);
+        matrix.remove_vertex_unchecked(a);
+        matrix.remove_vertex_unchecked(b);
         let _ = matrix.add_vertex();
         let _ = matrix.add_vertex();
 
@@ -566,8 +566,8 @@ mod tests {
         let c = matrix.add_vertex();
 
         // When: Removing vertices a and b and afterwards adding two new vertices.
-        matrix.remove_vertex(a);
-        matrix.remove_vertex(b);
+        matrix.remove_vertex_unchecked(a);
+        matrix.remove_vertex_unchecked(b);
         let _ = matrix.add_vertex();
         let _ = matrix.add_vertex();
 
@@ -738,9 +738,9 @@ mod tests {
         let ca = matrix.add_edge_unchecked(c, a, 3.into());
 
         // When: Incrementing edge of each edge by 1.
-        matrix.update_edge(a, b, ab, 2.into());
-        matrix.update_edge(b, c, bc, 3.into());
-        matrix.update_edge(c, a, ca, 4.into());
+        matrix.update_edge_unchecked(a, b, ab, 2.into());
+        matrix.update_edge_unchecked(b, c, bc, 3.into());
+        matrix.update_edge_unchecked(c, a, ca, 4.into());
 
         // Then:
         assert_eq!(matrix.vertex_count(), 3);
@@ -775,9 +775,9 @@ mod tests {
         let ca = matrix.add_edge_unchecked(c, a, 3.into());
 
         // When: Incrementing edge of each edge by 1.
-        matrix.update_edge(a, b, ab, 2.into());
-        matrix.update_edge(b, c, bc, 3.into());
-        matrix.update_edge(c, a, ca, 4.into());
+        matrix.update_edge_unchecked(a, b, ab, 2.into());
+        matrix.update_edge_unchecked(b, c, bc, 3.into());
+        matrix.update_edge_unchecked(c, a, ca, 4.into());
 
         // Then:
         assert_eq!(matrix.vertex_count(), 3);
@@ -817,8 +817,8 @@ mod tests {
         //      ^       |
         //      '--------
         //
-        matrix.remove_edge(a, b, ab);
-        matrix.remove_edge(b, c, bc);
+        matrix.remove_edge_unchecked(a, b, ab);
+        matrix.remove_edge_unchecked(b, c, bc);
 
         // Then:
         assert_eq!(matrix.vertex_count(), 3);
@@ -851,8 +851,8 @@ mod tests {
         //      |       |
         //      '--------
         //
-        matrix.remove_edge(a, b, ab);
-        matrix.remove_edge(b, c, bc);
+        matrix.remove_edge_unchecked(a, b, ab);
+        matrix.remove_edge_unchecked(b, c, bc);
 
         // Then:
         assert_eq!(matrix.vertex_count(), 3);

@@ -85,7 +85,7 @@ impl<W, E: Edge<W>, Dir: EdgeDir, S: GraphStorage<W, E, Dir>> Neighbors
     }
 
     fn neighbors_unchecked(&self, src_id: usize) -> Vec<usize> {
-        self.neighbors_unchecked(src_id)
+        self.storage.neighbors_unchecked(src_id)
     }
 }
 
@@ -176,11 +176,11 @@ impl<W, E: Edge<W>, Dir: EdgeDir, S: GraphStorage<W, E, Dir>> Graph<W, E, Dir>
     }
 
     fn remove_vertex(&mut self, vertex_id: usize) -> Result<()> {
-        self.remove_vertex(vertex_id)
+        self.storage.remove_vertex(vertex_id)
     }
 
     fn remove_vertex_unchecked(&mut self, vertex_id: usize) {
-        self.remove_vertex_unchecked(vertex_id)
+        self.storage.remove_vertex_unchecked(vertex_id)
     }
 
     fn add_edge(&mut self, src_id: usize, dst_id: usize, edge: E) -> Result<usize> {
@@ -197,7 +197,7 @@ impl<W, E: Edge<W>, Dir: EdgeDir, S: GraphStorage<W, E, Dir>> Graph<W, E, Dir>
     }
 
     fn add_edge_unchecked(&mut self, src_id: usize, dst_id: usize, edge: E) -> usize {
-        self.add_edge_unchecked(src_id, dst_id, edge)
+        self.storage.add_edge_unchecked(src_id, dst_id, edge)
     }
 
     fn update_edge(&mut self, src_id: usize, dst_id: usize, edge_id: usize, edge: E) -> Result<()> {
@@ -210,11 +210,11 @@ impl<W, E: Edge<W>, Dir: EdgeDir, S: GraphStorage<W, E, Dir>> Graph<W, E, Dir>
     }
 
     fn remove_edge(&mut self, src_id: usize, dst_id: usize, edge_id: usize) -> Result<Option<E>> {
-        self.remove_edge(src_id, dst_id, edge_id)
+        self.storage.remove_edge(src_id, dst_id, edge_id)
     }
 
     fn remove_edge_unchecked(&mut self, src_id: usize, dst_id: usize, edge_id: usize) -> Option<E> {
-        self.remove_edge_unchecked(src_id, dst_id, edge_id)
+        self.storage.remove_edge_unchecked(src_id, dst_id, edge_id)
     }
 }
 
@@ -224,19 +224,15 @@ mod tests {
     use crate::provide::*;
 
     #[test]
-    #[should_panic(expected = "Can not create loop in simple graph")]
     fn add_loop() {
         // Given: An empty graph.
         let mut graph = MatGraph::init(Mat::<usize>::init());
 
         // When: Adding an edge from a vertex to itself.
-        graph.add_edge(0, 0, 1.into());
-
-        // Then: Code should panic.
+        assert!(graph.add_edge(0, 0, 1.into()).is_err());
     }
 
     #[test]
-    #[should_panic(expected = "Can not add multiple edges between two vertices in simple graph")]
     fn add_multiple_edge() {
         // Given: Graph
         //
@@ -245,10 +241,10 @@ mod tests {
         let mut graph = MatGraph::init(Mat::<usize>::init());
         let a = graph.add_vertex();
         let b = graph.add_vertex();
-        graph.add_edge(a, b, 1.into());
+        graph.add_edge_unchecked(a, b, 1.into());
 
         // When: Trying to add another edge between a and b.
-        graph.add_edge(a, b, 1.into());
+        assert!(graph.add_edge(a, b, 1.into()).is_err());
 
         // Then: Code should panic.
     }

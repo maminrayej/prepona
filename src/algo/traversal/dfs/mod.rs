@@ -86,7 +86,7 @@ impl<'a, L: DfsListener> Dfs<'a, L> {
                         let real_id = self.id_map.real_id_of(virt_id);
 
                         let mut neighbors = graph
-                            .neighbors(real_id)
+                            .neighbors_unchecked(real_id)
                             .into_iter()
                             .map(|real_id| self.id_map.virt_id_of(real_id))
                             .filter(|virt_id| self.colors[*virt_id] == Color::White)
@@ -281,12 +281,12 @@ mod tests {
         let e = graph.add_vertex();
         let f = graph.add_vertex();
 
-        graph.add_edge(a, b, 1.into());
-        graph.add_edge(b, c, 1.into());
-        graph.add_edge(c, a, 1.into());
-        graph.add_edge(b, d, 1.into());
-        graph.add_edge(d, e, 1.into());
-        graph.add_edge(e, f, 1.into());
+        graph.add_edge_unchecked(a, b, 1.into());
+        graph.add_edge_unchecked(b, c, 1.into());
+        graph.add_edge_unchecked(c, a, 1.into());
+        graph.add_edge_unchecked(b, d, 1.into());
+        graph.add_edge_unchecked(d, e, 1.into());
+        graph.add_edge_unchecked(e, f, 1.into());
 
         // When: Performing Dfs algorithm.
         let mut listener = DefaultListener::init();
@@ -317,12 +317,12 @@ mod tests {
         let e = graph.add_vertex();
         let f = graph.add_vertex();
 
-        graph.add_edge(a, b, 1.into());
-        graph.add_edge(b, c, 1.into());
-        graph.add_edge(c, a, 1.into());
-        graph.add_edge(b, d, 1.into());
-        graph.add_edge(d, e, 1.into());
-        graph.add_edge(e, f, 1.into());
+        graph.add_edge_unchecked(a, b, 1.into());
+        graph.add_edge_unchecked(b, c, 1.into());
+        graph.add_edge_unchecked(c, a, 1.into());
+        graph.add_edge_unchecked(b, d, 1.into());
+        graph.add_edge_unchecked(d, e, 1.into());
+        graph.add_edge_unchecked(e, f, 1.into());
 
         // When: Performing Dfs algorithm.
         let mut listener = DefaultListener::init();
@@ -353,10 +353,10 @@ mod tests {
         let e = graph.add_vertex();
         let f = graph.add_vertex();
 
-        graph.add_edge(a, b, 1.into());
-        graph.add_edge(b, c, 1.into());
-        graph.add_edge(d, f, 1.into());
-        graph.add_edge(d, e, 1.into());
+        graph.add_edge_unchecked(a, b, 1.into());
+        graph.add_edge_unchecked(b, c, 1.into());
+        graph.add_edge_unchecked(d, f, 1.into());
+        graph.add_edge_unchecked(d, e, 1.into());
 
         // When: Performing Dfs algorithm.
         let mut listener = DefaultListener::init();
@@ -386,10 +386,10 @@ mod tests {
         let e = graph.add_vertex();
         let f = graph.add_vertex();
 
-        graph.add_edge(a, b, 1.into());
-        graph.add_edge(b, c, 1.into());
-        graph.add_edge(d, f, 1.into());
-        graph.add_edge(d, e, 1.into());
+        graph.add_edge_unchecked(a, b, 1.into());
+        graph.add_edge_unchecked(b, c, 1.into());
+        graph.add_edge_unchecked(d, f, 1.into());
+        graph.add_edge_unchecked(d, e, 1.into());
 
         // When: Performing Dfs algorithm.
         let mut listener = DefaultListener::init();
@@ -418,11 +418,11 @@ mod tests {
         let c = graph.add_vertex();
         let d = graph.add_vertex(); // 3
         let e = graph.add_vertex();
-        graph.add_edge(a, b, 1.into());
-        graph.add_edge(a, d, 1.into());
-        graph.add_edge(b, c, 1.into());
-        graph.add_edge(b, e, 1.into());
-        graph.add_edge(d, e, 1.into());
+        graph.add_edge_unchecked(a, b, 1.into());
+        graph.add_edge_unchecked(a, d, 1.into());
+        graph.add_edge_unchecked(b, c, 1.into());
+        graph.add_edge_unchecked(b, e, 1.into());
+        graph.add_edge_unchecked(d, e, 1.into());
 
         // When: Performing Dfs algorithm.
         let mut listener = DefaultListener::init();

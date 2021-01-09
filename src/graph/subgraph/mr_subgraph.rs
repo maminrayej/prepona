@@ -238,10 +238,10 @@ where
     }
 
     fn add_edge_from_graph(&mut self, src_id: usize, dst_id: usize, edge_id: usize) -> Result<()> {
-        self.add_edge_from_graph(src_id, dst_id, edge_id)
+        self.subgraph.add_edge_from_graph(src_id, dst_id, edge_id)
     }
 
     fn add_edge_from_graph_unchecked(&mut self, src_id: usize, dst_id: usize, edge_id: usize) {
-        self.add_edge_from_graph_unchecked(src_id, dst_id, edge_id)
+        self.subgraph.add_edge_from_graph_unchecked(src_id, dst_id, edge_id)
     }
 }

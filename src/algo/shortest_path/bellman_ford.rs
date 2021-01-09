@@ -1,6 +1,6 @@
 use magnitude::Magnitude;
 use num_traits::Zero;
-use std::any::Any;
+use std::{any::Any, collections::HashSet};
 use std::collections::HashMap;
 
 use crate::{graph::{subgraph::ShortestPathSubgraph, Edge, EdgeDir}, prelude::Neighbors};
@@ -80,15 +80,11 @@ impl<W: Copy + Any + Zero + Ord> BellmanFord<W> {
             distance_map.insert(real_id, self.distance[virt_id]);
         }
 
-        let mut vertices = edges
+        let vertices = edges
             .iter()
             .flat_map(|(src_id, dst_id, _)| vec![*src_id, *dst_id])
             .chain(std::iter::once(src_id))
-            .collect::<Vec<usize>>();
-
-        // Remove duplicated vertices.
-        vertices.sort();
-        vertices.dedup();
+            .collect::<HashSet<usize>>();
 
         Ok(ShortestPathSubgraph::init(
             graph,
@@ -161,13 +157,13 @@ mod tests {
         let d = graph.add_vertex();
         let e = graph.add_vertex();
 
-        graph.add_edge(a, b, 6.into());
-        let ad = graph.add_edge(a, d, 1.into());
-        let bd = graph.add_edge(b, d, 2.into());
-        graph.add_edge(b, c, 5.into());
-        graph.add_edge(b, e, 2.into());
-        let ce = graph.add_edge(c, e, 5.into());
-        let de = graph.add_edge(d, e, 1.into());
+        graph.add_edge_unchecked(a, b, 6.into());
+        let ad = graph.add_edge_unchecked(a, d, 1.into());
+        let bd = graph.add_edge_unchecked(b, d, 2.into());
+        graph.add_edge_unchecked(b, c, 5.into());
+        graph.add_edge_unchecked(b, e, 2.into());
+        let ce = graph.add_edge_unchecked(c, e, 5.into());
+        let de = graph.add_edge_unchecked(d, e, 1.into());
 
         // When: Performing BellmanFord algorithm.
         let sp_subgraph = BellmanFord::init(&graph).execute(&graph, a);
@@ -182,7 +178,7 @@ mod tests {
             .all(|vertex_id| sp_subgraph.vertices().contains(vertex_id)));
         assert!(vec![ad, bd, ce, de]
             .into_iter()
-            .all(|edge_id| sp_subgraph.edge(edge_id).is_some()));
+            .all(|edge_id| sp_subgraph.edge(edge_id).is_ok()));
         assert_eq!(sp_subgraph.distance_to(a).unwrap(), 0.into());
         assert_eq!(sp_subgraph.distance_to(b).unwrap(), 3.into());
         assert_eq!(sp_subgraph.distance_to(c).unwrap(), 7.into());
@@ -208,13 +204,13 @@ mod tests {
         let d = graph.add_vertex(); // 3
         let e = graph.add_vertex(); // 4
 
-        graph.add_edge(a, b, 6.into());
-        let ad = graph.add_edge(a, d, 1.into());
-        graph.add_edge(b, d, 2.into());
-        graph.add_edge(b, e, 2.into());
-        let cb = graph.add_edge(c, b, 1.into());
-        let ec = graph.add_edge(e, c, 1.into());
-        let de = graph.add_edge(d, e, 1.into());
+        graph.add_edge_unchecked(a, b, 6.into());
+        let ad = graph.add_edge_unchecked(a, d, 1.into());
+        graph.add_edge_unchecked(b, d, 2.into());
+        graph.add_edge_unchecked(b, e, 2.into());
+        let cb = graph.add_edge_unchecked(c, b, 1.into());
+        let ec = graph.add_edge_unchecked(e, c, 1.into());
+        let de = graph.add_edge_unchecked(d, e, 1.into());
 
         // When: Performing BellmanFord algorithm.
         let sp_subgraph = BellmanFord::init(&graph).execute(&graph, a);
@@ -229,7 +225,7 @@ mod tests {
             .all(|vertex_id| sp_subgraph.vertices().contains(vertex_id)));
         assert!(vec![ad, cb, ec, de]
             .into_iter()
-            .all(|edge_id| sp_subgraph.edge(edge_id).is_some()));
+            .all(|edge_id| sp_subgraph.edge(edge_id).is_ok()));
         assert_eq!(sp_subgraph.distance_to(a).unwrap(), 0.into());
         assert_eq!(sp_subgraph.distance_to(b).unwrap(), 4.into());
         assert_eq!(sp_subgraph.distance_to(c).unwrap(), 3.into());
@@ -250,9 +246,9 @@ mod tests {
         let a = graph.add_vertex();
         let b = graph.add_vertex();
         let c = graph.add_vertex();
-        graph.add_edge(a, b, 1.into());
-        graph.add_edge(b, c, 2.into());
-        graph.add_edge(c, a, (-5).into());
+        graph.add_edge_unchecked(a, b, 1.into());
+        graph.add_edge_unchecked(b, c, 2.into());
+        graph.add_edge_unchecked(c, a, (-5).into());
 
         // When: Performing BellmanFord algorithm.
         let shortest_paths = BellmanFord::init(&graph).execute(&graph, a);
@@ -269,7 +265,7 @@ mod tests {
         let mut graph = MatGraph::init(Mat::<isize>::init());
         let a = graph.add_vertex();
         let b = graph.add_vertex();
-        graph.add_edge(a, b, (-1).into());
+        graph.add_edge_unchecked(a, b, (-1).into());
 
         let shortest_paths = BellmanFord::init(&graph).execute(&graph, a);
 
@@ -290,9 +286,9 @@ mod tests {
         let a = graph.add_vertex();
         let b = graph.add_vertex();
         let c = graph.add_vertex();
-        graph.add_edge(a, b, 1.into());
-        graph.add_edge(b, c, 2.into());
-        graph.add_edge(c, a, (-5).into());
+        graph.add_edge_unchecked(a, b, 1.into());
+        graph.add_edge_unchecked(b, c, 2.into());
+        graph.add_edge_unchecked(c, a, (-5).into());
 
         // When: Performing BellmanFord algorithm.
         let shortest_paths = BellmanFord::init(&graph).execute(&graph, a);

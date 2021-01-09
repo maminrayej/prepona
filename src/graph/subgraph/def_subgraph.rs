@@ -190,7 +190,7 @@ where
         } else {
             self.edges()
                 .into_iter()
-                .filter(|(src_id, dst_id, edge)| src_id <= dst_id)
+                .filter(|(src_id, dst_id, _)| src_id <= dst_id)
                 .collect()
         }
     }
@@ -233,7 +233,7 @@ where
         }
     }
 
-    fn remove_edge_unchecked(&mut self, src_id: usize, dst_id: usize, edge_id: usize) {
+    fn remove_edge_unchecked(&mut self, _: usize, _: usize, edge_id: usize) {
         self.edges.retain(|(_, _, e_id)| *e_id != edge_id)
     }
 

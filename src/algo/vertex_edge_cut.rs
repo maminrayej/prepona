@@ -1,4 +1,4 @@
-use std::marker::PhantomData;
+use std::{cmp::min, marker::PhantomData};
 
 use magnitude::Magnitude;
 
@@ -50,11 +50,11 @@ impl<'a, W, E: Edge<W>> VertexEdgeCut<'a, W, E> {
         (self.cut_vertices, self.cut_edges)
     }
 
-    fn find_cut_vertices<G>(&mut self, graph: &'a G, real_id: usize, depth: Magnitude<usize>)
+    fn find_cut_vertices<G>(&mut self, graph: &'a G, virt_id: usize, depth: Magnitude<usize>)
     where
         G: Vertices + Edges<W, E>,
     {
-        let virt_id = self.id_map.virt_id_of(real_id);
+        let real_id = self.id_map.real_id_of(virt_id);
 
         let mut child_count = 0;
         let mut is_vertex_cut = false;
@@ -62,28 +62,27 @@ impl<'a, W, E: Edge<W>> VertexEdgeCut<'a, W, E> {
         self.depth_of[virt_id] = depth;
         self.low_of[virt_id] = depth;
 
-        for (n_real_id, edge) in graph.edges_from(virt_id) {
+        for (n_real_id, edge) in graph.edges_from_unchecked(real_id) {
             let n_virt_id = self.id_map.virt_id_of(n_real_id);
 
             if !self.is_visited[n_virt_id] {
                 self.parent_of[n_virt_id] = virt_id.into();
-                self.find_cut_vertices(graph, n_real_id, depth + 1.into());
+                self.find_cut_vertices(graph, n_virt_id, depth + 1.into());
                 child_count += 1;
                 is_vertex_cut = self.low_of[n_virt_id] >= self.depth_of[virt_id];
                 if self.low_of[n_virt_id] > self.depth_of[virt_id] {
-                    self.cut_edges.push((real_id, n_real_id, edge));
+                    self.cut_edges.push((virt_id, n_real_id, edge));
                 }
-                self.low_of[virt_id] = std::cmp::min(self.low_of[virt_id], self.low_of[n_virt_id]);
+                self.low_of[virt_id] = min(self.low_of[virt_id], self.low_of[n_virt_id]);
             } else if self.parent_of[virt_id] != n_virt_id.into() {
-                self.low_of[virt_id] =
-                    std::cmp::min(self.low_of[virt_id], self.depth_of[n_virt_id]);
+                self.low_of[virt_id] = min(self.low_of[virt_id], self.depth_of[n_virt_id]);
             }
         }
 
         if (self.parent_of[virt_id].is_finite() && is_vertex_cut)
             || (!self.parent_of[virt_id].is_finite() && child_count > 1)
         {
-            self.cut_vertices.push(real_id);
+            self.cut_vertices.push(virt_id);
         }
     }
 }
@@ -121,7 +120,7 @@ mod tests {
         let mut graph = MatGraph::init(Mat::<usize>::init());
         let a = graph.add_vertex();
         let b = graph.add_vertex();
-        let ab = graph.add_edge(a, b, 1.into());
+        let ab = graph.add_edge_unchecked(a, b, 1.into());
 
         let (cut_vertices, cut_edges) = VertexEdgeCut::init(&graph).execute(&graph);
 
@@ -144,8 +143,8 @@ mod tests {
         let a = graph.add_vertex();
         let b = graph.add_vertex();
         let c = graph.add_vertex();
-        let ab = graph.add_edge(a, b, 1.into());
-        let ac = graph.add_edge(a, c, 1.into());
+        let ab = graph.add_edge_unchecked(a, b, 1.into());
+        let ac = graph.add_edge_unchecked(a, c, 1.into());
 
         let (cut_vertices, cut_edges) = VertexEdgeCut::init(&graph).execute(&graph);
 
@@ -171,9 +170,9 @@ mod tests {
         let b = graph.add_vertex();
         let c = graph.add_vertex();
         let d = graph.add_vertex();
-        let ab = graph.add_edge(a, b, 1.into());
-        let bc = graph.add_edge(a, d, 1.into());
-        let ad = graph.add_edge(b, c, 1.into());
+        let ab = graph.add_edge_unchecked(a, b, 1.into());
+        let bc = graph.add_edge_unchecked(a, d, 1.into());
+        let ad = graph.add_edge_unchecked(b, c, 1.into());
 
         let (cut_vertices, cut_edges) = VertexEdgeCut::init(&graph).execute(&graph);
 
@@ -214,32 +213,32 @@ mod tests {
         let l = graph.add_vertex();
         let m = graph.add_vertex();
         let n = graph.add_vertex();
-        graph.add_edge(a, b, 1.into());
-        graph.add_edge(a, c, 1.into());
+        graph.add_edge_unchecked(a, b, 1.into());
+        graph.add_edge_unchecked(a, c, 1.into());
 
-        graph.add_edge(b, d, 1.into());
+        graph.add_edge_unchecked(b, d, 1.into());
 
-        graph.add_edge(c, d, 1.into());
+        graph.add_edge_unchecked(c, d, 1.into());
 
-        let de = graph.add_edge(d, e, 1.into());
+        let de = graph.add_edge_unchecked(d, e, 1.into());
 
-        let ef = graph.add_edge(e, f, 1.into());
+        let ef = graph.add_edge_unchecked(e, f, 1.into());
 
-        let fh = graph.add_edge(f, h, 1.into());
+        let fh = graph.add_edge_unchecked(f, h, 1.into());
 
-        graph.add_edge(h, i, 1.into());
-        let hg = graph.add_edge(h, g, 1.into());
-        graph.add_edge(h, m, 1.into());
+        graph.add_edge_unchecked(h, i, 1.into());
+        let hg = graph.add_edge_unchecked(h, g, 1.into());
+        graph.add_edge_unchecked(h, m, 1.into());
 
-        graph.add_edge(i, j, 1.into());
+        graph.add_edge_unchecked(i, j, 1.into());
 
-        graph.add_edge(j, k, 1.into());
+        graph.add_edge_unchecked(j, k, 1.into());
 
-        graph.add_edge(k, l, 1.into());
+        graph.add_edge_unchecked(k, l, 1.into());
 
-        graph.add_edge(l, m, 1.into());
+        graph.add_edge_unchecked(l, m, 1.into());
 
-        let mn = graph.add_edge(m, n, 1.into());
+        let mn = graph.add_edge_unchecked(m, n, 1.into());
 
         let (cut_vertices, cut_edges) = VertexEdgeCut::init(&graph).execute(&graph);
 
@@ -267,11 +266,11 @@ mod tests {
         let c = graph.add_vertex();
         let d = graph.add_vertex();
         let e = graph.add_vertex();
-        let ab = graph.add_edge(a, b, 1.into());
-        graph.add_edge(b, c, 1.into());
-        graph.add_edge(c, d, 1.into());
-        graph.add_edge(b, d, 1.into());
-        let de = graph.add_edge(d, e, 1.into());
+        let ab = graph.add_edge_unchecked(a, b, 1.into());
+        graph.add_edge_unchecked(b, c, 1.into());
+        graph.add_edge_unchecked(c, d, 1.into());
+        graph.add_edge_unchecked(b, d, 1.into());
+        let de = graph.add_edge_unchecked(d, e, 1.into());
 
         let (cut_vertices, cut_edges) = VertexEdgeCut::init(&graph).execute(&graph);
 
