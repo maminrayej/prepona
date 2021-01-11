@@ -114,7 +114,7 @@ pub trait GraphStorage<W, E: Edge<W>, Dir: EdgeDir> {
     /// # Returns
     /// * `Ok`: If edge updated successfully.
     /// * `Err`: [`VertexNotFound`](crate::storage::ErrorKind::VertexNotFound) if vertex with either id: `src_id` or `dst_id` does not exist.
-    /// * `Err`: ['EdgeNotFound`](crate::storage::ErrorKind::EdgeNotFound) if edge with specified id does not exist.
+    /// * `Err`: [`EdgeNotFound`](crate::storage::ErrorKind::EdgeNotFound) if edge with specified id does not exist.
     fn update_edge(&mut self, src_id: usize, dst_id: usize, edge_id: usize, edge: E) -> Result<()> {
         if !self.contains_vertex(src_id) {
             Err(Error::new_vnf(src_id))?
@@ -137,9 +137,9 @@ pub trait GraphStorage<W, E: Edge<W>, Dir: EdgeDir> {
     fn update_edge_unchecked(&mut self, src_id: usize, dst_id: usize, edge_id: usize, mut edge: E) {
         edge.set_id(edge_id);
 
-        if let Some(_) = self.remove_edge_unchecked(src_id, dst_id, edge_id) {
-            self.add_edge(src_id, dst_id, edge).unwrap();
-        }
+        self.remove_edge_unchecked(src_id, dst_id, edge_id);
+
+        self.add_edge_unchecked(src_id, dst_id, edge);
     }
 
     /// Removes the edge with id: `edge_id`.
@@ -150,10 +150,10 @@ pub trait GraphStorage<W, E: Edge<W>, Dir: EdgeDir> {
     /// * `edge_id`: Id of edge to be removed.
     ///
     /// # Returns
-    /// * `Ok(Some)`: Containing the removed edge.
+    /// * `Ok`: Containing the removed edge.
     /// * `Err`: [`VertexNotFound`](crate::storage::ErrorKind::VertexNotFound) if vertex with either id: `src_id` or `dst_id` does not exist.
-    /// * `Err`: ['EdgeNotFound`](crate::storage::ErrorKind::EdgeNotFound) if edge with specified id does not exist.
-    fn remove_edge(&mut self, src_id: usize, dst_id: usize, edge_id: usize) -> Result<Option<E>> {
+    /// * `Err`: [`EdgeNotFound`](crate::storage::ErrorKind::EdgeNotFound) if edge with specified id does not exist.
+    fn remove_edge(&mut self, src_id: usize, dst_id: usize, edge_id: usize) -> Result<E> {
         if !self.contains_vertex(src_id) {
             Err(Error::new_vnf(src_id))?
         } else if !self.contains_vertex(dst_id) {
@@ -174,7 +174,7 @@ pub trait GraphStorage<W, E: Edge<W>, Dir: EdgeDir> {
     ///
     /// # Returns
     /// The removed edge.
-    fn remove_edge_unchecked(&mut self, src_id: usize, dst_id: usize, edge_id: usize) -> Option<E>;
+    fn remove_edge_unchecked(&mut self, src_id: usize, dst_id: usize, edge_id: usize) -> E;
 
     fn contains_edge(&self, edge_id: usize) -> bool;
 
@@ -224,10 +224,10 @@ pub trait GraphStorage<W, E: Edge<W>, Dir: EdgeDir> {
     /// * `edge_id`: Id of the edge to retrieve.
     ///
     /// # Returns
-    /// * `Ok(Some)`: Containing the edge between specified source and destination with specified id.
+    /// * `Ok`: Containing the edge between specified source and destination with specified id.
     /// * `Err`: [`VertexNotFound`](crate::storage::ErrorKind::VertexNotFound) if vertex with either id: `src_id` or `dst_id` does not exist.
-    /// * `Err`: ['EdgeNotFound`](crate::storage::ErrorKind::EdgeNotFound) if edge with specified id does not exist.
-    fn edge_between(&self, src_id: usize, dst_id: usize, edge_id: usize) -> Result<Option<&E>> {
+    /// * `Err`: [`EdgeNotFound`](crate::storage::ErrorKind::EdgeNotFound) if edge with specified id does not exist.
+    fn edge_between(&self, src_id: usize, dst_id: usize, edge_id: usize) -> Result<&E> {
         if !self.contains_vertex(src_id) {
             Err(Error::new_vnf(src_id))?
         } else if !self.contains_vertex(dst_id) {
@@ -246,10 +246,11 @@ pub trait GraphStorage<W, E: Edge<W>, Dir: EdgeDir> {
     ///
     /// # Returns
     /// Edge between specified source and destination with specified id.
-    fn edge_between_unchecked(&self, src_id: usize, dst_id: usize, edge_id: usize) -> Option<&E> {
+    fn edge_between_unchecked(&self, src_id: usize, dst_id: usize, edge_id: usize) -> &E {
         self.edges_between_unchecked(src_id, dst_id)
             .into_iter()
             .find(|edge| edge.get_id() == edge_id)
+            .unwrap()
     }
 
     /// # Note:
@@ -263,9 +264,9 @@ pub trait GraphStorage<W, E: Edge<W>, Dir: EdgeDir> {
     /// `edge_id`: Id of the edge to be retrieved.
     ///
     /// # Returns
-    /// * `Ok(Some)`: Containing reference to the edge with specified id.
-    /// * `Err`: ['EdgeNotFound`](crate::storage::ErrorKind::EdgeNotFound) if edge with specified id does not exist.
-    fn edge(&self, edge_id: usize) -> Result<Option<&E>> {
+    /// * `Ok`: Containing reference to the edge with specified id.
+    /// * `Err`: [`EdgeNotFound`](crate::storage::ErrorKind::EdgeNotFound) if edge with specified id does not exist.
+    fn edge(&self, edge_id: usize) -> Result<&E> {
         if !self.contains_edge(edge_id) {
             Err(Error::new_enf(edge_id))?
         } else {
@@ -285,11 +286,12 @@ pub trait GraphStorage<W, E: Edge<W>, Dir: EdgeDir> {
     ///
     /// # Returns
     /// Containing reference to the edge with specified id.
-    fn edge_unchecked(&self, edge_id: usize) -> Option<&E> {
+    fn edge_unchecked(&self, edge_id: usize) -> &E {
         self.edges()
             .into_iter()
             .find(|(_, _, edge)| edge.get_id() == edge_id)
             .and_then(|(_, _, edge)| Some(edge))
+            .unwrap()
     }
 
     /// # Arguments

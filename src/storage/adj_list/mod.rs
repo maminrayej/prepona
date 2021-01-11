@@ -203,11 +203,11 @@ impl<W: Copy, E: Edge<W> + Copy, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjLi
     /// # Complexity
     /// O(*removing an edge* + *adding an edge*)
     fn update_edge_unchecked(&mut self, src_id: usize, dst_id: usize, edge_id: usize, mut edge: E) {
-        if let Some(removed_edge) = self.remove_edge_unchecked(src_id, dst_id, edge_id) {
-            edge.set_id(removed_edge.get_id());
+        let removed_edge = self.remove_edge_unchecked(src_id, dst_id, edge_id);
 
-            self.add_edge_unchecked(src_id, dst_id, edge);
-        }
+        edge.set_id(removed_edge.get_id());
+
+        self.add_edge_unchecked(src_id, dst_id, edge);
     }
 
     /// Removes the edge with id: `edge_id`.
@@ -224,21 +224,19 @@ impl<W: Copy, E: Edge<W> + Copy, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjLi
     /// # Complexity
     /// * Directed: O(E<sup>\*</sup><sub>src</sub>)
     /// * Undirected: O(E<sup>\*</sup><sub>src</sub> + E<sup>\*</sup><sub>dst</sub>)
-    fn remove_edge_unchecked(&mut self, src_id: usize, dst_id: usize, edge_id: usize) -> Option<E> {
-        if let Some(index) = self.edges_of[src_id]
+    fn remove_edge_unchecked(&mut self, src_id: usize, dst_id: usize, edge_id: usize) -> E {
+        let index = self.edges_of[src_id]
             .iter()
             .position(|(_, edge)| edge.get_id() == edge_id)
-        {
-            self.reusable_edge_ids.insert(edge_id);
+            .unwrap();
 
-            if self.is_undirected() {
-                self.edges_of[dst_id].retain(|(_, edge)| edge.get_id() != edge_id);
-            }
+        self.reusable_edge_ids.insert(edge_id);
 
-            Some(self.edges_of[src_id].remove(index).1)
-        } else {
-            None
+        if self.is_undirected() {
+            self.edges_of[dst_id].retain(|(_, edge)| edge.get_id() != edge_id);
         }
+
+        self.edges_of[src_id].remove(index).1
     }
 
     /// # Returns
@@ -762,7 +760,10 @@ mod tests {
         assert_eq!(list.edges_of[c].len(), 1);
 
         assert_eq!(list.edges().len(), 1);
-        assert_eq!(list.edges_between_unchecked(c, a)[0].get_weight().unwrap(), 3);
+        assert_eq!(
+            list.edges_between_unchecked(c, a)[0].get_weight().unwrap(),
+            3
+        );
     }
 
     #[test]
@@ -797,7 +798,10 @@ mod tests {
         assert_eq!(list.edges_of[c].len(), 1);
 
         assert_eq!(list.edges().len(), 1);
-        assert_eq!(list.edges_between_unchecked(a, c)[0].get_weight().unwrap(), 3);
+        assert_eq!(
+            list.edges_between_unchecked(a, c)[0].get_weight().unwrap(),
+            3
+        );
     }
 
     #[test]

@@ -226,17 +226,15 @@ impl<W: Any, E: Edge<W>, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjMatrix<W, 
     ///
     /// # Complexity
     /// O(E<sup>*</sup>)
-    fn remove_edge_unchecked(&mut self, src_id: usize, dst_id: usize, edge_id: usize) -> Option<E> {
-        if let Some(index) = self[(src_id, dst_id)]
+    fn remove_edge_unchecked(&mut self, src_id: usize, dst_id: usize, edge_id: usize) -> E {
+        let index = self[(src_id, dst_id)]
             .iter()
             .position(|edge| edge.get_id() == edge_id)
-        {
-            self.reusable_edge_ids.insert(edge_id);
+            .unwrap();
 
-            Some(self[(src_id, dst_id)].swap_remove(index))
-        } else {
-            None
-        }
+        self.reusable_edge_ids.insert(edge_id);
+
+        self[(src_id, dst_id)].swap_remove(index)
     }
 
     /// # Returns
@@ -826,7 +824,12 @@ mod tests {
         assert_eq!(matrix.vec.len(), 9);
 
         assert_eq!(matrix.edges().len(), 1);
-        assert_eq!(matrix.edges_between_unchecked(c, a)[0].get_weight().unwrap(), 3);
+        assert_eq!(
+            matrix.edges_between_unchecked(c, a)[0]
+                .get_weight()
+                .unwrap(),
+            3
+        );
     }
 
     #[test]
@@ -860,7 +863,12 @@ mod tests {
         assert_eq!(matrix.vec.len(), 6);
 
         assert_eq!(matrix.edges().len(), 1);
-        assert_eq!(matrix.edges_between_unchecked(a, c)[0].get_weight().unwrap(), 3);
+        assert_eq!(
+            matrix.edges_between_unchecked(a, c)[0]
+                .get_weight()
+                .unwrap(),
+            3
+        );
     }
 
     #[test]

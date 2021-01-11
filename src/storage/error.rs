@@ -1,18 +1,33 @@
+/// Different kinds of errors that may occur is storages.
 pub enum ErrorKind {
     VertexNotFound,
     EdgeNotFound,
 }
 
+/// Error type returned by storages in `storage` module.
 pub struct Error {
     kind: ErrorKind,
     msg: String,
 }
 
 impl Error {
+    /// # Arguments
+    /// * `kind`: Specifies what kind of error is being created.
+    /// * `msg`: Cause of the error.
+    ///
+    /// # Returns
+    /// Constructed `Error`.
     pub fn new(kind: ErrorKind, msg: String) -> Self {
         Error { kind, msg }
     }
 
+    /// Creates a [`VertexNotFound`](crate::storage::ErrorKind::VertexNotFound) kind of error.
+    ///
+    /// # Arguments
+    /// `vertex_id`: Id of the vertex that has not been found.
+    ///
+    /// # Returns
+    /// `Error` with `VertexNotFound` kind and predefined msg.
     pub fn new_vnf(vertex_id: usize) -> Self {
         Error {
             kind: ErrorKind::VertexNotFound,
@@ -20,6 +35,13 @@ impl Error {
         }
     }
 
+    /// Creates a [`EdgeNotFound`](crate::storage::ErrorKind::EdgeNotFound) kind of error.
+    ///
+    /// # Arguments
+    /// `edge_id`: Id of the edge that has not been found.
+    ///
+    /// # Returns
+    /// `Error` with `EdgeNotFound` kind and predefined msg.
     pub fn new_enf(edge_id: usize) -> Self {
         Error {
             kind: ErrorKind::EdgeNotFound,
@@ -27,10 +49,14 @@ impl Error {
         }
     }
 
+    /// # Returns
+    /// Cause of the error.
     pub fn msg(&self) -> &str {
         self.msg.as_str()
     }
 
+    /// # Returns
+    /// Kind of the error.
     pub fn kind(&self) -> &ErrorKind {
         &self.kind
     }
