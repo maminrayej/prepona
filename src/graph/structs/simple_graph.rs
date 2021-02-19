@@ -126,19 +126,19 @@ impl<W, E: Edge<W>, Dir: EdgeDir, S: GraphStorage<W, E, Dir>> Edges<W, E>
         self.storage.edges_between_unchecked(src_id, dst_id)
     }
 
-    fn edge_between(&self, src_id: usize, dst_id: usize, edge_id: usize) -> Result<Option<&E>> {
+    fn edge_between(&self, src_id: usize, dst_id: usize, edge_id: usize) -> Result<&E> {
         self.storage.edge_between(src_id, dst_id, edge_id)
     }
 
-    fn edge_between_unchecked(&self, src_id: usize, dst_id: usize, edge_id: usize) -> Option<&E> {
+    fn edge_between_unchecked(&self, src_id: usize, dst_id: usize, edge_id: usize) -> &E {
         self.storage.edge_between_unchecked(src_id, dst_id, edge_id)
     }
 
-    fn edge(&self, edge_id: usize) -> Result<Option<&E>> {
+    fn edge(&self, edge_id: usize) -> Result<&E> {
         self.storage.edge(edge_id)
     }
 
-    fn edge_unchecked(&self, edge_id: usize) -> Option<&E> {
+    fn edge_unchecked(&self, edge_id: usize) -> &E {
         self.storage.edge_unchecked(edge_id)
     }
 
@@ -183,6 +183,19 @@ impl<W, E: Edge<W>, Dir: EdgeDir, S: GraphStorage<W, E, Dir>> Graph<W, E, Dir>
         self.storage.remove_vertex_unchecked(vertex_id)
     }
 
+    /// Adds an edge to the graph.
+    ///
+    /// # Arguments
+    /// `src_id`: Id of the source vertex.
+    /// `dst_id`: Id of the destination vertex.
+    /// `edge`: Edge to be added from source to destination.
+    ///
+    /// # Returns
+    /// * `Err`:
+    ///     * If there is already an edge between source and destination.
+    ///     * If source and destination are the same(edge is a loop)
+    ///     * Error from calling `add_edge` on storage.
+    /// * `Ok`: Id of the newly added edge.
     fn add_edge(&mut self, src_id: usize, dst_id: usize, edge: E) -> Result<usize> {
         if self
             .has_any_edge(src_id, dst_id)
@@ -192,7 +205,7 @@ impl<W, E: Edge<W>, Dir: EdgeDir, S: GraphStorage<W, E, Dir>> Graph<W, E, Dir>
         } else if src_id == dst_id {
             Err(Error::new_l(src_id))?
         } else {
-            self.add_edge(src_id, dst_id, edge)
+            self.storage.add_edge(src_id, dst_id, edge)
         }
     }
 
@@ -209,11 +222,11 @@ impl<W, E: Edge<W>, Dir: EdgeDir, S: GraphStorage<W, E, Dir>> Graph<W, E, Dir>
             .update_edge_unchecked(src_id, dst_id, edge_id, edge)
     }
 
-    fn remove_edge(&mut self, src_id: usize, dst_id: usize, edge_id: usize) -> Result<Option<E>> {
+    fn remove_edge(&mut self, src_id: usize, dst_id: usize, edge_id: usize) -> Result<E> {
         self.storage.remove_edge(src_id, dst_id, edge_id)
     }
 
-    fn remove_edge_unchecked(&mut self, src_id: usize, dst_id: usize, edge_id: usize) -> Option<E> {
+    fn remove_edge_unchecked(&mut self, src_id: usize, dst_id: usize, edge_id: usize) -> E {
         self.storage.remove_edge_unchecked(src_id, dst_id, edge_id)
     }
 }

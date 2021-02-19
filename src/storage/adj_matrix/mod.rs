@@ -154,6 +154,9 @@ impl<W: Any, E: Edge<W>, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjMatrix<W, 
     ///
     /// # Complexity
     /// O(|V|)
+    ///
+    /// # Panics
+    /// If `vertex_id` is not in range 0..|V|.
     fn remove_vertex_unchecked(&mut self, vertex_id: usize) {
         for other_id in 0..self.total_vertex_count() {
             self[(vertex_id, other_id)].clear();
@@ -177,6 +180,9 @@ impl<W: Any, E: Edge<W>, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjMatrix<W, 
     ///
     /// # Complexity
     /// O(1)
+    ///
+    /// # Panics
+    /// If `src_id` or `dst_id` is not in 0..|V| range.
     fn add_edge_unchecked(&mut self, src_id: usize, dst_id: usize, mut edge: E) -> usize {
         let edge_id = if let Some(id) = self.next_reusable_edge_id() {
             id
@@ -203,6 +209,9 @@ impl<W: Any, E: Edge<W>, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjMatrix<W, 
     ///
     /// # Complexity
     /// O(E<sup>*</sup>)
+    ///
+    /// # Panics
+    /// * If `src_id` or `dst_id` is not in range 0..|V|.
     fn update_edge_unchecked(&mut self, src_id: usize, dst_id: usize, edge_id: usize, mut edge: E) {
         if let Some(index) = self[(src_id, dst_id)]
             .iter()
@@ -226,6 +235,10 @@ impl<W: Any, E: Edge<W>, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjMatrix<W, 
     ///
     /// # Complexity
     /// O(E<sup>*</sup>)
+    ///
+    /// # Panics
+    /// * If `src_id` or `dst_id` is not in range 0..|V|.
+    /// * If there is no edge with id: `edge_id` from `src_id` to `dst_id`.
     fn remove_edge_unchecked(&mut self, src_id: usize, dst_id: usize, edge_id: usize) -> E {
         let index = self[(src_id, dst_id)]
             .iter()
@@ -270,6 +283,9 @@ impl<W: Any, E: Edge<W>, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjMatrix<W, 
     ///
     /// # Complexity
     /// O(|V|*|E<sup>\*</sup>|)
+    ///
+    /// # Panics
+    /// If `src_id` is not in range 0..|V|.
     fn edges_from_unchecked(&self, src_id: usize) -> Vec<(usize, &E)> {
         (0..self.total_vertex_count())
             .into_iter()
@@ -290,6 +306,9 @@ impl<W: Any, E: Edge<W>, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjMatrix<W, 
     ///
     /// Complexity
     /// O(|V|)
+    ///
+    /// # Panics
+    /// If `src_id` is not in range 0..|V|.
     fn neighbors_unchecked(&self, src_id: usize) -> Vec<usize> {
         (0..self.total_vertex_count())
             .into_iter()
@@ -306,6 +325,9 @@ impl<W: Any, E: Edge<W>, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjMatrix<W, 
     ///
     /// # Complexity
     /// O(|E<sup>*</sup>|)
+    ///
+    /// # Panics
+    /// * If `src_id` or `dst_id` is not in range 0..|V|.
     fn edges_between_unchecked(&self, src_id: usize, dst_id: usize) -> Vec<&E> {
         self[(src_id, dst_id)].iter().collect()
     }
@@ -328,6 +350,9 @@ impl<W: Any, E: Edge<W>, Dir: EdgeDir> Index<(usize, usize)> for AdjMatrix<W, E,
     ///
     /// # Returns
     /// Edges from vertex with id: `src_id` to vertex with id: `dst_id`.
+    ///
+    /// # Panics
+    /// * If `src_id` or `dst_id` is not in range 0..|V|.
     fn index(&self, (src_id, dst_id): (usize, usize)) -> &Self::Output {
         let index = utils::from_ij(src_id, dst_id, self.is_directed());
 
@@ -341,6 +366,9 @@ impl<W: Any, E: Edge<W>, Dir: EdgeDir> IndexMut<(usize, usize)> for AdjMatrix<W,
     ///
     /// # Returns
     /// Edges from vertex with id: `src_id` to vertex with id: `dst_id`.
+    ///
+    /// # Panics
+    /// * If `src_id` or `dst_id` is not in range 0..|V|.
     fn index_mut(&mut self, (src_id, dst_id): (usize, usize)) -> &mut Self::Output {
         let index = utils::from_ij(src_id, dst_id, self.is_directed());
 

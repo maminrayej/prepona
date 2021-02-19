@@ -11,9 +11,15 @@ pub trait Neighbors {
     /// `src_id`: Id of the source vertex.
     ///
     /// # Returns
-    /// Id of vertices accessible from source vertex using one edge.
+    /// * `Err`
+    /// * `Ok`: Containing Id of vertices accessible from source vertex using one edge.
     fn neighbors(&self, src_id: usize) -> Result<Vec<usize>>;
 
+    /// # Arguments:
+    /// `src_id`: Id of the source vertex.
+    ///
+    /// # Returns
+    /// Id of vertices accessible from source vertex using one edge.
     fn neighbors_unchecked(&self, src_id: usize) -> Vec<usize>;
 }
 
@@ -60,9 +66,15 @@ pub trait Edges<W, E: Edge<W>> {
     /// `src_id`: Id of the source vertex.
     ///
     /// # Returns
-    /// * All edges from the source vertex in the format of: (`dst_id`, `edge`)
+    /// * `Err`
+    /// * `Ok`: Containin all edges from the source vertex in the format of: (`dst_id`, `edge`)
     fn edges_from(&self, src_id: usize) -> Result<Vec<(usize, &E)>>;
 
+    /// # Arguments
+    /// `src_id`: Id of the source vertex.
+    ///
+    /// # Returns
+    /// * All edges from the source vertex in the format of: (`dst_id`, `edge`)
     fn edges_from_unchecked(&self, src_id: usize) -> Vec<(usize, &E)>;
 
     /// # Arguments
@@ -70,9 +82,16 @@ pub trait Edges<W, E: Edge<W>> {
     /// * `dst_id`: Id of destination vertex.
     ///
     /// # Returns
-    /// Edges from source vertex to destination vertex.
+    /// * `Err`: 
+    /// * `Ok`: Containing edges from source vertex to destination vertex.
     fn edges_between(&self, src_id: usize, dst_id: usize) -> Result<Vec<&E>>;
     
+    /// # Arguments
+    /// * `src_id`: Id of source vertex.
+    /// * `dst_id`: Id of destination vertex.
+    ///
+    /// # Returns
+    /// Edges from source vertex to destination vertex.
     fn edges_between_unchecked(&self, src_id: usize, dst_id: usize) -> Vec<&E>;
 
     /// # Arguments
@@ -81,11 +100,18 @@ pub trait Edges<W, E: Edge<W>> {
     /// * `edge_id`: Id of the edge to retrieve.
     ///
     /// # Returns
-    /// * `Some`: Containing reference to the retrieved edge.
-    /// * `None`: If edge with id: `edge_id` does not exist from source vertex to destination vertex.
-    fn edge_between(&self, src_id: usize, dst_id: usize, edge_id: usize) -> Result<Option<&E>>;
+    /// * `Err`:
+    /// * `Ok`: Containing reference to edge with id: `edge_id` from `src_id` to `dst_id`.
+    fn edge_between(&self, src_id: usize, dst_id: usize, edge_id: usize) -> Result<&E>;
 
-    fn edge_between_unchecked(&self, src_id: usize, dst_id: usize, edge_id: usize) -> Option<&E>;
+    /// # Arguments
+    /// * `src_id`: Id of source vertex.
+    /// * `dst_id`: Id of destination vertex.
+    /// * `edge_id`: Id of the edge to retrieve.
+    ///
+    /// # Returns
+    /// Reference to edge with id: `edge_id` from `src_id` to `dst_id`.
+    fn edge_between_unchecked(&self, src_id: usize, dst_id: usize, edge_id: usize) -> &E;
 
     /// # Note:
     /// Consider using `edge_between` or `edges_from` functions instead of this one.
@@ -98,21 +124,39 @@ pub trait Edges<W, E: Edge<W>> {
     /// `edge_id`: Id of the edge to be retrieved.
     ///
     /// # Returns
-    /// * `Some`: Containing reference to the retrieved edge.
-    /// * `None`: If edge with id: `edge_id` does not exist in the graph.
-    fn edge(&self, edge_id: usize) -> Result<Option<&E>>;
+    /// * `Err`: 
+    /// * `Ok`: Containing reference to edge with id: `edge_id`.
+    fn edge(&self, edge_id: usize) -> Result<&E>;
 
-    fn edge_unchecked(&self, edge_id: usize) -> Option<&E>;
+    /// # Note:
+    /// Consider using `edge_between_unchecked` or `edges_from_unchecked` functions instead of this one.
+    /// Because default implementation of this function iterates over all edges to find the edge with specified id.
+    /// And it's likely that other storages use the same approach. So:
+    /// * if you have info about source of the edge, consider using `edges_from_unchecked` function instead.
+    /// * if you have info about both source and destination of the edge, consider using `edge_between_unchecked` function instead.
+    ///
+    /// # Arguments
+    /// `edge_id`: Id of the edge to be retrieved.
+    ///
+    /// # Returns
+    /// Reference to edge with id: `edge_id`.
+    fn edge_unchecked(&self, edge_id: usize) -> &E;
 
     /// # Arguments
     /// * `src_id`: Id of the source vertex.
     /// * `dst_id`: Id of the destination vertex.
     ///
     /// # Returns
-    /// * `true`: If there is any edge from source to destination.
-    /// * `false`: Otherwise.
+    /// * `Err`:
+    /// * `Ok`: Containing `true` if there is at least one edge from `src_id` to `dst_id` and `false` otherwise.
     fn has_any_edge(&self, src_id: usize, dst_id: usize) -> Result<bool>;
 
+    /// # Arguments
+    /// * `src_id`: Id of the source vertex.
+    /// * `dst_id`: Id of the destination vertex.
+    ///
+    /// # Returns
+    /// `true` if there is at least one edge from `src_id` to `dst_id` and `false` otherwise.
     fn has_any_edge_unchecked(&self, src_id: usize, dst_id: usize) -> bool;
 
     /// # Returns
@@ -151,6 +195,10 @@ pub trait Graph<W, E: Edge<W>, Ty: EdgeDir> {
     /// `vertex_id`: Id of the vertex to be removed.
     fn remove_vertex(&mut self, vertex_id: usize) -> Result<()>;
 
+    /// Removes the vertex with id: `vertex_id` from graph.
+    ///
+    /// # Arguments
+    /// `vertex_id`: Id of the vertex to be removed.
     fn remove_vertex_unchecked(&mut self, vertex_id: usize);
 
     /// Adds `edge` from vertex with id `src_id`: to vertex with id: `dst_id`.
@@ -161,9 +209,19 @@ pub trait Graph<W, E: Edge<W>, Ty: EdgeDir> {
     /// * `edge`: Edge to be added from source to destination.
     ///
     /// # Returns
-    /// Unique id of the newly added edge.
+    /// * `Err`: 
+    /// * `Ok`: Containing unique id of the newly added edge.
     fn add_edge(&mut self, src_id: usize, dst_id: usize, edge: E) -> Result<usize>;
 
+    /// Adds `edge` from vertex with id `src_id`: to vertex with id: `dst_id`.
+    ///
+    /// # Arguments
+    /// * `src_id`: Id of the source vertex.
+    /// * `dst_id`: Id of the destination vertex.
+    /// * `edge`: Edge to be added from source to destination.
+    ///
+    /// # Returns
+    /// Unique id of the newly added edge.
     fn add_edge_unchecked(&mut self, src_id: usize, dst_id: usize, edge: E) -> usize;
 
     /// Replaces the edge with id: `edge_id` with `edge`.
@@ -175,6 +233,13 @@ pub trait Graph<W, E: Edge<W>, Ty: EdgeDir> {
     /// * `edge`: New edge to replace the old one.
     fn update_edge(&mut self, src_id: usize, dst_id: usize, edge_id: usize, edge: E) -> Result<()>;
 
+    /// Replaces the edge with id: `edge_id` with `edge`.
+    ///
+    /// # Arguments
+    /// * `src_id`: Id of source vertex.
+    /// * `dst_id`: Id of destination vertex.
+    /// * `edge_id`: Id of the to be updated edge.
+    /// * `edge`: New edge to replace the old one.
     fn update_edge_unchecked(&mut self, src_id: usize, dst_id: usize, edge_id: usize, edge: E);
 
     /// Removes the edge with id: `edge_id`.
@@ -185,9 +250,18 @@ pub trait Graph<W, E: Edge<W>, Ty: EdgeDir> {
     /// * `edge_id`: Id of edge to be removed.
     ///
     /// # Returns
-    /// * `Some`: Containing the removed edge.
-    /// * `None`: If edge with `edge_id` does not exist in the graph.
-    fn remove_edge(&mut self, src_id: usize, dst_id: usize, edge_id: usize) -> Result<Option<E>>;
+    /// * `Err`:
+    /// * `Ok`: Containing removed edge.
+    fn remove_edge(&mut self, src_id: usize, dst_id: usize, edge_id: usize) -> Result<E>;
 
-    fn remove_edge_unchecked(&mut self, src_id: usize, dst_id: usize, edge_id: usize) -> Option<E>;
+    /// Removes the edge with id: `edge_id`.
+    ///
+    /// # Arguments
+    /// * `src_id`: Id of source vertex.
+    /// * `dst_id`: Id of destination vertex.
+    /// * `edge_id`: Id of edge to be removed.
+    ///
+    /// # Returns
+    /// Removed edge.
+    fn remove_edge_unchecked(&mut self, src_id: usize, dst_id: usize, edge_id: usize) -> E;
 }

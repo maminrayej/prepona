@@ -62,7 +62,6 @@ where
     }
 }
 
-/// For documentation about each function checkout [`Neighbors`](crate::provide::Neighbors) trait.
 /// `ShortestPathSubgraph` uses `Subgraph` internally so for complexity of each function checkout [`Subgraph`](crate::graph::subgraph::Subgraph).
 impl<'a, W, E, Dir, G> Neighbors for ShortestPathSubgraph<'a, W, E, Dir, G>
 where
@@ -79,7 +78,6 @@ where
     }
 }
 
-/// For documentation about each function checkout [`Vertices`](crate::provide::Vertices) trait.
 /// `ShortestPathSubgraph` uses `Subgraph` internally so for complexity of each function checkout [`Subgraph`](crate::graph::subgraph::Subgraph).
 impl<'a, W, E, Dir, G> Vertices for ShortestPathSubgraph<'a, W, E, Dir, G>
 where
@@ -96,7 +94,6 @@ where
     }
 }
 
-/// For documentation about each function checkout [`Edges`](crate::provide::Edges) trait.
 /// `ShortestPathSubgraph` uses `Subgraph` internally so for complexity of each function checkout [`Subgraph`](crate::graph::subgraph::Subgraph).
 impl<'a, W, E, Dir, G> Edges<W, E> for ShortestPathSubgraph<'a, W, E, Dir, G>
 where
@@ -125,20 +122,20 @@ where
         src_id: usize,
         dst_id: usize,
         edge_id: usize,
-    ) -> anyhow::Result<Option<&E>> {
+    ) -> anyhow::Result<&E> {
         self.subgraph.edge_between(src_id, dst_id, edge_id)
     }
 
-    fn edge_between_unchecked(&self, src_id: usize, dst_id: usize, edge_id: usize) -> Option<&E> {
+    fn edge_between_unchecked(&self, src_id: usize, dst_id: usize, edge_id: usize) -> &E {
         self.subgraph
             .edge_between_unchecked(src_id, dst_id, edge_id)
     }
 
-    fn edge(&self, edge_id: usize) -> anyhow::Result<Option<&E>> {
+    fn edge(&self, edge_id: usize) -> anyhow::Result<&E> {
         self.subgraph.edge(edge_id)
     }
 
-    fn edge_unchecked(&self, edge_id: usize) -> Option<&E> {
+    fn edge_unchecked(&self, edge_id: usize) -> &E {
         self.subgraph.edge_unchecked(edge_id)
     }
 

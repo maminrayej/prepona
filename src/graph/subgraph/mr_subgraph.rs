@@ -76,6 +76,16 @@ where
         self.roots.contains(&vertex_id)
     }
 
+    /// Adds a new root to the set of roots.
+    ///
+    /// # Arguments
+    /// `vertex_id`: Id of the vertex to be added as root.
+    ///
+    /// # Returns
+    /// * `Err`:
+    ///     * If root with specified id already exists
+    ///     * Error of calling `add_vertex_from_graph`.
+    /// * `Ok`:
     pub fn add_root(&mut self, vertex_id: usize) -> Result<()> {
         if self.is_root(vertex_id) {
             Err(Error::new_rae(vertex_id)).with_context(|| "MultiRootSubgraph failed")?
@@ -88,6 +98,10 @@ where
         }
     }
 
+    /// Adds a new root to the set of roots.
+    ///
+    /// # Arguments
+    /// `vertex_id`: Id of the vertex to be added as root.
     pub fn add_root_uncheckec(&mut self, vertex_id: usize) {
         self.add_vertex_from_graph_unchecked(vertex_id);
 
@@ -95,7 +109,6 @@ where
     }
 }
 
-/// For documentation about each function checkout [`Neighbors`](crate::provide::Neighbors) trait.
 /// `MultiRootSubgraph` uses `Subgraph` internally so for complexity of each function checkout [`Subgraph`](crate::graph::subgraph::Subgraph).
 impl<'a, W, E, Dir, G> Neighbors for MultiRootSubgraph<'a, W, E, Dir, G>
 where
@@ -112,7 +125,6 @@ where
     }
 }
 
-/// For documentation about each function checkout [`Vertices`](crate::provide::Vertices) trait.
 /// `MultiRootSubgraph` uses `Subgraph` internally so for complexity of each function checkout [`Subgraph`](crate::graph::subgraph::Subgraph).
 impl<'a, W, E, Dir, G> Vertices for MultiRootSubgraph<'a, W, E, Dir, G>
 where
@@ -129,7 +141,6 @@ where
     }
 }
 
-/// For documentation about each function checkout [`Edges`](crate::provide::Edges) trait.
 /// `MultiRootSubgraph` uses `Subgraph` internally so for complexity of each function checkout [`Subgraph`](crate::graph::subgraph::Subgraph).
 impl<'a, W, E, Dir, G> Edges<W, E> for MultiRootSubgraph<'a, W, E, Dir, G>
 where
@@ -153,19 +164,19 @@ where
         self.subgraph.edges_between_unchecked(src_id, dst_id)
     }
 
-    fn edge_between(&self, src_id: usize, dst_id: usize, edge_id: usize) -> anyhow::Result<Option<&E>> {
+    fn edge_between(&self, src_id: usize, dst_id: usize, edge_id: usize) -> anyhow::Result<&E> {
         self.subgraph.edge_between(src_id, dst_id, edge_id)
     }
 
-    fn edge_between_unchecked(&self, src_id: usize, dst_id: usize, edge_id: usize) -> Option<&E> {
+    fn edge_between_unchecked(&self, src_id: usize, dst_id: usize, edge_id: usize) -> &E {
         self.subgraph.edge_between_unchecked(src_id, dst_id, edge_id)
     }
 
-    fn edge(&self, edge_id: usize) -> anyhow::Result<Option<&E>> {
+    fn edge(&self, edge_id: usize) -> anyhow::Result<&E> {
         self.subgraph.edge(edge_id)
     }
 
-    fn edge_unchecked(&self, edge_id: usize) -> Option<&E> {
+    fn edge_unchecked(&self, edge_id: usize) -> &E {
         self.subgraph.edge_unchecked(edge_id)
     }
 
@@ -201,6 +212,7 @@ where
     G: Graph<W, E, Dir> + Edges<W, E> + Neighbors,
 {}
 
+/// `MultiRootSubgraph` uses `Subgraph` internally so for complexity of each function checkout [`Subgraph`](crate::graph::subgraph::Subgraph).
 impl<'a, W, E, Dir, G> AsSubgraph<W, E> for MultiRootSubgraph<'a, W, E, Dir, G>
 where
     E: Edge<W>,

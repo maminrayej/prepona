@@ -10,7 +10,7 @@ pub type DiList<W> = AdjList<W, DefaultEdge<W>, DirectedEdge>;
 pub type FlowList<W, Dir = UndirectedEdge> = AdjList<W, FlowEdge<W>, Dir>;
 pub type DiFlowList<W> = AdjList<W, FlowEdge<W>, DirectedEdge>;
 
-/// Is a collection of unordered lists used to represent a finite graph. Each list describes the set of neighbors_unchecked of a vertex in the graph.
+/// Is a collection of unordered lists used to represent a finite graph. Each list describes the set of neighbors of a vertex in the graph.
 ///
 /// ## Note
 /// From now on
@@ -148,6 +148,9 @@ impl<W: Copy, E: Edge<W> + Copy, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjLi
     ///
     /// # Complexity
     /// O(|V| + |V<sup>\*</sup>| * |max(E<sup>\*</sup>)|)
+    ///
+    /// # Panics
+    /// If `vertex_id` is not in range 0..|V|.
     fn remove_vertex_unchecked(&mut self, vertex_id: usize) {
         self.edges_of[vertex_id].clear();
 
@@ -172,6 +175,9 @@ impl<W: Copy, E: Edge<W> + Copy, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjLi
     ///
     /// # Complexity
     /// O(1)
+    ///
+    /// # Panics
+    /// If `src_id` or `dst_id` is not in 0..|V| range.
     fn add_edge_unchecked(&mut self, src_id: usize, dst_id: usize, mut edge: E) -> usize {
         let edge_id = if let Some(id) = self.next_reusable_edge_id() {
             id
@@ -202,6 +208,10 @@ impl<W: Copy, E: Edge<W> + Copy, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjLi
     ///
     /// # Complexity
     /// O(*removing an edge* + *adding an edge*)
+    ///
+    /// # Panics
+    /// * If `src_id` or `dst_id` is not in range 0..|V|.
+    /// * If there is no edge with id: `edge_id` from `src_id` to `dst_id`.
     fn update_edge_unchecked(&mut self, src_id: usize, dst_id: usize, edge_id: usize, mut edge: E) {
         let removed_edge = self.remove_edge_unchecked(src_id, dst_id, edge_id);
 
@@ -224,6 +234,10 @@ impl<W: Copy, E: Edge<W> + Copy, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjLi
     /// # Complexity
     /// * Directed: O(E<sup>\*</sup><sub>src</sub>)
     /// * Undirected: O(E<sup>\*</sup><sub>src</sub> + E<sup>\*</sup><sub>dst</sub>)
+    ///
+    /// # Panics
+    /// * If `src_id` or `dst_id` is not in range 0..|V|.
+    /// * If there is no edge with id: `edge_id` from `src_id` to `dst_id`.
     fn remove_edge_unchecked(&mut self, src_id: usize, dst_id: usize, edge_id: usize) -> E {
         let index = self.edges_of[src_id]
             .iter()
@@ -271,6 +285,9 @@ impl<W: Copy, E: Edge<W> + Copy, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjLi
     ///
     /// # Complexity
     /// O(|E<sup>\*</sup>|)
+    ///
+    /// # Panics
+    /// If `src_id` is not in range 0..|V|.
     fn edges_from_unchecked(&self, src_id: usize) -> Vec<(usize, &E)> {
         self.edges_of[src_id]
             .iter()
