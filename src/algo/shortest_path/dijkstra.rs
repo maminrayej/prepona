@@ -1,7 +1,7 @@
 use magnitude::Magnitude;
 use num_traits::{Unsigned, Zero};
-use std::{any::Any, collections::HashSet};
 use std::collections::HashMap;
+use std::{any::Any, collections::HashSet};
 
 use crate::provide::{Edges, Graph, Vertices};
 use crate::{
@@ -49,7 +49,7 @@ impl<W: Copy + Ord + Zero + Any + Unsigned> Dijkstra<W> {
     /// * `src_id`: Id of the source vertex(Shortest path will be calculated from this vertex to all other vertices)
     ///
     /// # Returns
-    /// The shortest path as a subgraph of the original graph. 
+    /// The shortest path as a subgraph of the original graph.
     /// You can query shortest path from source to each destination using api provided by `ShortestPathSubgraph`.
     pub fn execute<E, Ty, G>(
         mut self,

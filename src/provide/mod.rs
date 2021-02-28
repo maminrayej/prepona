@@ -82,10 +82,10 @@ pub trait Edges<W, E: Edge<W>> {
     /// * `dst_id`: Id of destination vertex.
     ///
     /// # Returns
-    /// * `Err`: 
+    /// * `Err`:
     /// * `Ok`: Containing edges from source vertex to destination vertex.
     fn edges_between(&self, src_id: usize, dst_id: usize) -> Result<Vec<&E>>;
-    
+
     /// # Arguments
     /// * `src_id`: Id of source vertex.
     /// * `dst_id`: Id of destination vertex.
@@ -124,7 +124,7 @@ pub trait Edges<W, E: Edge<W>> {
     /// `edge_id`: Id of the edge to be retrieved.
     ///
     /// # Returns
-    /// * `Err`: 
+    /// * `Err`:
     /// * `Ok`: Containing reference to edge with id: `edge_id`.
     fn edge(&self, edge_id: usize) -> Result<&E>;
 
@@ -209,7 +209,7 @@ pub trait Graph<W, E: Edge<W>, Ty: EdgeDir> {
     /// * `edge`: Edge to be added from source to destination.
     ///
     /// # Returns
-    /// * `Err`: 
+    /// * `Err`:
     /// * `Ok`: Containing unique id of the newly added edge.
     fn add_edge(&mut self, src_id: usize, dst_id: usize, edge: E) -> Result<usize>;
 

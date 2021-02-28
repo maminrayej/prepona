@@ -117,12 +117,7 @@ where
         self.subgraph.edges_between_unchecked(src_id, dst_id)
     }
 
-    fn edge_between(
-        &self,
-        src_id: usize,
-        dst_id: usize,
-        edge_id: usize,
-    ) -> anyhow::Result<&E> {
+    fn edge_between(&self, src_id: usize, dst_id: usize, edge_id: usize) -> anyhow::Result<&E> {
         self.subgraph.edge_between(src_id, dst_id, edge_id)
     }
 

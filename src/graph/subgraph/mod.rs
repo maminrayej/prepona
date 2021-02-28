@@ -80,7 +80,7 @@ pub trait AsSubgraph<W, E: Edge<W>>: AsFrozenSubgraph<W, E> {
 /// Describes a subgraph that can mutate and also can mutate the graph it's representing.
 ///
 /// Adding an edge or a vertex to the subgraph that is completely new(is not already present in the subgraph), will be added to the graph as well.
-/// Also removing an edge or vertex from the graph that is also present in the subgraph, will get removed from the subgarph as well. 
+/// Also removing an edge or vertex from the graph that is also present in the subgraph, will get removed from the subgarph as well.
 pub trait AsMutSubgraph<W, E: Edge<W>>: AsSubgraph<W, E> {
     /// Removes a vertex from the graph.
     /// If the vertex is present in the subgraph, It will get removed from the subgraph as well.
@@ -105,9 +105,10 @@ pub trait AsMutSubgraph<W, E: Edge<W>>: AsSubgraph<W, E> {
     /// * `edge_id`: Id of the edge from source vertex to destination vertex.
     ///
     /// # Returns
-    /// * `Err`: 
+    /// * `Err`:
     /// * `Ok`: Containing the removed edge.
-    fn remove_edge_from_graph(&mut self, src_id: usize, dst_id: usize, edge_id: usize) -> Result<E>;
+    fn remove_edge_from_graph(&mut self, src_id: usize, dst_id: usize, edge_id: usize)
+        -> Result<E>;
 
     /// Removes an edge from the graph.
     /// If the edge is present in the subgraph, It will get removed from the subgraph as well.
@@ -119,7 +120,12 @@ pub trait AsMutSubgraph<W, E: Edge<W>>: AsSubgraph<W, E> {
     ///
     /// # Returns
     /// The removed edge.
-    fn remove_edge_from_graph_unchecked(&mut self, src_id: usize, dst_id: usize, edge_id: usize) -> E;
+    fn remove_edge_from_graph_unchecked(
+        &mut self,
+        src_id: usize,
+        dst_id: usize,
+        edge_id: usize,
+    ) -> E;
 
     /// Adds a new vertex to subgraph and the graph it's representing.
     ///

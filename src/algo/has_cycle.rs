@@ -75,7 +75,8 @@ impl HasCycle {
             let dst_virt_id = self.id_map.virt_id_of(dst_real_id);
 
             if !self.is_visited[dst_virt_id] {
-                self.edge_stack.push((src_real_id, dst_real_id, edge.get_id()));
+                self.edge_stack
+                    .push((src_real_id, dst_real_id, edge.get_id()));
                 if self.has_cycle(graph, dst_virt_id, src_virt_id) {
                     return true;
                 } else {
@@ -84,7 +85,8 @@ impl HasCycle {
             } else if !self.is_finished[dst_virt_id]
                 && (Dir::is_directed() || dst_virt_id != parent_virt_id)
             {
-                self.edge_stack.push((src_real_id, dst_real_id, edge.get_id()));
+                self.edge_stack
+                    .push((src_real_id, dst_real_id, edge.get_id()));
                 return true;
             }
         }

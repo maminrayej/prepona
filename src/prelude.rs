@@ -1,3 +1,3 @@
-pub use crate::storage::GraphStorage;
+pub use crate::graph::{DefaultEdge, DirectedEdge, Edge, UndirectedEdge};
 pub use crate::provide::*;
-pub use crate::graph::{DirectedEdge, UndirectedEdge, Edge, DefaultEdge};
+pub use crate::storage::GraphStorage;

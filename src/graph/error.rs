@@ -4,7 +4,7 @@ pub enum ErrorKind {
     VertexNotFound,
     EdgeNotFound,
     EdgeAlreadyExists,
-    RootAlreadyExists
+    RootAlreadyExists,
 }
 
 pub struct Error {
@@ -34,28 +34,28 @@ impl Error {
     pub fn new_vnf(vertex_id: usize) -> Self {
         Error {
             kind: ErrorKind::VertexNotFound,
-            msg: format!("Vertex with id: {} does not exist", vertex_id)
+            msg: format!("Vertex with id: {} does not exist", vertex_id),
         }
     }
 
     pub fn new_enf(edge_id: usize) -> Self {
         Error {
             kind: ErrorKind::EdgeNotFound,
-            msg: format!("Edge with id: {} does not exist", edge_id)
+            msg: format!("Edge with id: {} does not exist", edge_id),
         }
     }
 
     pub fn new_eae(edge_id: usize) -> Self {
         Error {
             kind: ErrorKind::EdgeAlreadyExists,
-            msg: format!("Edge with id: {} already exists", edge_id)
+            msg: format!("Edge with id: {} already exists", edge_id),
         }
     }
 
     pub fn new_rae(vertex_id: usize) -> Self {
         Error {
             kind: ErrorKind::RootAlreadyExists,
-            msg: format!("Vertex with id: {} is already a root", vertex_id)
+            msg: format!("Vertex with id: {} is already a root", vertex_id),
         }
     }
 

@@ -2,7 +2,10 @@ use std::collections::HashSet;
 
 use anyhow::{Context, Result};
 
-use crate::{graph::error::Error, provide::{Edges, Graph, Neighbors, Vertices}};
+use crate::{
+    graph::error::Error,
+    provide::{Edges, Graph, Neighbors, Vertices},
+};
 
 use super::{AsFrozenSubgraph, AsSubgraph, Subgraph};
 use crate::graph::{Edge, EdgeDir};
@@ -169,7 +172,8 @@ where
     }
 
     fn edge_between_unchecked(&self, src_id: usize, dst_id: usize, edge_id: usize) -> &E {
-        self.subgraph.edge_between_unchecked(src_id, dst_id, edge_id)
+        self.subgraph
+            .edge_between_unchecked(src_id, dst_id, edge_id)
     }
 
     fn edge(&self, edge_id: usize) -> anyhow::Result<&E> {
@@ -210,7 +214,8 @@ where
     E: Edge<W>,
     Dir: EdgeDir,
     G: Graph<W, E, Dir> + Edges<W, E> + Neighbors,
-{}
+{
+}
 
 /// `MultiRootSubgraph` uses `Subgraph` internally so for complexity of each function checkout [`Subgraph`](crate::graph::subgraph::Subgraph).
 impl<'a, W, E, Dir, G> AsSubgraph<W, E> for MultiRootSubgraph<'a, W, E, Dir, G>
@@ -254,6 +259,7 @@ where
     }
 
     fn add_edge_from_graph_unchecked(&mut self, src_id: usize, dst_id: usize, edge_id: usize) {
-        self.subgraph.add_edge_from_graph_unchecked(src_id, dst_id, edge_id)
+        self.subgraph
+            .add_edge_from_graph_unchecked(src_id, dst_id, edge_id)
     }
 }

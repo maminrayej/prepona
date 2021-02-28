@@ -1,10 +1,13 @@
 use magnitude::Magnitude;
 use num_traits::Zero;
-use std::{any::Any, collections::HashSet};
 use std::collections::HashMap;
+use std::{any::Any, collections::HashSet};
 
-use crate::{graph::{subgraph::ShortestPathSubgraph, Edge, EdgeDir}, prelude::Neighbors};
 use crate::provide::{Edges, Graph, Vertices};
+use crate::{
+    graph::{subgraph::ShortestPathSubgraph, Edge, EdgeDir},
+    prelude::Neighbors,
+};
 
 /// Finds shortest path from a single source to all other vertices using bellman-ford algorithm.
 pub struct BellmanFord<W> {
@@ -34,7 +37,7 @@ impl<W: Copy + Any + Zero + Ord> BellmanFord<W> {
     /// * `src_id`: Id of the source vertex(Shortest path will be calculated from this vertex to all other vertices)
     ///
     /// # Returns
-    /// * `Ok`: The shortest path as a subgraph of the original graph. 
+    /// * `Ok`: The shortest path as a subgraph of the original graph.
     /// You can query shortest path from source to each destination using api provided by `ShortestPathSubgraph`.
     /// * `Err`: If graph contains negative cycle.
     pub fn execute<E, Ty, G>(

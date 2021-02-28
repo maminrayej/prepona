@@ -154,7 +154,7 @@ impl<'a, L: BfsListener> Bfs<'a, L> {
     }
 
     /// # Returns
-    /// (Discovered time, Finished time, `IdMap`) 
+    /// (Discovered time, Finished time, `IdMap`)
     pub fn dissolve(self) -> (Vec<Magnitude<usize>>, Vec<Magnitude<usize>>, IdMap) {
         (self.discovered, self.finished, self.id_map)
     }

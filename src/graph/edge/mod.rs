@@ -62,7 +62,7 @@ impl EdgeDir for UndirectedEdge {
 pub trait Edge<W> {
     /// # Arguments
     /// `weight`: Weight of the edge.
-    /// 
+    ///
     /// # Returns
     /// Initialized edge with the specified `weight`.
     fn init(weight: Magnitude<W>) -> Self;

@@ -405,7 +405,7 @@ where
     ///
     /// # Returns
     /// * `Err`: If graph does not contain vertex with id: `vertex_id`.
-    /// * `Ok`: 
+    /// * `Ok`:
     fn add_vertex_from_graph(&mut self, vertex_id: usize) -> Result<()> {
         if !self.graph.contains_vertex(vertex_id) {
             Err(Error::new_vnf(vertex_id)).with_context(|| "Subgraph failed")?

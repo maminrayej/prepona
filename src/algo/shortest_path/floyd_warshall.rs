@@ -6,7 +6,6 @@ use std::collections::HashMap;
 use crate::graph::Edge;
 use crate::provide;
 
-
 /// Finds shortest path from all vertices to all the other ones using floyd-warshall algorithm.
 pub struct FloydWarshall {}
 

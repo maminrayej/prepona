@@ -1,6 +1,6 @@
 mod edge;
-mod structs;
 mod error;
+mod structs;
 
 /// Subgraphs are views of graphs.
 ///
@@ -18,5 +18,5 @@ mod error;
 pub mod subgraph;
 
 pub use edge::{DefaultEdge, DirectedEdge, Edge, EdgeDir, FlowEdge, UndirectedEdge};
-pub use structs::{FlowMatGraph, MatGraph, ListGraph, FlowListGraph, SimpleGraph};
 pub use error::{Error, ErrorKind};
+pub use structs::{FlowListGraph, FlowMatGraph, ListGraph, MatGraph, SimpleGraph};

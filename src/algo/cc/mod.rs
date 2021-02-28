@@ -1,5 +1,5 @@
-mod tarjan;
 mod cc;
+mod tarjan;
 
-pub use tarjan::TarjanSCC;
 pub use cc::ConnectedComponents;
+pub use tarjan::TarjanSCC;

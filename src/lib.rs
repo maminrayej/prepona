@@ -1,6 +1,6 @@
-/// Re-exports traits and structs that are necessary to accomplish basic tasks with prepona. 
-pub mod prelude;
 pub mod algo;
+/// Re-exports traits and structs that are necessary to accomplish basic tasks with prepona.
+pub mod prelude;
 
 /// Graphs sit on top of storages defined in [`storage`](crate::storage) module and provide logic about how a storage should be used.
 ///
@@ -16,17 +16,17 @@ pub mod graph;
 /// All you have to do is to implement the traits that are needed by the algorithm you want to use.
 ///
 /// # Note
-/// Functions defined in each trait are abstractions of what is expected from the graphs that implement them. 
-/// For concrete information about why/when these functions may panic or return `Err`, refer to the specific graph struct that you are using. 
+/// Functions defined in each trait are abstractions of what is expected from the graphs that implement them.
+/// For concrete information about why/when these functions may panic or return `Err`, refer to the specific graph struct that you are using.
 pub mod provide;
 
 /// Storages are structures that graphs use to store information about vertices and edges.
 ///
 /// There are two storage types that are supported:
-/// * Adjacency matrix: Is a matrix used to represent a finite graph. 
+/// * Adjacency matrix: Is a matrix used to represent a finite graph.
 ///                     The elements of the matrix indicate whether pairs of vertices are adjacent or not in the graph.
 ///                     For more info read [`AdjMatrix`](crate::storage::AdjMatrix).
-/// * Adjacency list:   Is a collection of unordered lists used to represent a finite graph. 
+/// * Adjacency list:   Is a collection of unordered lists used to represent a finite graph.
 ///                     Each list describes the set of neighbors of a vertex in the graph.
 ///                     For more info read [`AdjList`](crate::storage::AdjList)
 ///
