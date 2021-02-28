@@ -8,6 +8,7 @@ use std::{cell::RefCell, collections::VecDeque};
 use super::Color;
 use crate::provide::{self, IdMap};
 
+/// Visits graph vertices in a breath-first manner.
 pub struct Bfs<'a, L: BfsListener> {
     queue: VecDeque<usize>,
     colors: Vec<Color>,
@@ -20,6 +21,11 @@ pub struct Bfs<'a, L: BfsListener> {
 }
 
 impl<'a, L: BfsListener> Bfs<'a, L> {
+    /// Initializes the structure.
+    ///
+    /// # Arguments
+    /// * `graph`: Graph to perform the Bfs on.
+    /// * `listener`: To listen to bfs events.
     pub fn init<G>(graph: &G, listener: &'a mut L) -> Self
     where
         G: provide::Vertices + provide::Neighbors,
@@ -27,6 +33,12 @@ impl<'a, L: BfsListener> Bfs<'a, L> {
         Bfs::init_with_starts(graph, listener, vec![])
     }
 
+    /// Initializes the structure.
+    ///
+    /// # Arguments
+    /// * `graph`: Graph to perform the BFS on.
+    /// * `listener`: To listen to bfs events.
+    /// * `start_ids`: List of ids to start the bfs from.
     pub fn init_with_starts<G>(graph: &G, listener: &'a mut L, mut start_ids: Vec<usize>) -> Self
     where
         G: provide::Vertices + provide::Neighbors,
@@ -63,6 +75,7 @@ impl<'a, L: BfsListener> Bfs<'a, L> {
         }
     }
 
+    /// Performs Bfs visit and calls the listener on every event.
     pub fn execute<G>(&mut self, graph: &G)
     where
         G: provide::Vertices + provide::Neighbors,
@@ -110,26 +123,38 @@ impl<'a, L: BfsListener> Bfs<'a, L> {
         }
     }
 
+    /// # Returns
+    /// Queue of the bfs structure.
     pub fn get_queue(&self) -> &VecDeque<usize> {
         &self.queue
     }
 
+    /// # Returns
+    /// Color of each vertex. Note that color of vertex with virtual id of `i` is in `get_colors()[i]`.
     pub fn get_colors(&self) -> &Vec<Color> {
         &self.colors
     }
 
+    /// # Returns
+    /// discovered time of each vertex. Note that discovered time of vertex with virtual id of `i` is in `get_colors()[i]`.
     pub fn get_discovered(&self) -> &Vec<Magnitude<usize>> {
         &self.discovered
     }
 
+    /// # Returns
+    /// finished time of each vertex. Note that finished time of vertex with virtual id of `i` is in `get_colors()[i]`.
     pub fn get_finished(&self) -> &Vec<Magnitude<usize>> {
         &self.finished
     }
 
+    /// # Returns
+    /// `IdMap` used by `Bfs` to map real ids to virtual ids(and vice versa).
     pub fn get_id_map(&self) -> &IdMap {
         &self.id_map
     }
 
+    /// # Returns
+    /// (Discovered time, Finished time, `IdMap`) 
     pub fn dissolve(self) -> (Vec<Magnitude<usize>>, Vec<Magnitude<usize>>, IdMap) {
         (self.discovered, self.finished, self.id_map)
     }

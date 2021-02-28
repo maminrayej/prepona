@@ -9,6 +9,7 @@ use crate::{
     prelude::Neighbors,
 };
 
+/// Finds shortest path from a single source to all other vertices using dijkstra algorithm.
 pub struct Dijkstra<W> {
     visited: Vec<bool>,
     dist: Vec<Magnitude<W>>,
@@ -16,6 +17,7 @@ pub struct Dijkstra<W> {
 }
 
 impl<W: Copy + Ord + Zero + Any + Unsigned> Dijkstra<W> {
+    /// Initializes the structure.
     pub fn init<E, Ty, G>(graph: &G) -> Self
     where
         E: Edge<W>,
@@ -40,6 +42,15 @@ impl<W: Copy + Ord + Zero + Any + Unsigned> Dijkstra<W> {
             .and_then(|(v_id, _)| Some(v_id))
     }
 
+    /// Finds shortest path from a single source to all other vertices.
+    ///
+    /// # Arguments
+    /// * `graph`: Graph to search for the shortest paths in.
+    /// * `src_id`: Id of the source vertex(Shortest path will be calculated from this vertex to all other vertices)
+    ///
+    /// # Returns
+    /// The shortest path as a subgraph of the original graph. 
+    /// You can query shortest path from source to each destination using api provided by `ShortestPathSubgraph`.
     pub fn execute<E, Ty, G>(
         mut self,
         graph: &G,

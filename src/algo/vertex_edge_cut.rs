@@ -7,6 +7,7 @@ use crate::{
     provide::{Edges, Graph, IdMap, Vertices},
 };
 
+/// Finds cut vertices(articulation points) and cut edges(bridges).
 pub struct VertexEdgeCut<'a, W, E: Edge<W>> {
     is_visited: Vec<bool>,
     depth_of: Vec<Magnitude<usize>>,
@@ -20,6 +21,7 @@ pub struct VertexEdgeCut<'a, W, E: Edge<W>> {
 }
 
 impl<'a, W, E: Edge<W>> VertexEdgeCut<'a, W, E> {
+    /// Initializes the structure.
     pub fn init<G>(graph: &G) -> Self
     where
         G: Vertices + Edges<W, E> + Graph<W, E, UndirectedEdge>,
@@ -39,6 +41,15 @@ impl<'a, W, E: Edge<W>> VertexEdgeCut<'a, W, E> {
         }
     }
 
+    /// Finds cut vertices(articulation points) and cut edges(bridges).
+    ///
+    /// # Arguments
+    /// `graph`: Graph to search for cut vertices and edges in it.
+    ///
+    /// # Returns
+    /// Cut vertices(first) and cut edges(second) in the form of: (Vec<usize>, Vec<(usize, usize, &E)>). \
+    /// Cut vertices will be a vector of vertex ids. \
+    /// Cut edges will be vector of (src_id, dst_id, edge reference).
     pub fn execute<G>(mut self, graph: &'a G) -> (Vec<usize>, Vec<(usize, usize, &E)>)
     where
         G: Vertices + Edges<W, E> + Graph<W, E, UndirectedEdge>,

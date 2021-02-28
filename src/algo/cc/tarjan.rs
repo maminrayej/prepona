@@ -3,6 +3,7 @@ use magnitude::Magnitude;
 use crate::graph::{DirectedEdge, Edge};
 use crate::provide;
 
+/// Finds connected components of a directed graph.
 pub struct TarjanSCC {
     stack: Vec<usize>,
     on_stack: Vec<bool>,
@@ -31,6 +32,14 @@ impl TarjanSCC {
         }
     }
 
+    /// Finds connected components of a directed graph.
+    ///
+    /// # Arguments
+    /// `graph`: Graph to search for its connected components.
+    ///
+    /// # Returns
+    /// Connected components of the graph. \
+    /// Returned value will be vector of vectors. Each vector contains ids of vertices that are in a component.
     pub fn execute<W, E: Edge<W>, G>(mut self, graph: &G) -> Vec<Vec<usize>>
     where
         G: provide::Graph<W, E, DirectedEdge> + provide::Vertices + provide::Neighbors,

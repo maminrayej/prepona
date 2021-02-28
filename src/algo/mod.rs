@@ -14,6 +14,6 @@ pub use shortest_path::BellmanFord;
 pub use shortest_path::Dijkstra;
 pub use shortest_path::FloydWarshall;
 pub use topological_sort::TopologicalSort;
-pub use traversal::{Bfs, Color, Dfs, DfsListener};
+pub use traversal::{Bfs, BfsListener, Color, Dfs, DfsListener};
 pub use vertex_edge_cut::VertexEdgeCut;
 pub use eulerian::Eulerian;

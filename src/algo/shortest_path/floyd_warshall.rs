@@ -6,13 +6,25 @@ use std::collections::HashMap;
 use crate::graph::Edge;
 use crate::provide;
 
+
+/// Finds shortest path from all vertices to all the other ones using floyd-warshall algorithm.
 pub struct FloydWarshall {}
 
 impl FloydWarshall {
+    /// Initializes the structure.
     pub fn init() -> Self {
         FloydWarshall {}
     }
 
+    /// Finds shortest path from all vertices to all the other ones.
+    ///
+    /// # Arguments
+    /// * `graph`: Graph to search for the shortest paths in.
+    /// * `src_id`: Id of the source vertex(Shortest path will be calculated from this vertex to all other vertices)
+    ///
+    /// # Returns
+    /// * `Ok`: Containing shortest path information in the form of: (src_id, dst_id) -> distance.
+    /// * `Err`: If graph contains negative cycle.
     pub fn execute<G, W: Copy + Zero + Any + Ord + std::fmt::Debug, E: Edge<W>>(
         self,
         graph: &G,

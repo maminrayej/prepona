@@ -5,6 +5,7 @@ use provide::{Edges, Graph, Vertices};
 use crate::graph::{subgraph::Subgraph, Edge, EdgeDir};
 use crate::provide;
 
+/// Detects cycle in a graph.
 pub struct HasCycle {
     is_visited: Vec<bool>,
     is_finished: Vec<bool>,
@@ -13,6 +14,7 @@ pub struct HasCycle {
 }
 
 impl HasCycle {
+    /// Initializes the structure.
     pub fn init<W, E, Dir, G>(graph: &G) -> Self
     where
         E: Edge<W>,
@@ -27,6 +29,14 @@ impl HasCycle {
         }
     }
 
+    /// Performs cycle detection.
+    ///
+    /// # Arguments
+    /// `graph`: Graph to search for cycles in it.
+    ///
+    /// # Returns
+    /// * `Some`: Containing the found cycle in the form of a subgraph.
+    /// * `None`: If graph does not have any cycle.
     pub fn execute<W, E, Dir, G>(mut self, graph: &G) -> Option<Subgraph<W, E, Dir, G>>
     where
         E: Edge<W>,

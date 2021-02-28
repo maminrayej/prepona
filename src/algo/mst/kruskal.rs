@@ -5,11 +5,13 @@ use std::rc::Rc;
 use crate::graph::{subgraph::Subgraph, Edge, UndirectedEdge};
 use crate::provide;
 
+/// Finds minimum spanning tree using kruskal algorithm.
 pub struct Kruskal {
     sets: Vec<Rc<RefCell<HashSet<usize>>>>,
 }
 
 impl Kruskal {
+    /// Initializes the structure.
     pub fn init<G, W: Ord, E: Edge<W>>(graph: &G) -> Self
     where
         G: provide::Vertices + provide::Edges<W, E> + provide::Graph<W, E, UndirectedEdge>,
@@ -26,6 +28,13 @@ impl Kruskal {
         Kruskal { sets }
     }
 
+    /// Finds minimum spanning tree.
+    ///
+    /// # Arguments
+    /// `graph`: Graph to find its MST.
+    ///
+    /// # Returns
+    /// MST as a subgraph of the original graph(containing vertices and selected edges)
     pub fn execute<'a, G, W: Ord + std::fmt::Debug, E: Edge<W>>(
         mut self,
         graph: &'a G,

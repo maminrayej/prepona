@@ -2,6 +2,7 @@ use crate::algo::{Dfs, DfsListener};
 use crate::graph::{Edge, UndirectedEdge};
 use crate::provide;
 
+/// Finds connected components of an undirected graph.
 pub struct ConnectedComponents {
     current_component: Vec<usize>,
     ccs: Vec<Vec<usize>>,
@@ -21,6 +22,7 @@ impl DfsListener for ConnectedComponents {
 }
 
 impl ConnectedComponents {
+    /// Initializes the structure.
     pub fn init<G, W, E: Edge<W>>(_: &G) -> Self
     where
         G: provide::Graph<W, E, UndirectedEdge> + provide::Vertices + provide::Neighbors,
@@ -31,6 +33,14 @@ impl ConnectedComponents {
         }
     }
 
+    /// Finds connected components of an undirected graph.
+    ///
+    /// # Arguments
+    /// `graph`: Graph to search for its connected components.
+    ///
+    /// # Returns
+    /// Connected components of the graph. \
+    /// Returned value will be vector of vectors. Each vector contains ids of vertices that are in a component.
     pub fn execute<G, W, E: Edge<W>>(mut self, graph: &G) -> Vec<Vec<usize>>
     where
         G: provide::Graph<W, E, UndirectedEdge> + provide::Vertices + provide::Neighbors,

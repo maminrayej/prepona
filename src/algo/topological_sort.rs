@@ -2,6 +2,7 @@ use crate::algo::{Dfs, DfsListener};
 use crate::graph::{DirectedEdge, Edge};
 use crate::provide;
 
+/// Performs topological sort in the graph.
 pub struct TopologicalSort {
     sorted_vertex_ids: Vec<usize>,
 }
@@ -13,12 +14,20 @@ impl DfsListener for TopologicalSort {
 }
 
 impl TopologicalSort {
+    /// Initializes the structure.
     pub fn init() -> Self {
         TopologicalSort {
             sorted_vertex_ids: vec![],
         }
     }
 
+    /// Performs topological sort.
+    ///
+    /// # Arguments
+    /// `graph`: Graph to sort its vertices topologically.
+    ///
+    /// # Returns
+    /// Sorted ids of vertices.
     pub fn execute<W, E: Edge<W>, G>(mut self, graph: &G) -> Vec<usize>
     where
         G: provide::Graph<W, E, DirectedEdge> + provide::Vertices + provide::Neighbors,

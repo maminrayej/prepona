@@ -5,6 +5,7 @@ use crate::{
     provide::{Edges, Graph, IdMap, Vertices},
 };
 
+/// Calculates eulerian trail and circuit
 pub struct Eulerian<W, E: Edge<W>, Ty: EdgeDir, G: Graph<W, E, Ty>> {
     unused_edges: HashSet<usize>,
     out_deg: Vec<u32>,
@@ -25,6 +26,7 @@ where
     Ty: EdgeDir,
     G: Graph<W, E, Ty> + Vertices + Edges<W, E>,
 {
+    /// Initializes the structure
     pub fn init(graph: &G) -> Self {
         let id_map = graph.continuos_id_map();
 
@@ -54,11 +56,6 @@ where
             diff_deg[v_id] = (out_deg[v_id] as i32) - (in_deg[v_id] as i32);
         }
 
-        println!(
-            "\nOut: {:?}\nIn: {:?}\nDiff: {:?}\nUnused Edges:{:?}\n",
-            out_deg, in_deg, diff_deg, unused_edges
-        );
-
         Eulerian {
             unused_edges,
             out_deg,
@@ -74,6 +71,7 @@ where
         }
     }
 
+    // Finds id of the vertex to start the trail/circuit from.
     fn find_start_virt_id(&self) -> Option<usize> {
         let unique_start = if Ty::is_undirected() {
             self.out_deg.iter().position(|out_deg| (*out_deg % 2) != 0)
@@ -84,6 +82,11 @@ where
         unique_start.or(self.out_deg.iter().position(|out_deg| *out_deg > 0))
     }
 
+    /// Finds id of the vertex to start the eulerian trail from.
+    ///
+    /// # Returns
+    /// * `Some`: Containing the id of the starting vertex.
+    /// * `None`: If can not find a starting vertex for eulerian trail.
     pub fn start_of_eulerian_trail(&self) -> Option<usize> {
         let has_trail = if Ty::is_undirected() {
             let num_of_odd_degrees = self
@@ -105,6 +108,11 @@ where
         }
     }
 
+    /// Finds id of the vertex to start the eulerian circuit from.
+    ///
+    /// # Returns
+    /// * `Some`: Containing the id of the starting vertex.
+    /// * `None`: If can not find a starting vertex for eulerian circuit.
     pub fn start_of_eulerian_circuit(&self) -> Option<usize> {
         let has_circuit = if Ty::is_undirected() {
             self.in_deg.iter().all(|in_deg| (*in_deg % 2) == 0)
@@ -119,6 +127,16 @@ where
         }
     }
 
+    /// Finds the eulerian trail if there is one.
+    ///
+    /// # Arguments
+    /// `graph`: Graph to search the eulerian trail in it.
+    ///
+    /// # Returns
+    /// List of vector ids that will get visited during the eulerian trail.
+    ///
+    /// # Panics
+    /// If graph does not have eulerian trail.
     pub fn find_trail(mut self, graph: &G) -> Vec<usize> {
         if self.out_deg.len() <= 1 {
             return self.trail;
@@ -144,6 +162,16 @@ where
         self.trail
     }
 
+    /// Finds the eulerian circuit if there is one.
+    ///
+    /// # Arguments
+    /// `graph`: Graph to search the eulerian circuit in it.
+    ///
+    /// # Returns
+    /// List of vector ids that will get visited during the eulerian circuit.
+    ///
+    /// # Panics
+    /// If graph does not have eulerian circuit.
     pub fn find_circuit(mut self, graph: &G) -> Vec<usize> {
         if self.out_deg.len() <= 1 {
             return self.trail;
@@ -163,19 +191,16 @@ where
         self.trail
     }
 
+    // Recursively find the next vertex id in the trail/circuit.
     fn rec_execute(&mut self, graph: &G, v_virt_id: usize) {
-        println!("At vertex: {}", v_virt_id);
         let v_real_id = self.id_map.real_id_of(v_virt_id);
 
         if self.out_deg[v_virt_id] == 0 {
-            println!("Out Deg of {} is 0 so pushing", v_virt_id);
             self.trail.push(v_real_id)
         } else {
             for (dst_real_id, edge) in graph.edges_from_unchecked(v_real_id) {
                 let dst_virt_id = self.id_map.virt_id_of(dst_real_id);
-                println!("At Edge: {} to dst: {}", edge.get_id(), dst_virt_id);
                 if self.unused_edges.contains(&edge.get_id()) {
-                    println!("Edge was unused. using it");
                     self.unused_edges.remove(&edge.get_id());
 
                     self.out_deg[v_virt_id] -= 1;
