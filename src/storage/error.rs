@@ -1,7 +1,8 @@
-/// Different kinds of errors that may occur is storages.
+/// Types of errors that may happen when using a graph storage.
 pub enum ErrorKind {
     VertexNotFound,
     EdgeNotFound,
+    InvalidEdgeId
 }
 
 /// Error type returned by storages in `storage` module.
@@ -35,7 +36,7 @@ impl Error {
         }
     }
 
-    /// Creates a [`EdgeNotFound`](crate::storage::ErrorKind::EdgeNotFound) kind of error.
+    /// Creates an [`EdgeNotFound`](crate::storage::ErrorKind::EdgeNotFound) kind of error.
     ///
     /// # Arguments
     /// `edge_id`: Id of the edge that has not been found.
@@ -49,10 +50,17 @@ impl Error {
         }
     }
 
+    pub fn new_iei(src_id: usize, dst_id: usize, edge_id: usize) -> Self {
+        Error {
+            kind: ErrorKind::InvalidEdgeId,
+            msg: format!("Edge with id: {} exists but it's not from vertex: {} to vertex: {}", edge_id, src_id, dst_id)
+        }
+    }
+
     /// # Returns
     /// Cause of the error.
-    pub fn msg(&self) -> &str {
-        self.msg.as_str()
+    pub fn msg(&self) -> &String {
+        &self.msg
     }
 
     /// # Returns

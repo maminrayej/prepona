@@ -25,11 +25,11 @@ use anyhow::Result;
 ///
 /// ## Using a storage
 /// Regarding using storages(if you want to implement a new type of graph for example), Many functions have two checked(default) and unchecked versions.
-/// In checked versions some checkings will occur before computing the end result. So these functions will return `Result` and will not panic.
-/// But checking on every call will have some overheads so if you want to skip these checkings(For example you are sure some invariants are never violated),
+/// In checked versions some checking will occur before computing the end result. So these functions will return `Result` and will not panic.
+/// But checking on every call will have some overheads so if you want to skip the checking(For example you are sure some invariants are never violated),
 /// You can use unchecked version of the function. Regarding that what situations will cause a function to `panic` or return `Err`,
-/// It depends on wether storage uses the default implmenetation provided by `GraphStorage` or not. Causes of returning `Err` is specified for default implementations.
-/// But if storage does use the default implementatino, refer to the documentation of the storage to find out about causes of `panic` or `Err`.
+/// It depends on wether storage uses the default implementation provided by `GraphStorage` or not. Causes of returning `Err` is specified for default implementations.
+/// But if storage does use the default implementation, refer to the documentation of the storage to find out about causes of `panic` or `Err`.
 ///
 /// ## Generic Parameters
 /// * `W`: **W**eight type associated with edges.
@@ -227,6 +227,7 @@ pub trait GraphStorage<W, E: Edge<W>, Dir: EdgeDir> {
     /// * `Ok`: Containing the edge between specified source and destination with specified id.
     /// * `Err`: [`VertexNotFound`](crate::storage::ErrorKind::VertexNotFound) if vertex with either id: `src_id` or `dst_id` does not exist.
     /// * `Err`: [`EdgeNotFound`](crate::storage::ErrorKind::EdgeNotFound) if edge with specified id does not exist.
+    /// * `Err`: [`InvalidEdgeId`](crate::storage::ErrorKind::InvalidEdgeId) if edge with specified id does exist but it's not from source to destination.
     fn edge_between(&self, src_id: usize, dst_id: usize, edge_id: usize) -> Result<&E> {
         if !self.contains_vertex(src_id) {
             Err(Error::new_vnf(src_id))?
@@ -235,7 +236,16 @@ pub trait GraphStorage<W, E: Edge<W>, Dir: EdgeDir> {
         } else if !self.contains_edge(edge_id) {
             Err(Error::new_enf(edge_id))?
         } else {
-            Ok(self.edge_between_unchecked(src_id, dst_id, edge_id))
+            let edge = self
+                .edges_between_unchecked(src_id, dst_id)
+                .into_iter()
+                .find(|edge| edge.get_id() == edge_id);
+
+            if edge.is_none() {
+                Err(Error::new_iei(src_id, dst_id, edge_id))?
+            } else {
+                Ok(edge.unwrap())
+            }
         }
     }
 
@@ -327,6 +337,9 @@ pub trait GraphStorage<W, E: Edge<W>, Dir: EdgeDir> {
         if Dir::is_directed() {
             self.as_directed_edges()
         } else {
+            // Returning only triplets that have src_id <= dst_id property will filter duplicate edges.
+            // Because storage is undirected, there is no difference between returning (1, 2, edge) or (2, 1, edge).
+            // For example as_directed_edges() returns both (1, 2, edge) and (2, 1, edge). (2, 1, edge) will get removed.
             self.as_directed_edges()
                 .into_iter()
                 .filter(|(src_id, dst_id, _)| src_id <= dst_id)
@@ -340,16 +353,22 @@ pub trait GraphStorage<W, E: Edge<W>, Dir: EdgeDir> {
         self.edges().len()
     }
 
-    /// Difference between this function and `edges` is that this function treats each edge as a directed edge. \
-    /// For example consider storage: a --- b \
-    /// If you call `edges` on this storage, you will get: (a, b, edge). \
-    /// But if you call `as_directed_edges`, you will get two elements: (a, b, edge) and (b, a, edge). \
+    /// Difference between this function and `edges` is that this function treats each edge as a directed edge.
+    /// For example consider storage: a --- b
+    /// If you call `edges` on this storage, you will get: (a, b, edge).
+    /// But if you call `as_directed_edges`, you will get two elements: (a, b, edge) and (b, a, edge).
     /// It's specifically useful in algorithms that are for directed graphs but can also be applied to undirected graphs if we treat the edges as directed.
     /// One example is [`BellmanFord`](crate::algo::BellmanFord) algorithm.
     ///
     /// # Returns
     /// All edges(as directed edges) in the storage in the format of: (`src_id`, `dst_id`, `edge`).
     fn as_directed_edges(&self) -> Vec<(usize, usize, &E)> {
+        // Map each vertex to its list of outgoing edges: 
+        // v1 -> { (v1, v2, e12), (v1, v3, e13), ... }
+        // Then combine all these generated lists into a final flat list which contains all the outgoing edges:
+        // { { (v1, v2, e12), (v1, v3, e13) }, { (v2, v3, e23) } } -> { (v1, v2, e12), (v1, v3, e13), (v2, v3, e23) }
+        // For a directed graph the final list will contain the edges but for an undirected graph the final list will contain two instance of each edge.
+        // One instance is (src_id, dst_id, edge) and the other is (dst_id, src_id, edge).
         self.vertices()
             .into_iter()
             .flat_map(|src_id| {
