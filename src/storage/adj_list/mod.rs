@@ -4,10 +4,16 @@ use std::marker::PhantomData;
 use crate::graph::{DefaultEdge, DirectedEdge, Edge, EdgeDir, FlowEdge, UndirectedEdge};
 use crate::storage::GraphStorage;
 
+/// An adjacency list that uses [`undirected`](crate::graph::UndirectedEdge) [`default edges`](crate::graph::DefaultEdge).
 pub type List<W, Dir = UndirectedEdge> = AdjList<W, DefaultEdge<W>, Dir>;
+
+/// An adjacency list that uses [`directed`](crate::graph::DirectedEdge) [`default edges`](crate::graph::DefaultEdge).
 pub type DiList<W> = AdjList<W, DefaultEdge<W>, DirectedEdge>;
 
+/// An adjacency list that uses [`undirected`](crate::graph::UndirectedEdge) [`flow edges`](crate::graph::FlowEdge).
 pub type FlowList<W, Dir = UndirectedEdge> = AdjList<W, FlowEdge<W>, Dir>;
+
+/// An adjacency list that uses [`directed`](crate::graph::DirectedEdge) [`flow edges`](crate::graph::FlowEdge).
 pub type DiFlowList<W> = AdjList<W, FlowEdge<W>, DirectedEdge>;
 
 /// `AdjList` is a collection of unordered lists used to represent a finite graph. Each list describes the set of neighbors of a vertex in the graph.
@@ -49,17 +55,13 @@ impl<W, E: Edge<W>, Dir: EdgeDir> AdjList<W, E, Dir> {
     ///
     /// `AdjList` defines multiple types with different combination of values for generic parameters.
     /// These types are:
-    /// * [`List`](crate::storage::List): An adjacency list that uses [`undirected`](crate::graph::UndirectedEdge) [`default edges`](crate::graph::DefaultEdge). \
-    ///                                 It is equivalent to `AdjList<W, DefaultEdge<W>, UndirectedEdge>`.
+    /// * [`List`](crate::storage::List): An adjacency list that uses [`undirected`](crate::graph::UndirectedEdge) [`default edges`](crate::graph::DefaultEdge).
     ///
-    /// * [`DiList`](crate::storage::DiList): An adjacency list that uses [`directed`](crate::graph::DirectedEdge) [`default edges`](crate::graph::DefaultEdge). \
-    ///                                 It is equivalent to `AdjList<W, DefaultEdge<W>, DirectedEdge>`.
+    /// * [`DiList`](crate::storage::DiList): An adjacency list that uses [`directed`](crate::graph::DirectedEdge) [`default edges`](crate::graph::DefaultEdge).
     ///
-    /// * [`FlowList`](crate::storage::FlowList): An adjacency list that uses [`undirected`](crate::graph::UndirectedEdge) [`flow edges`](crate::graph::FlowEdge). \
-    ///                                 It is equivalent to `AdjList<W, FlowEdge<W>, UndirectedEdge>`.
+    /// * [`FlowList`](crate::storage::FlowList): An adjacency list that uses [`undirected`](crate::graph::UndirectedEdge) [`flow edges`](crate::graph::FlowEdge).
     ///
-    /// * [`DiFlowList`](crate::storage::DiFlowList): An adjacency list that uses [`directed`](crate::graph::DirectedEdge) [`flow edges`](crate::graph::FlowEdge). \
-    ///                                 It is equivalent to `AdjList<W, FlowEdge<W>, DirectedEdge>`.
+    /// * [`DiFlowList`](crate::storage::DiFlowList): An adjacency list that uses [`directed`](crate::graph::DirectedEdge) [`flow edges`](crate::graph::FlowEdge).
     ///
     /// # Returns
     /// An empty `AdjList`.

@@ -363,7 +363,7 @@ pub trait GraphStorage<W, E: Edge<W>, Dir: EdgeDir> {
     /// # Returns
     /// All edges(as directed edges) in the storage in the format of: (`src_id`, `dst_id`, `edge`).
     fn as_directed_edges(&self) -> Vec<(usize, usize, &E)> {
-        // Map each vertex to its list of outgoing edges: 
+        // Map each vertex to its list of outgoing edges:
         // v1 -> { (v1, v2, e12), (v1, v3, e13), ... }
         // Then combine all these generated lists into a final flat list which contains all the outgoing edges:
         // { { (v1, v2, e12), (v1, v3, e13) }, { (v2, v3, e23) } } -> { (v1, v2, e12), (v1, v3, e13), (v2, v3, e23) }

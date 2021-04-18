@@ -2,7 +2,7 @@
 pub enum ErrorKind {
     VertexNotFound,
     EdgeNotFound,
-    InvalidEdgeId
+    InvalidEdgeId,
 }
 
 /// Error type returned by storages in `storage` module.
@@ -53,7 +53,10 @@ impl Error {
     pub fn new_iei(src_id: usize, dst_id: usize, edge_id: usize) -> Self {
         Error {
             kind: ErrorKind::InvalidEdgeId,
-            msg: format!("Edge with id: {} exists but it's not from vertex: {} to vertex: {}", edge_id, src_id, dst_id)
+            msg: format!(
+                "Edge with id: {} exists but it's not from vertex: {} to vertex: {}",
+                edge_id, src_id, dst_id
+            ),
         }
     }
 

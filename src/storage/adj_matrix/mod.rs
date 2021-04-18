@@ -7,10 +7,16 @@ use std::marker::PhantomData;
 use crate::graph::{DefaultEdge, DirectedEdge, Edge, EdgeDir, FlowEdge, UndirectedEdge};
 use crate::storage::GraphStorage;
 
+/// An adjacency matrix that uses [`undirected`](crate::graph::UndirectedEdge) [`default edges`](crate::graph::DefaultEdge).
 pub type Mat<W, Dir = UndirectedEdge> = AdjMatrix<W, DefaultEdge<W>, Dir>;
+
+/// An adjacency matrix that uses [`directed`](crate::graph::DirectedEdge) [`default edges`](crate::graph::DefaultEdge).
 pub type DiMat<W> = AdjMatrix<W, DefaultEdge<W>, DirectedEdge>;
 
+/// An adjacency matrix that uses [`undirected`](crate::graph::UndirectedEdge) [`flow edges`](crate::graph::FlowEdge).
 pub type FlowMat<W, Dir = UndirectedEdge> = AdjMatrix<W, FlowEdge<W>, Dir>;
+
+/// An adjacency matrix that uses [`directed`](crate::graph::DirectedEdge) [`flow edges`](crate::graph::FlowEdge).
 pub type DiFlowMat<W> = AdjMatrix<W, FlowEdge<W>, DirectedEdge>;
 
 /// `AdjMatrix` is a matrix used to represent a finite graph.
