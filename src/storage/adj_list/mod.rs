@@ -10,7 +10,7 @@ pub type DiList<W> = AdjList<W, DefaultEdge<W>, DirectedEdge>;
 pub type FlowList<W, Dir = UndirectedEdge> = AdjList<W, FlowEdge<W>, Dir>;
 pub type DiFlowList<W> = AdjList<W, FlowEdge<W>, DirectedEdge>;
 
-/// Is a collection of unordered lists used to represent a finite graph. Each list describes the set of neighbors of a vertex in the graph.
+/// `AdjList` is a collection of unordered lists used to represent a finite graph. Each list describes the set of neighbors of a vertex in the graph.
 ///
 /// ## Note
 /// From now on
@@ -19,9 +19,8 @@ pub type DiFlowList<W> = AdjList<W, FlowEdge<W>, DirectedEdge>;
 /// Because even if you remove a vertex from storage, the allocated memory for that vertex will not get freed and will be reused again when adding a new vertex.
 /// You can retrieve the amount of |V| using `total_vertex_count` function(as opposed to number of vertices present in the graph which can be retrieved using `vertex_count` function).
 /// For more info and examples refer to `total_vertex_count` documentation.
-/// * |V<sup>*</sup>|: Number of vertices present in the graph.
 /// * |E|: Means number of edges present in the graph.
-/// * |E<sup>*</sup>|: Means number of edges exiting a vertex(out degree of the vertex).
+/// * |E<sup>out</sup>|: Means number of edges exiting a vertex(out degree of the vertex).
 ///
 /// ## Space complexity
 /// Space complexity of `AdjList` depends on wether `Dir` is [`Directed`](crate::graph::DirectedEdge) or [`Undirected`](crate::graph::UndirectedEdge). \
@@ -91,6 +90,12 @@ impl<W, E: Edge<W>, Dir: EdgeDir> AdjList<W, E, Dir> {
         }
     }
 
+    // # Returns
+    // * Some: Containing an id that can be reused.
+    // * None: If there is no id to reuse and storage must allocate memory for a new id.
+    //
+    // # Complexity
+    // O(1)
     fn next_reusable_vertex_id(&mut self) -> Option<usize> {
         if let Some(id) = self.reusable_vertex_ids.iter().take(1).next().copied() {
             self.reusable_vertex_ids.remove(&id);
@@ -101,6 +106,12 @@ impl<W, E: Edge<W>, Dir: EdgeDir> AdjList<W, E, Dir> {
         }
     }
 
+    // # Returns
+    // * Some: Containing an id that can be reused.
+    // * None: If there is no id to reuse and storage must allocate memory for a new id.
+    //
+    // # Complexity
+    // O(1)
     fn next_reusable_edge_id(&mut self) -> Option<usize> {
         if let Some(id) = self.reusable_edge_ids.iter().take(1).next().copied() {
             self.reusable_edge_ids.remove(&id);
@@ -147,7 +158,7 @@ impl<W: Copy, E: Edge<W> + Copy, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjLi
     /// `vertex_id`: Id of the vertex to be removed.
     ///
     /// # Complexity
-    /// O(|V| + |V<sup>\*</sup>| * |max(E<sup>\*</sup>)|)
+    /// O(|E|)
     ///
     /// # Panics
     /// If `vertex_id` is not in range 0..|V|.
@@ -207,7 +218,7 @@ impl<W: Copy, E: Edge<W> + Copy, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjLi
     /// * `edge`: New edge to replace the old one.
     ///
     /// # Complexity
-    /// O(*removing an edge* + *adding an edge*)
+    /// O(|E|)
     ///
     /// # Panics
     /// * If `src_id` or `dst_id` is not in range 0..|V|.
@@ -262,6 +273,11 @@ impl<W: Copy, E: Edge<W> + Copy, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjLi
         self.vertex_count
     }
 
+    /// # Returns
+    /// Number of edges in the graph.
+    ///
+    /// # Complexity:
+    /// O(1)
     fn edge_count(&self) -> usize {
         self.max_edge_id - self.reusable_edge_ids.len()
     }
@@ -284,7 +300,7 @@ impl<W: Copy, E: Edge<W> + Copy, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjLi
     /// * All edges from the source vertex in the format of: (`dst_id`, `edge`)
     ///
     /// # Complexity
-    /// O(|E<sup>\*</sup>|)
+    /// O(|E<sup>out</sup>|)
     ///
     /// # Panics
     /// If `src_id` is not in range 0..|V|.
@@ -295,10 +311,22 @@ impl<W: Copy, E: Edge<W> + Copy, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjLi
             .collect()
     }
 
+    /// # Arguments
+    /// `vertex_id`: Id of the vertex to search for its existence in the storage.
+    ///
+    /// # Returns
+    /// * `true`: If storage contains the vertex with id: `vertex_id`.
+    /// * `false`: Otherwise.
     fn contains_vertex(&self, vertex_id: usize) -> bool {
         vertex_id < self.total_vertex_count() && !self.reusable_vertex_ids.contains(&vertex_id)
     }
 
+    /// # Arguments
+    /// `edge_id`: Id of the edge to search for its existence in the storage.
+    ///
+    /// # Returns
+    /// * `true`: If storage contains the edge with id: `edge_id`.
+    /// * `false`: Otherwise.
     fn contains_edge(&self, edge_id: usize) -> bool {
         edge_id < self.max_edge_id && !self.reusable_edge_ids.contains(&edge_id)
     }
@@ -316,7 +344,7 @@ mod tests {
         // When: Doing nothing.
 
         // Then:
-        assert_eq!(list.edges().len(), 0);
+        assert_eq!(list.edge_count(), 0);
         assert_eq!(list.vertex_count(), 0);
         assert_eq!(list.edges_of.len(), 0);
         assert_eq!(list.reusable_vertex_ids.len(), 0);
@@ -331,7 +359,7 @@ mod tests {
         // When: Doing nothing.
 
         // Then:
-        assert_eq!(list.edges().len(), 0);
+        assert_eq!(list.edge_count(), 0);
         assert_eq!(list.vertex_count(), 0);
         assert_eq!(list.edges_of.len(), 0);
         assert_eq!(list.reusable_vertex_ids.len(), 0);
@@ -349,7 +377,6 @@ mod tests {
         let c = list.add_vertex();
 
         // Then:
-        assert_eq!(list.edges().len(), 0);
         assert_eq!(list.vertex_count(), 3);
         assert_eq!(list.edges_of.len(), 3);
         assert!(list.edges_of.iter().all(|edges| edges.is_empty()));
@@ -379,7 +406,6 @@ mod tests {
         let c = list.add_vertex();
 
         // Then:
-        assert_eq!(list.edges().len(), 0);
         assert_eq!(list.vertex_count(), 3);
         assert_eq!(list.edges_of.len(), 3);
         assert_eq!(list.reusable_vertex_ids.len(), 0);
@@ -413,7 +439,6 @@ mod tests {
         list.remove_vertex_unchecked(b);
 
         // Then:
-        assert_eq!(list.edges().len(), 0);
         assert_eq!(list.vertex_count(), 1);
         assert_eq!(list.edges_of.len(), 3);
 
@@ -446,7 +471,6 @@ mod tests {
         list.remove_vertex_unchecked(b);
 
         // Then:
-        assert_eq!(list.edges().len(), 0);
         assert_eq!(list.vertex_count(), 1);
         assert_eq!(list.edges_of.len(), 3);
 
@@ -481,7 +505,6 @@ mod tests {
         let _ = list.add_vertex();
 
         // Then:
-        assert_eq!(list.edges().len(), 0);
         assert_eq!(list.vertex_count(), 3);
         assert_eq!(list.edges_of.len(), 3);
 
@@ -520,7 +543,6 @@ mod tests {
         let _ = list.add_vertex();
 
         // Then:
-        assert_eq!(list.edges().len(), 0);
         assert_eq!(list.vertex_count(), 3);
         assert_eq!(list.edges_of.len(), 3);
 
@@ -893,73 +915,52 @@ mod tests {
             .all(|vertex_id| list.neighbors_unchecked(c).contains(vertex_id)));
     }
 
-    // #[test]
-    // #[should_panic(expected = "Vertex with id: 0 is not present in the graph")]
-    // fn first_vertex_not_present() {
-    //     // Given: list
-    //     //
-    //     //      a
-    //     //
-    //     let mut list = List::<usize>::init();
-    //     let a = list.add_vertex();
-    //     let b = list.add_vertex();
+    #[test]
+    fn edge_count() {
+        // Undirected
+        // Given: an empty matrix.
+        let mut mat = List::<usize>::init();
 
-    //     // When: Removing vertex a and try to pass it as valid vertex id.
-    //     list.remove_vertex_unchecked(a);
-    //     list.edge(a, b);
+        // When: adding 3 edges.
+        let a = mat.add_vertex();
+        let b = mat.add_vertex();
+        let c = mat.add_vertex();
+        let ab = mat.add_edge_unchecked(a, b, 1.into());
+        let bc = mat.add_edge_unchecked(b, c, 1.into());
+        let ca = mat.add_edge_unchecked(c, a, 1.into());
 
-    //     // Then: Code should panic.
-    // }
+        // Then: it must have 3 edges.
+        assert_eq!(mat.edge_count(), 3);
 
-    // #[test]
-    // #[should_panic(expected = "Vertex with id: 1 is not present in the graph")]
-    // fn second_vertex_not_present() {
-    //     // Given: list
-    //     //
-    //     //      a
-    //     //
-    //     let mut list = List::<usize>::init();
-    //     let a = list.add_vertex();
-    //     let b = list.add_vertex();
+        // When removing the 3 edges.
+        mat.remove_edge_unchecked(a, b, ab);
+        mat.remove_edge_unchecked(b, c, bc);
+        mat.remove_edge_unchecked(c, a, ca);
 
-    //     // When: Removing vertex b and try to pass it as valid vertex id.
-    //     list.remove_vertex_unchecked(b);
-    //     list.edge(a, b);
+        // Then: it must have zero edges again.
+        assert_eq!(mat.edge_count(), 0);
 
-    //     // Then: Code should panic.
-    // }
+        // Directed
+        // Given: an empty matrix.
+        let mut di_mat = DiList::<usize>::init();
 
-    // #[test]
-    // #[should_panic(expected = "Vertex with id: 3 is not present in the graph")]
-    // fn non_existent_vertex() {
-    //     // Given: list
-    //     //
-    //     //      a
-    //     //
-    //     let mut list = List::<usize>::init();
-    //     let a = list.add_vertex();
-    //     let b = 3;
+        // When: adding 3 edges.
+        let a = di_mat.add_vertex();
+        let b = di_mat.add_vertex();
+        let c = di_mat.add_vertex();
+        let ab = di_mat.add_edge_unchecked(a, b, 1.into());
+        let bc = di_mat.add_edge_unchecked(b, c, 1.into());
+        let ca = di_mat.add_edge_unchecked(c, a, 1.into());
 
-    //     // When: Trying to access b which is never add to graph.
-    //     list.edge(a, b);
+        // Then: it must have 3 edges.
+        assert_eq!(di_mat.edge_count(), 3);
 
-    //     // Then: Code should panic.
-    // }
+        // When: removing the 3 edges.
+        di_mat.remove_edge_unchecked(a, b, ab);
+        di_mat.remove_edge_unchecked(b, c, bc);
+        di_mat.remove_edge_unchecked(c, a, ca);
 
-    // #[test]
-    // #[should_panic(expected = "There is no edge from vertex: 0 to vertex: 1")]
-    // fn non_existent_edge() {
-    //     // Given: List
-    //     //
-    //     //      a   b
-    //     //
-    //     let mut list = List::<usize>::init();
-    //     let a = list.add_vertex();
-    //     let b = list.add_vertex();
-
-    //     // When: Trying to remove non existent edge between a and b.
-    //     list.remove_edge_unchecked(a, b);
-
-    //     // Then: Code should panic.
-    // }
+        // Then: it must have zero edges again.
+        assert_eq!(di_mat.edge_count(), 0);
+    }
 }
