@@ -25,7 +25,7 @@ pub type DiFlowMat<W> = AdjMatrix<W, FlowEdge<W>, DirectedEdge>;
 /// For more info and examples refer to `total_vertex_count` documentation.
 /// * |E|: Means number of edges present in the graph.
 /// * |E<sup>out</sup>|: Means number of edges exiting a vertex(out degree of the vertex).
-/// * |E|: Means number of edges from vertex with id: `src` to vertex with id: `dst`.
+/// * |E<sub>src->dst</sub>|: Means number of edges from vertex with id: `src` to vertex with id: `dst`.
 ///
 /// ## Space complexity
 /// Space complexity of `AdjMatrix` depends on wether `Dir` is [`Directed`](crate::graph::DirectedEdge) or [`Undirected`](crate::graph::UndirectedEdge). \
@@ -231,7 +231,7 @@ impl<W: Any, E: Edge<W>, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjMatrix<W, 
     /// * `edge`: New edge to replace the old one.
     ///
     /// # Complexity
-    /// O(E<sup>*</sup>) // FIXME: This upper bound is not correct. Change it to O(#edges_between_src_and_dst)
+    /// O(|E<sub>src->dst</sub>|)
     ///
     /// # Panics
     /// * If `src_id` or `dst_id` is not in range 0..|V|.
@@ -257,7 +257,7 @@ impl<W: Any, E: Edge<W>, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjMatrix<W, 
     /// * `None`: If edge with `edge_id` does not exist in the graph.
     ///
     /// # Complexity
-    /// O(E<sup>*</sup>) // FIXME: This upper bound is not correct. Change it to O(#edges_between_src_and_dst)
+    /// O(|E<sub>src->dst</sub>|)
     ///
     /// # Panics
     /// * If `src_id` or `dst_id` is not in range 0..|V|.
@@ -287,7 +287,6 @@ impl<W: Any, E: Edge<W>, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjMatrix<W, 
     ///
     /// # Complexity:
     /// O(1)
-    /// TODO: Test this and make sure there is no need for a +1.
     fn edge_count(&self) -> usize {
         self.max_edge_id - self.reusable_edge_ids.len()
     }
@@ -355,7 +354,7 @@ impl<W: Any, E: Edge<W>, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjMatrix<W, 
     /// Edges from source vertex to destination vertex.
     ///
     /// # Complexity
-    /// O(|E<sup>*</sup>|) // FIXME: This upper bound is not correct. Change it to O(#edges_between_src_and_dst).
+    /// O(|E<sub>src->dst</sub>|)
     ///
     /// # Panics
     /// * If `src_id` or `dst_id` is not in range 0..|V|.
@@ -428,10 +427,8 @@ mod tests {
         // Given: An empty directed matrix.
         let matrix = DiMat::<usize>::init();
 
-        // When: Doing nothing.
-
         // Then:
-        assert_eq!(matrix.edges().len(), 0);
+        assert_eq!(matrix.edge_count(), 0);
         assert_eq!(matrix.vertex_count(), 0);
         assert_eq!(matrix.total_vertex_count(), 0);
         assert_eq!(matrix.vec.len(), 0);
@@ -444,10 +441,8 @@ mod tests {
         // Given: An empty undirected matrix.
         let matrix = Mat::<usize>::init();
 
-        // When: Doing nothing.
-
         // Then:
-        assert_eq!(matrix.edges().len(), 0);
+        assert_eq!(matrix.edge_count(), 0);
         assert_eq!(matrix.vertex_count(), 0);
         assert_eq!(matrix.total_vertex_count(), 0);
         assert_eq!(matrix.vec.len(), 0);
@@ -466,7 +461,6 @@ mod tests {
         let c = matrix.add_vertex();
 
         // Then:
-        assert_eq!(matrix.edges().len(), 0);
         assert_eq!(matrix.vertex_count(), 3);
         assert_eq!(matrix.total_vertex_count(), 3);
         assert_eq!(matrix.vec.len(), 9);
@@ -496,7 +490,6 @@ mod tests {
         let c = matrix.add_vertex();
 
         // Then:
-        assert_eq!(matrix.edges().len(), 0);
         assert_eq!(matrix.vertex_count(), 3);
         assert_eq!(matrix.total_vertex_count(), 3);
         assert_eq!(matrix.vec.len(), 6);
@@ -565,7 +558,6 @@ mod tests {
         matrix.remove_vertex_unchecked(b);
 
         // Then:
-        assert_eq!(matrix.edges().len(), 0);
         assert_eq!(matrix.vertex_count(), 1);
         assert_eq!(matrix.total_vertex_count(), 3);
         assert_eq!(matrix.vec.len(), 6);
@@ -601,7 +593,6 @@ mod tests {
         let _ = matrix.add_vertex();
 
         // Then:
-        assert_eq!(matrix.edges().len(), 0);
         assert_eq!(matrix.vertex_count(), 3);
         assert_eq!(matrix.total_vertex_count(), 3);
         assert_eq!(matrix.vec.len(), 9);
@@ -641,7 +632,6 @@ mod tests {
         let _ = matrix.add_vertex();
 
         // Then:
-        assert_eq!(matrix.edges().len(), 0);
         assert_eq!(matrix.vertex_count(), 3);
         assert_eq!(matrix.total_vertex_count(), 3);
         assert_eq!(matrix.vec.len(), 6);
@@ -806,7 +796,7 @@ mod tests {
         let bc = matrix.add_edge_unchecked(b, c, 2.into());
         let ca = matrix.add_edge_unchecked(c, a, 3.into());
 
-        // When: Incrementing edge of each edge by 1.
+        // When: Incrementing weight of each edge by 1.
         matrix.update_edge_unchecked(a, b, ab, 2.into());
         matrix.update_edge_unchecked(b, c, bc, 3.into());
         matrix.update_edge_unchecked(c, a, ca, 4.into());
@@ -843,7 +833,7 @@ mod tests {
         let bc = matrix.add_edge_unchecked(b, c, 2.into());
         let ca = matrix.add_edge_unchecked(c, a, 3.into());
 
-        // When: Incrementing edge of each edge by 1.
+        // When: Incrementing weight of each edge by 1.
         matrix.update_edge_unchecked(a, b, ab, 2.into());
         matrix.update_edge_unchecked(b, c, bc, 3.into());
         matrix.update_edge_unchecked(c, a, ca, 4.into());
@@ -1012,5 +1002,54 @@ mod tests {
         assert!(vec![a, b]
             .iter()
             .all(|vertex_id| matrix.neighbors_unchecked(c).contains(vertex_id)));
+    }
+
+    #[test]
+    fn edge_count() {
+        // Undirected
+        // Given: an empty matrix.
+        let mut mat = Mat::<usize>::init();
+
+        // When: adding 3 edges.
+        let a = mat.add_vertex();
+        let b = mat.add_vertex();
+        let c = mat.add_vertex();
+        let ab = mat.add_edge_unchecked(a, b, 1.into());
+        let bc = mat.add_edge_unchecked(b, c, 1.into());
+        let ca = mat.add_edge_unchecked(c, a, 1.into());
+
+        // Then: it must have 3 edges.
+        assert_eq!(mat.edge_count(), 3);
+
+        // When removing the 3 edges.
+        mat.remove_edge_unchecked(a, b, ab);
+        mat.remove_edge_unchecked(b, c, bc);
+        mat.remove_edge_unchecked(c, a, ca);
+
+        // Then: it must have zero edges again.
+        assert_eq!(mat.edge_count(), 0);
+
+        // Directed
+        // Given: an empty matrix.
+        let mut di_mat = DiMat::<usize>::init();
+
+        // When: adding 3 edges.
+        let a = di_mat.add_vertex();
+        let b = di_mat.add_vertex();
+        let c = di_mat.add_vertex();
+        let ab = di_mat.add_edge_unchecked(a, b, 1.into());
+        let bc = di_mat.add_edge_unchecked(b, c, 1.into());
+        let ca = di_mat.add_edge_unchecked(c, a, 1.into());
+
+        // Then: it must have 3 edges.
+        assert_eq!(di_mat.edge_count(), 3);
+
+        // When: removing the 3 edges.
+        di_mat.remove_edge_unchecked(a, b, ab);
+        di_mat.remove_edge_unchecked(b, c, bc);
+        di_mat.remove_edge_unchecked(c, a, ca);
+
+        // Then: it must have zero edges again.
+        assert_eq!(di_mat.edge_count(), 0);
     }
 }
