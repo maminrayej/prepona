@@ -176,6 +176,12 @@ pub trait GraphStorage<W, E: Edge<W>, Dir: EdgeDir> {
     /// The removed edge.
     fn remove_edge_unchecked(&mut self, src_id: usize, dst_id: usize, edge_id: usize) -> E;
 
+    /// # Arguments
+    /// `edge_id`: Id of the edge.
+    ///
+    /// # Returns
+    /// * `true`: if storage contains the edge with specified id.
+    /// * `false`: otherwise.
     fn contains_edge(&self, edge_id: usize) -> bool;
 
     /// # Returns

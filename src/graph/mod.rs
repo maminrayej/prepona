@@ -12,9 +12,9 @@ mod structs;
 /// Each subgraph must at least implement [`AsFrozenSubgraph`](crate::graph::subgraph::AsFrozenSubgraph) trait.
 /// This makes sure that from point of view of algorithms, there is no difference from graph and subgraphs.
 ///
-/// A default [`Subgraph`](crate::graph::subgraph::Subgraph) and [`MutSubgraph`](crate::graph::subgraph::AsMutSubgraph) is defined so you can concentrate on additional functionalities that you want to provide.
+/// A default [`Subgraph`](crate::graph::subgraph::Subgraph) and [`MutSubgraph`](crate::graph::subgraph::MutSubgraph) is defined so you can concentrate on additional functionalities that you want to provide.
 /// For example [`ShortestPathSubgraph`](crate::graph::subgraph::ShortestPathSubgraph) is composed of a `Subgraph` and a distance map.
-/// So it just forwards every call to `AsSubgraph` functions to the inner `Subgraph`.
+/// So it just forwards every call of `AsSubgraph` functions to the inner `Subgraph`.
 pub mod subgraph;
 
 pub use edge::{DefaultEdge, DirectedEdge, Edge, EdgeDir, FlowEdge, UndirectedEdge};

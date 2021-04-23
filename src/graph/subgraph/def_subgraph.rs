@@ -1,6 +1,6 @@
 use std::{collections::HashSet, marker::PhantomData};
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 
 use crate::{
     graph::{error::Error, EdgeDir},
@@ -9,7 +9,15 @@ use crate::{
 
 use super::{AsFrozenSubgraph, AsSubgraph};
 
+// TODO: add verification to subgraph constructors.
+
 /// Default implementation of [`AsSubgraph`](crate::graph::subgraph::AsSubgraph) trait.
+///
+/// ## Generic Parameters
+/// * `W`: **W**eight type associated with edges.
+/// * `E`: **E**dge type that subgraph uses.
+/// * `Dir`: **Dir**ection of edges: [`Directed`](crate::graph::DirectedEdge) or [`Undirected`](crate::graph::UndirectedEdge).
+/// * `G`: **G**raph type that subgraph is representing.
 pub struct Subgraph<'a, W, E, Dir, G>
 where
     E: Edge<W>,
@@ -36,7 +44,7 @@ where
     ///
     /// # Arguments
     /// * `graph`: Graph that this subgraph is representing.
-    /// * `edges`: Edges present in the subgraph.
+    /// * `edges`: Edges present in the subgraph in the format of (`src_id`, `dst_id`, `edge_id`).
     /// * `vertex_ids`: Vertices present in the subgraph.
     ///
     /// # Returns
@@ -72,7 +80,7 @@ where
     /// * `Ok`: Containing Id of vertices accessible from source vertex using one edge.
     fn neighbors(&self, src_id: usize) -> Result<Vec<usize>> {
         if !self.contains_vertex(src_id) {
-            Err(Error::new_vnf(src_id)).with_context(|| "Subgraph failed")?
+            Err(Error::new_vnf(src_id))?
         } else {
             Ok(self.neighbors_unchecked(src_id))
         }
@@ -121,11 +129,11 @@ where
     /// `src_id`: Id of the source vertex.
     ///
     /// # Returns
-    /// * `Err`: If vertex with id: `src_id` does not exist.
-    /// * `Ok`: Containin all edges from the source vertex in the format of: (`dst_id`, `edge`)
+    /// * `Err`: If vertex with id: `src_id` is not present in the subgraph.
+    /// * `Ok`: Containing all edges from the source vertex in the format of: (`dst_id`, `edge`)
     fn edges_from(&self, src_id: usize) -> Result<Vec<(usize, &E)>> {
         if !self.contains_vertex(src_id) {
-            Err(Error::new_vnf(src_id)).with_context(|| "Argument invalid")?
+            Err(Error::new_vnf(src_id))?
         } else {
             Ok(self.edges_from_unchecked(src_id))
         }
@@ -151,13 +159,13 @@ where
     /// * `dst_id`: Id of destination vertex.
     ///
     /// # Returns
-    /// * `Err`: If either `src_id` or `dst_id` is invalid.
+    /// * `Err`: If either `src_id` or `dst_id` is not present in the subgraph.
     /// * `Ok`: Containing edges from source vertex to destination vertex.
     fn edges_between(&self, src_id: usize, dst_id: usize) -> Result<Vec<&E>> {
         if !self.contains_vertex(src_id) {
-            Err(Error::new_vnf(src_id)).with_context(|| "Subgraph failed")?
+            Err(Error::new_vnf(src_id))?
         } else if !self.contains_vertex(dst_id) {
-            Err(Error::new_vnf(dst_id)).with_context(|| "Subgraph failed")?
+            Err(Error::new_vnf(dst_id))?
         } else {
             Ok(self.edges_between_unchecked(src_id, dst_id))
         }
@@ -183,16 +191,17 @@ where
     /// * `edge_id`: Id of the edge to retrieve.
     ///
     /// # Returns
-    /// * `Err`: If either vertices with `src_id` or `dst_id` does not exist.
-    /// Also when there is not edge from source to destination with id: `edge_id`.
+    /// * `Err`: 
+    ///     * If either vertices with `src_id` or `dst_id` is not present in the subgraph.
+    ///     * If there is no edge from source to destination with id: `edge_id`.
     /// * `Ok`: Containing reference to edge with id: `edge_id` from `src_id` to `dst_id`.
     fn edge_between(&self, src_id: usize, dst_id: usize, edge_id: usize) -> Result<&E> {
         if !self.contains_vertex(src_id) {
-            Err(Error::new_vnf(src_id)).with_context(|| "Subgraph failed")?
+            Err(Error::new_vnf(src_id))?
         } else if !self.contains_vertex(dst_id) {
-            Err(Error::new_vnf(dst_id)).with_context(|| "Subgraph failed")?
+            Err(Error::new_vnf(dst_id))?
         } else if !self.contains_edge(edge_id) {
-            Err(Error::new_enf(edge_id)).with_context(|| "Subgraph failed")?
+            Err(Error::new_enf(edge_id))?
         } else {
             Ok(self.edge_between_unchecked(src_id, dst_id, edge_id))
         }
@@ -212,7 +221,7 @@ where
     /// # Note:
     /// Consider using `edge_between` or `edges_from` functions instead of this one.
     /// Because default implementation of this function iterates over all edges to find the edge with specified id.
-    /// And it's likely that other storages use the same approach. So:
+    /// So:
     /// * if you have info about source of the edge, consider using `edges_from` function instead.
     /// * if you have info about both source and destination of the edge, consider using `edge_between` function instead.
     ///
@@ -224,7 +233,7 @@ where
     /// * `Ok`: Containing reference to edge with id: `edge_id`.
     fn edge(&self, edge_id: usize) -> Result<&E> {
         if !self.contains_edge(edge_id) {
-            Err(Error::new_enf(edge_id)).with_context(|| "Subgraph failed")?
+            Err(Error::new_enf(edge_id))?
         } else {
             Ok(self.edge_unchecked(edge_id))
         }
@@ -233,7 +242,7 @@ where
     /// # Note:
     /// Consider using `edge_between_unchecked` or `edges_from_unchecked` functions instead of this one.
     /// Because default implementation of this function iterates over all edges to find the edge with specified id.
-    /// And it's likely that other storages use the same approach. So:
+    /// So:
     /// * if you have info about source of the edge, consider using `edges_from_unchecked` function instead.
     /// * if you have info about both source and destination of the edge, consider using `edge_between_unchecked` function instead.
     ///
@@ -255,9 +264,9 @@ where
     /// * `Ok`: Containing `true` if there is at least one edge from `src_id` to `dst_id` and `false` otherwise.
     fn has_any_edge(&self, src_id: usize, dst_id: usize) -> Result<bool> {
         if !self.contains_vertex(src_id) {
-            Err(Error::new_vnf(src_id)).with_context(|| "Subgraph failed")?
+            Err(Error::new_vnf(src_id))?
         } else if !self.contains_vertex(dst_id) {
-            Err(Error::new_vnf(dst_id)).with_context(|| "Subgraph failed")?
+            Err(Error::new_vnf(dst_id))?
         } else {
             Ok(self.has_any_edge_unchecked(src_id, dst_id))
         }
@@ -277,7 +286,7 @@ where
     }
 
     /// # Returns
-    /// All edges in the graph in the format: (`src_id`, `dst_id`, `edge`).
+    /// All edges in the subgraph in the format: (`src_id`, `dst_id`, `edge`).
     fn edges(&self) -> Vec<(usize, usize, &E)> {
         self.graph
             .edges()
@@ -316,6 +325,12 @@ where
         self.edges().len()
     }
 
+    /// # Arguments
+    /// `edge_id`: Id of the edge to be found.
+    ///
+    /// # Returns
+    /// * `true`: If edge with id: `edge_id` is present in the subgraph.
+    /// * `false`: otherwise.
     fn contains_edge(&self, edge_id: usize) -> bool {
         self.edges
             .iter()
@@ -346,16 +361,17 @@ where
     /// * `edge_id`: Id of the edge from source to destination to be removed.
     ///
     /// # Returns
-    /// * `Err`: If either vertices with `src_id` or `dst_id` does not exist.
-    /// Also when there is not edge from source to destination with id: `edge_id`.
+    /// * `Err`: 
+    ///     * If either vertices with `src_id` or `dst_id` does not exist.
+    ///     * If there is no edge from source to destination with id: `edge_id`.
     /// * `Ok`:
     fn remove_edge(&mut self, src_id: usize, dst_id: usize, edge_id: usize) -> Result<()> {
         if !self.contains_vertex(src_id) {
-            Err(Error::new_vnf(src_id)).with_context(|| "Subgraph failed")?
+            Err(Error::new_vnf(src_id))?
         } else if !self.contains_vertex(dst_id) {
-            Err(Error::new_vnf(dst_id)).with_context(|| "Subgraph failed")?
+            Err(Error::new_vnf(dst_id))?
         } else if !self.contains_edge(edge_id) {
-            Err(Error::new_enf(edge_id)).with_context(|| "Subgraph failed")?
+            Err(Error::new_enf(edge_id))?
         } else {
             Ok(self.remove_edge_unchecked(src_id, dst_id, edge_id))
         }
@@ -381,7 +397,7 @@ where
     /// * `Ok`:
     fn remove_vertex(&mut self, vertex_id: usize) -> Result<()> {
         if !self.contains_vertex(vertex_id) {
-            Err(Error::new_vnf(vertex_id)).with_context(|| "Subgraph failed")?
+            Err(Error::new_vnf(vertex_id))?
         } else {
             Ok(self.remove_vertex_unchecked(vertex_id))
         }
@@ -408,7 +424,7 @@ where
     /// * `Ok`:
     fn add_vertex_from_graph(&mut self, vertex_id: usize) -> Result<()> {
         if !self.graph.contains_vertex(vertex_id) {
-            Err(Error::new_vnf(vertex_id)).with_context(|| "Subgraph failed")?
+            Err(Error::new_vnf(vertex_id))?
         } else {
             Ok(self.add_vertex_from_graph_unchecked(vertex_id))
         }
@@ -438,13 +454,13 @@ where
     /// * `Ok`:
     fn add_edge_from_graph(&mut self, src_id: usize, dst_id: usize, edge_id: usize) -> Result<()> {
         if !self.graph.contains_vertex(src_id) {
-            Err(Error::new_vnf(src_id)).with_context(|| "Subgraph failed")?
+            Err(Error::new_vnf(src_id))?
         } else if !self.graph.contains_vertex(dst_id) {
-            Err(Error::new_vnf(dst_id)).with_context(|| "Subgraph failed")?
+            Err(Error::new_vnf(dst_id))?
         } else if !self.graph.contains_edge(edge_id) {
-            Err(Error::new_enf(edge_id)).with_context(|| "Subgraph failed")?
+            Err(Error::new_enf(edge_id))?
         } else if self.contains_edge(edge_id) {
-            Err(Error::new_eae(edge_id)).with_context(|| "Subgraph failed")?
+            Err(Error::new_eae(edge_id))?
         } else {
             Ok(self.add_edge_from_graph_unchecked(src_id, dst_id, edge_id))
         }

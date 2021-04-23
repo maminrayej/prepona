@@ -4,11 +4,17 @@ use crate::{
     graph::{error::Error, EdgeDir},
     prelude::{Edge, Edges, Graph, Neighbors, Vertices},
 };
-use anyhow::{Context, Result};
+use anyhow::Result;
 
 use super::{AsFrozenSubgraph, AsMutSubgraph, AsSubgraph};
 
 /// Default implementation of [`AsMutSubgraph`](crate::graph::subgraph::AsMutSubgraph) trait.
+///
+/// ## Generic Parameters
+/// * `W`: **W**eight type associated with edges.
+/// * `E`: **E**dge type that subgraph uses.
+/// * `Dir`: **Dir**ection of edges: [`Directed`](crate::graph::DirectedEdge) or [`Undirected`](crate::graph::UndirectedEdge).
+/// * `G`: **G**raph type that subgraph is representing.
 pub struct MutSubgraph<'a, W, E: Edge<W>, Dir: EdgeDir, G: Graph<W, E, Dir>> {
     graph: &'a mut G,
 
@@ -30,7 +36,7 @@ where
     ///
     /// # Arguments
     /// * `graph`: Graph that this subgraph is representing.
-    /// * `edges`: Edges present in the subgraph.
+    /// * `edges`: Edges present in the subgraph in the format of (`src_id`, `dst_id`, `edge_id`).
     /// * `vertex_ids`: Vertices present in the subgraph.
     ///
     /// # Returns
@@ -66,7 +72,7 @@ where
     /// * `Ok`: Containing Id of vertices accessible from source vertex using one edge.
     fn neighbors(&self, src_id: usize) -> Result<Vec<usize>> {
         if !self.contains_vertex(src_id) {
-            Err(Error::new_vnf(src_id)).with_context(|| "MutSubgraph failed")?
+            Err(Error::new_vnf(src_id))?
         } else {
             Ok(self.neighbors_unchecked(src_id))
         }
@@ -119,7 +125,7 @@ where
     /// * `Ok`: Containin all edges from the source vertex in the format of: (`dst_id`, `edge`)
     fn edges_from(&self, src_id: usize) -> Result<Vec<(usize, &E)>> {
         if !self.contains_vertex(src_id) {
-            Err(Error::new_vnf(src_id)).with_context(|| "Argument invalid")?
+            Err(Error::new_vnf(src_id))?
         } else {
             Ok(self.edges_from_unchecked(src_id))
         }
@@ -149,9 +155,9 @@ where
     /// * `Ok`: Containing edges from source vertex to destination vertex.
     fn edges_between(&self, src_id: usize, dst_id: usize) -> Result<Vec<&E>> {
         if !self.contains_vertex(src_id) {
-            Err(Error::new_vnf(src_id)).with_context(|| "MutSubgraph failed")?
+            Err(Error::new_vnf(src_id))?
         } else if !self.contains_vertex(dst_id) {
-            Err(Error::new_vnf(dst_id)).with_context(|| "MutSubgraph failed")?
+            Err(Error::new_vnf(dst_id))?
         } else {
             Ok(self.edges_between_unchecked(src_id, dst_id))
         }
@@ -182,11 +188,11 @@ where
     /// * `Ok`: Containing reference to edge with id: `edge_id` from `src_id` to `dst_id`.
     fn edge_between(&self, src_id: usize, dst_id: usize, edge_id: usize) -> Result<&E> {
         if !self.contains_vertex(src_id) {
-            Err(Error::new_vnf(src_id)).with_context(|| "MutSubgraph failed")?
+            Err(Error::new_vnf(src_id))?
         } else if !self.contains_vertex(dst_id) {
-            Err(Error::new_vnf(dst_id)).with_context(|| "MutSubgraph failed")?
+            Err(Error::new_vnf(dst_id))?
         } else if !self.contains_edge(edge_id) {
-            Err(Error::new_enf(edge_id)).with_context(|| "MutSubgraph failed")?
+            Err(Error::new_enf(edge_id))?
         } else {
             Ok(self.edge_between_unchecked(src_id, dst_id, edge_id))
         }
@@ -218,7 +224,7 @@ where
     /// * `Ok`: Containing reference to edge with id: `edge_id`.
     fn edge(&self, edge_id: usize) -> Result<&E> {
         if !self.contains_edge(edge_id) {
-            Err(Error::new_enf(edge_id)).with_context(|| "MutSubgraph failed")?
+            Err(Error::new_enf(edge_id))?
         } else {
             Ok(self.edge_unchecked(edge_id))
         }
@@ -249,9 +255,9 @@ where
     /// * `Ok`: Containing `true` if there is at least one edge from `src_id` to `dst_id` and `false` otherwise.
     fn has_any_edge(&self, src_id: usize, dst_id: usize) -> Result<bool> {
         if !self.contains_vertex(src_id) {
-            Err(Error::new_vnf(src_id)).with_context(|| "MutSubgraph failed")?
+            Err(Error::new_vnf(src_id))?
         } else if !self.contains_vertex(dst_id) {
-            Err(Error::new_vnf(dst_id)).with_context(|| "MutSubgraph failed")?
+            Err(Error::new_vnf(dst_id))?
         } else {
             Ok(self.has_any_edge_unchecked(src_id, dst_id))
         }
@@ -345,11 +351,11 @@ where
     /// * `Ok`:
     fn remove_edge(&mut self, src_id: usize, dst_id: usize, edge_id: usize) -> Result<()> {
         if !self.contains_vertex(src_id) {
-            Err(Error::new_vnf(src_id)).with_context(|| "MutSubgraph failed")?
+            Err(Error::new_vnf(src_id))?
         } else if !self.contains_vertex(dst_id) {
-            Err(Error::new_vnf(dst_id)).with_context(|| "MutSubgraph failed")?
+            Err(Error::new_vnf(dst_id))?
         } else if !self.contains_edge(edge_id) {
-            Err(Error::new_enf(edge_id)).with_context(|| "MutSubgraph failed")?
+            Err(Error::new_enf(edge_id))?
         } else {
             Ok(self.remove_edge_unchecked(src_id, dst_id, edge_id))
         }
@@ -375,7 +381,7 @@ where
     /// * `Ok`:
     fn remove_vertex(&mut self, vertex_id: usize) -> Result<()> {
         if !self.contains_vertex(vertex_id) {
-            Err(Error::new_vnf(vertex_id)).with_context(|| "MutSubgraph failed")?
+            Err(Error::new_vnf(vertex_id))?
         } else {
             Ok(self.remove_vertex_unchecked(vertex_id))
         }
@@ -402,7 +408,7 @@ where
     /// * `Ok`:
     fn add_vertex_from_graph(&mut self, vertex_id: usize) -> Result<()> {
         if !self.graph.contains_vertex(vertex_id) {
-            Err(Error::new_vnf(vertex_id)).with_context(|| "MutSubgraph failed")?
+            Err(Error::new_vnf(vertex_id))?
         } else {
             Ok(self.add_vertex_from_graph_unchecked(vertex_id))
         }
@@ -432,13 +438,13 @@ where
     /// * `Ok`:
     fn add_edge_from_graph(&mut self, src_id: usize, dst_id: usize, edge_id: usize) -> Result<()> {
         if !self.graph.contains_vertex(src_id) {
-            Err(Error::new_vnf(src_id)).with_context(|| "MutSubgraph failed")?
+            Err(Error::new_vnf(src_id))?
         } else if !self.graph.contains_vertex(dst_id) {
-            Err(Error::new_vnf(dst_id)).with_context(|| "MutSubgraph failed")?
+            Err(Error::new_vnf(dst_id))?
         } else if !self.graph.contains_edge(edge_id) {
-            Err(Error::new_enf(edge_id)).with_context(|| "MutSubgraph failed")?
+            Err(Error::new_enf(edge_id))?
         } else if self.contains_edge(edge_id) {
-            Err(Error::new_eae(edge_id)).with_context(|| "MutSubgraph failed")?
+            Err(Error::new_eae(edge_id))?
         } else {
             Ok(self.add_edge_from_graph_unchecked(src_id, dst_id, edge_id))
         }

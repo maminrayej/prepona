@@ -1,7 +1,7 @@
 use std::any::Any;
 use std::marker::PhantomData;
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 use provide::{Edges, Graph, Neighbors, Vertices};
 
 use crate::graph::{error::Error, DefaultEdge, Edge, EdgeDir, FlowEdge};
@@ -20,7 +20,7 @@ pub type FlowMatGraph<W, Dir> = SimpleGraph<W, FlowEdge<W>, Dir, FlowMat<W>>;
 /// A `SimpleGraph` that uses [`FlowList`](crate::storage::FlowList) as its storage.
 pub type FlowListGraph<W, Dir> = SimpleGraph<W, DefaultEdge<W>, Dir, FlowList<W, Dir>>;
 
-/// Representing a graph with no loops and multiple edges.
+/// Representing a graph that does not allow loops or multiple edges between two vertices.
 ///
 /// ## Note
 /// `SimpleGraph` forwards most of its function calls to its underlying storage. So the complexities of its functions are dependent to what storage you use to initialize the graph.
@@ -76,7 +76,7 @@ impl<W: Any, E: Edge<W>, Dir: EdgeDir, S: GraphStorage<W, E, Dir>> SimpleGraph<W
     }
 }
 
-/// For documentation about each function checkout [`Neighbors`](crate::provide::Neighbors) trait.
+/// For documentation about each function checkout [`Neighbors`](crate::provide::Neighbors) trait and the storage you use.
 impl<W, E: Edge<W>, Dir: EdgeDir, S: GraphStorage<W, E, Dir>> Neighbors
     for SimpleGraph<W, E, Dir, S>
 {
@@ -89,7 +89,7 @@ impl<W, E: Edge<W>, Dir: EdgeDir, S: GraphStorage<W, E, Dir>> Neighbors
     }
 }
 
-/// For documentation about each function checkout [`Vertices`](crate::provide::Vertices) trait.
+/// For documentation about each function checkout [`Vertices`](crate::provide::Vertices) trait and the storage you use.
 impl<W, E: Edge<W>, Dir: EdgeDir, S: GraphStorage<W, E, Dir>> Vertices
     for SimpleGraph<W, E, Dir, S>
 {
@@ -106,7 +106,7 @@ impl<W, E: Edge<W>, Dir: EdgeDir, S: GraphStorage<W, E, Dir>> Vertices
     }
 }
 
-/// For documentation about each function checkout [`Edges`](crate::provide::Edges) trait.
+/// For documentation about each function checkout [`Edges`](crate::provide::Edges) trait and the storage you use.
 impl<W, E: Edge<W>, Dir: EdgeDir, S: GraphStorage<W, E, Dir>> Edges<W, E>
     for SimpleGraph<W, E, Dir, S>
 {
@@ -197,10 +197,7 @@ impl<W, E: Edge<W>, Dir: EdgeDir, S: GraphStorage<W, E, Dir>> Graph<W, E, Dir>
     ///     * Error from calling `add_edge` on storage.
     /// * `Ok`: Id of the newly added edge.
     fn add_edge(&mut self, src_id: usize, dst_id: usize, edge: E) -> Result<usize> {
-        if self
-            .has_any_edge(src_id, dst_id)
-            .with_context(|| "Invalid arguments")?
-        {
+        if self.has_any_edge(src_id, dst_id)? {
             Err(Error::new_me(src_id, dst_id))?
         } else if src_id == dst_id {
             Err(Error::new_l(src_id))?

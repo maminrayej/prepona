@@ -11,6 +11,12 @@ use crate::provide;
 ///
 /// It also carries a distance map to answer queries about shortest paths from source vertex to any destination vertex in O(1).
 /// This subgraph will be returned from algorithms like [`Dijkstra`](crate::algo::Dijkstra) or [BellmanFord](crate::algo::BellmanFord).
+///
+/// ## Generic Parameters
+/// * `W`: **W**eight type associated with edges.
+/// * `E`: **E**dge type that graph uses.
+/// * `Dir`: **Dir**ection of edges: [`Directed`](crate::graph::DirectedEdge) or [`Undirected`](crate::graph::UndirectedEdge).
+/// * `G`: **G**raph type that subgraph is representing.
 pub struct ShortestPathSubgraph<'a, W, E, Dir, G>
 where
     E: Edge<W>,
@@ -62,7 +68,7 @@ where
     }
 }
 
-/// `ShortestPathSubgraph` uses `Subgraph` internally so for complexity of each function checkout [`Subgraph`](crate::graph::subgraph::Subgraph).
+/// `ShortestPathSubgraph` uses `Subgraph` internally so for more info checkout [`Subgraph`](crate::graph::subgraph::Subgraph).
 impl<'a, W, E, Dir, G> Neighbors for ShortestPathSubgraph<'a, W, E, Dir, G>
 where
     E: Edge<W>,
@@ -78,7 +84,7 @@ where
     }
 }
 
-/// `ShortestPathSubgraph` uses `Subgraph` internally so for complexity of each function checkout [`Subgraph`](crate::graph::subgraph::Subgraph).
+/// `ShortestPathSubgraph` uses `Subgraph` internally so for more info checkout [`Subgraph`](crate::graph::subgraph::Subgraph).
 impl<'a, W, E, Dir, G> Vertices for ShortestPathSubgraph<'a, W, E, Dir, G>
 where
     E: Edge<W>,
@@ -94,7 +100,7 @@ where
     }
 }
 
-/// `ShortestPathSubgraph` uses `Subgraph` internally so for complexity of each function checkout [`Subgraph`](crate::graph::subgraph::Subgraph).
+/// `ShortestPathSubgraph` uses `Subgraph` internally so for more info checkout [`Subgraph`](crate::graph::subgraph::Subgraph).
 impl<'a, W, E, Dir, G> Edges<W, E> for ShortestPathSubgraph<'a, W, E, Dir, G>
 where
     E: Edge<W>,

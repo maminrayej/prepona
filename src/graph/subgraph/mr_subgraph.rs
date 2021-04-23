@@ -105,14 +105,14 @@ where
     ///
     /// # Arguments
     /// `vertex_id`: Id of the vertex to be added as root.
-    pub fn add_root_uncheckec(&mut self, vertex_id: usize) {
+    pub fn add_root_unchecked(&mut self, vertex_id: usize) {
         self.add_vertex_from_graph_unchecked(vertex_id);
 
         self.roots.push(vertex_id);
     }
 }
 
-/// `MultiRootSubgraph` uses `Subgraph` internally so for complexity of each function checkout [`Subgraph`](crate::graph::subgraph::Subgraph).
+/// `MultiRootSubgraph` uses `Subgraph` internally so for more info checkout [`Subgraph`](crate::graph::subgraph::Subgraph).
 impl<'a, W, E, Dir, G> Neighbors for MultiRootSubgraph<'a, W, E, Dir, G>
 where
     E: Edge<W>,
@@ -128,7 +128,7 @@ where
     }
 }
 
-/// `MultiRootSubgraph` uses `Subgraph` internally so for complexity of each function checkout [`Subgraph`](crate::graph::subgraph::Subgraph).
+/// `MultiRootSubgraph` uses `Subgraph` internally so for more info checkout [`Subgraph`](crate::graph::subgraph::Subgraph).
 impl<'a, W, E, Dir, G> Vertices for MultiRootSubgraph<'a, W, E, Dir, G>
 where
     E: Edge<W>,
@@ -144,7 +144,7 @@ where
     }
 }
 
-/// `MultiRootSubgraph` uses `Subgraph` internally so for complexity of each function checkout [`Subgraph`](crate::graph::subgraph::Subgraph).
+/// `MultiRootSubgraph` uses `Subgraph` internally so for more info checkout [`Subgraph`](crate::graph::subgraph::Subgraph).
 impl<'a, W, E, Dir, G> Edges<W, E> for MultiRootSubgraph<'a, W, E, Dir, G>
 where
     E: Edge<W>,
@@ -217,7 +217,7 @@ where
 {
 }
 
-/// `MultiRootSubgraph` uses `Subgraph` internally so for complexity of each function checkout [`Subgraph`](crate::graph::subgraph::Subgraph).
+/// `MultiRootSubgraph` uses `Subgraph` internally so for more info checkout [`Subgraph`](crate::graph::subgraph::Subgraph).
 impl<'a, W, E, Dir, G> AsSubgraph<W, E> for MultiRootSubgraph<'a, W, E, Dir, G>
 where
     E: Edge<W>,

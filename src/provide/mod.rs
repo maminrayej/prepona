@@ -39,13 +39,15 @@ pub trait Vertices {
     /// So this function maps potentially scattered vertex ids into a continuos one.
     /// In this mapping, scattered ids are real and continuos ones are virtual.
     ///
+    /// For example: \
+    /// if vertex ids are [1, 3, 4], they will be mapped to [0, 1, 2] so you can store information about vertices in a vector and use the new vertex ids as index.
+    ///
     /// # Returns
     /// The two-way mapping between scattered and continuos ids.
     fn continuos_id_map(&self) -> IdMap {
-        let vertex_count = self.vertex_count();
+        let mut id_map = IdMap::init(self.vertex_count());
 
-        let mut id_map = IdMap::init(vertex_count);
-
+        // Map each vertex id to its index in vector returned by vertices.
         self.vertices()
             .iter()
             .enumerate()
@@ -57,6 +59,12 @@ pub trait Vertices {
         id_map
     }
 
+    /// # Arguments
+    /// `vertex_id`: Id of the vertex.
+    ///
+    /// # Returns
+    /// * `true`: if graph contains the vertex with specified id.
+    /// * `false`: otherwise.
     fn contains_vertex(&self, vertex_id: usize) -> bool;
 }
 
@@ -67,7 +75,7 @@ pub trait Edges<W, E: Edge<W>> {
     ///
     /// # Returns
     /// * `Err`
-    /// * `Ok`: Containin all edges from the source vertex in the format of: (`dst_id`, `edge`)
+    /// * `Ok`: Containing all the outgoing edges from the source vertex in the format of: (`dst_id`, `edge`)
     fn edges_from(&self, src_id: usize) -> Result<Vec<(usize, &E)>>;
 
     /// # Arguments
@@ -116,7 +124,7 @@ pub trait Edges<W, E: Edge<W>> {
     /// # Note:
     /// Consider using `edge_between` or `edges_from` functions instead of this one.
     /// Because default implementation of this function iterates over all edges to find the edge with specified id.
-    /// And it's likely that other storages use the same approach. So:
+    /// So:
     /// * if you have info about source of the edge, consider using `edges_from` function instead.
     /// * if you have info about both source and destination of the edge, consider using `edge_between` function instead.
     ///
@@ -131,7 +139,7 @@ pub trait Edges<W, E: Edge<W>> {
     /// # Note:
     /// Consider using `edge_between_unchecked` or `edges_from_unchecked` functions instead of this one.
     /// Because default implementation of this function iterates over all edges to find the edge with specified id.
-    /// And it's likely that other storages use the same approach. So:
+    /// So:
     /// * if you have info about source of the edge, consider using `edges_from_unchecked` function instead.
     /// * if you have info about both source and destination of the edge, consider using `edge_between_unchecked` function instead.
     ///
@@ -178,6 +186,12 @@ pub trait Edges<W, E: Edge<W>> {
     /// Number of edges in the graph.
     fn edges_count(&self) -> usize;
 
+    /// # Arguments
+    /// `edge_id`: Id of the edge.
+    ///
+    /// # Returns
+    /// * `true`: if graph contains the edge with specified id.
+    /// * `false`: otherwise.
     fn contains_edge(&self, edge_id: usize) -> bool;
 }
 
