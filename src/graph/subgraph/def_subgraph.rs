@@ -191,7 +191,7 @@ where
     /// * `edge_id`: Id of the edge to retrieve.
     ///
     /// # Returns
-    /// * `Err`: 
+    /// * `Err`:
     ///     * If either vertices with `src_id` or `dst_id` is not present in the subgraph.
     ///     * If there is no edge from source to destination with id: `edge_id`.
     /// * `Ok`: Containing reference to edge with id: `edge_id` from `src_id` to `dst_id`.
@@ -361,7 +361,7 @@ where
     /// * `edge_id`: Id of the edge from source to destination to be removed.
     ///
     /// # Returns
-    /// * `Err`: 
+    /// * `Err`:
     ///     * If either vertices with `src_id` or `dst_id` does not exist.
     ///     * If there is no edge from source to destination with id: `edge_id`.
     /// * `Ok`:

@@ -2,7 +2,7 @@ use crate::algo::{Dfs, DfsListener};
 use crate::graph::{DirectedEdge, Edge};
 use crate::provide;
 
-/// Performs topological sort in the graph.
+/// Finds the topological sort of vertices.
 pub struct TopologicalSort {
     sorted_vertex_ids: Vec<usize>,
 }
@@ -14,14 +14,13 @@ impl DfsListener for TopologicalSort {
 }
 
 impl TopologicalSort {
-    /// Initializes the structure.
     pub fn init() -> Self {
         TopologicalSort {
             sorted_vertex_ids: vec![],
         }
     }
 
-    /// Performs topological sort.
+    /// Finds the topological sort of vertices.
     ///
     /// # Arguments
     /// `graph`: Graph to sort its vertices topologically.
@@ -32,6 +31,9 @@ impl TopologicalSort {
     where
         G: provide::Graph<W, E, DirectedEdge> + provide::Vertices + provide::Neighbors,
     {
+        // This algorithm uses dfs to sort the vertices.
+        // It stores each vertex the moment dfs visits all its children(vertex color goes black).
+        // So a parent will get added after all its children are visited.
         let mut dfs = Dfs::init(graph, &mut self);
 
         dfs.execute(graph);
@@ -40,6 +42,7 @@ impl TopologicalSort {
 
         let id_map = dfs.dissolve().2;
 
+        // Because a parent is added after its children but in topological order it must be visited first, the order of the vertices added during dfs must be reversed.
         self.sorted_vertex_ids.reverse();
 
         self.sorted_vertex_ids

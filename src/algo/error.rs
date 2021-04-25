@@ -2,6 +2,7 @@
 pub enum ErrorKind {
     EulerianTrailNotFound,
     EulerianCircuitNotFound,
+    NegativeCycleDetected,
 }
 
 /// Error type returns in [`algo`](crate::algo) module.
@@ -40,6 +41,13 @@ impl Error {
         Error {
             kind: ErrorKind::EulerianCircuitNotFound,
             msg: format!("Eulerian circuit not found"),
+        }
+    }
+
+    pub fn new_ncd() -> Self {
+        Error {
+            kind: ErrorKind::NegativeCycleDetected,
+            msg: format!("Graph contains cycle"),
         }
     }
 

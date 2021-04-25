@@ -1,8 +1,10 @@
+use anyhow::Result;
 use magnitude::Magnitude;
 use num_traits::Zero;
 use std::collections::HashMap;
 use std::{any::Any, collections::HashSet};
 
+use crate::algo::Error;
 use crate::provide::{Edges, Graph, Vertices};
 use crate::{
     graph::{subgraph::ShortestPathSubgraph, Edge, EdgeDir},
@@ -44,7 +46,7 @@ impl<W: Copy + Any + Zero + Ord> BellmanFord<W> {
         mut self,
         graph: &G,
         src_id: usize,
-    ) -> Result<ShortestPathSubgraph<W, E, Ty, G>, String>
+    ) -> Result<ShortestPathSubgraph<W, E, Ty, G>>
     where
         E: Edge<W>,
         Ty: EdgeDir,
@@ -84,7 +86,7 @@ impl<W: Copy + Any + Zero + Ord> BellmanFord<W> {
 
             let alt = self.distance[u_virt_id] + *edge.get_weight();
             if alt < self.distance[v_virt_id] {
-                return Err("Cycle detected".to_string());
+                Err(Error::new_ncd())?
             }
         }
 

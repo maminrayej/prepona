@@ -1,5 +1,5 @@
-mod error;
 mod cc;
+mod error;
 mod eulerian;
 mod has_cycle;
 mod mst;
@@ -8,8 +8,8 @@ mod topological_sort;
 mod traversal;
 mod vertex_edge_cut;
 
-pub use error::{ErrorKind, Error};
 pub use cc::{ConnectedComponents, TarjanSCC};
+pub use error::{Error, ErrorKind};
 pub use eulerian::Eulerian;
 pub use has_cycle::HasCycle;
 pub use mst::Kruskal;

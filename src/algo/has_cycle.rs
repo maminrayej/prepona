@@ -63,7 +63,7 @@ impl HasCycle {
     // * `graph`: Graph to search for cycles in it.
     // * `src_virt_id`: Virtual id of the current vertex.
     // * `parent_virt_id`: Virtual id of the parent of the current vertex.
-    // 
+    //
     // # Returns
     // * `true`: If graph has cycle.
     // * `false`: Otherwise.

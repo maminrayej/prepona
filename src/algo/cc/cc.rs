@@ -16,7 +16,10 @@ impl DfsListener for ConnectedComponents {
     }
 
     fn on_finish(&mut self, _: &Dfs<Self>) {
+        // Every time dfs is finished, a graph component is traversed.
         self.ccs.push(self.current_component.clone());
+
+        // So next time on_white is called, it will be for a new component.
         self.current_component.clear();
     }
 }

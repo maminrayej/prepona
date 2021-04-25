@@ -3,9 +3,9 @@ use std::{collections::HashSet, marker::PhantomData};
 use anyhow::Result;
 
 use crate::{
+    algo::Error,
     graph::{Edge, EdgeDir},
     provide::{Edges, Graph, IdMap, Vertices},
-    algo::Error
 };
 
 /// Finds Eulerian trail and circuit.

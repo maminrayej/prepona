@@ -1,8 +1,10 @@
+use anyhow::Result;
 use magnitude::Magnitude;
 use num_traits::Zero;
 use std::any::Any;
 use std::collections::HashMap;
 
+use crate::algo::Error;
 use crate::graph::Edge;
 use crate::provide;
 
@@ -27,7 +29,7 @@ impl FloydWarshall {
     pub fn execute<G, W: Copy + Zero + Any + Ord + std::fmt::Debug, E: Edge<W>>(
         self,
         graph: &G,
-    ) -> Result<HashMap<(usize, usize), Magnitude<W>>, String>
+    ) -> Result<HashMap<(usize, usize), Magnitude<W>>>
     where
         G: provide::Edges<W, E> + provide::Vertices,
     {
@@ -69,7 +71,7 @@ impl FloydWarshall {
                 for v_id in &vertices {
                     let v_virt_id = id_map.virt_id_of(*v_id);
                     if dist[v_virt_id][v_virt_id] < W::zero().into() {
-                        return Err("Graph contains negative cycle".to_string());
+                        Err(Error::new_ncd())?
                     }
                 }
             }
