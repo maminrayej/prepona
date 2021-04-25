@@ -1,4 +1,10 @@
+/// Containing algorithms that can get executed on graphs and subgraphs.
+///
+/// Graphs and subgraphs expose some functionalities defined in the [`provide`](crate::provide) module.
+/// One the other end, each algorithm defined in this module require some of the functionalities defined in [`provide`](crate::provide) to be able to get executed.
+/// So for one algorithm to be executable on a specific graph or subgraph, it is necessary for the graphs exposed functionalities to match the requirements of the algorithm.
 pub mod algo;
+
 /// Re-exports traits and structs that are necessary to accomplish basic tasks with prepona.
 pub mod prelude;
 

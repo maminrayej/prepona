@@ -1,11 +1,14 @@
 use std::{collections::HashSet, marker::PhantomData};
 
+use anyhow::Result;
+
 use crate::{
     graph::{Edge, EdgeDir},
     provide::{Edges, Graph, IdMap, Vertices},
+    algo::Error
 };
 
-/// Calculates eulerian trail and circuit
+/// Finds Eulerian trail and circuit.
 pub struct Eulerian<W, E: Edge<W>, Ty: EdgeDir, G: Graph<W, E, Ty>> {
     unused_edges: HashSet<usize>,
     out_deg: Vec<u32>,
@@ -26,7 +29,10 @@ where
     Ty: EdgeDir,
     G: Graph<W, E, Ty> + Vertices + Edges<W, E>,
 {
-    /// Initializes the structure
+    /// Initializes the structure.
+    ///
+    /// # Arguments
+    /// `graph`: The graph to find the Eulerian trail or circuit in.
     pub fn init(graph: &G) -> Self {
         let id_map = graph.continuos_id_map();
 
@@ -71,24 +77,31 @@ where
         }
     }
 
-    // Finds id of the vertex to start the trail/circuit from.
+    /// # Returns
+    /// * `Some`: Containing the id of the vertex that is suitable for starting the Eulerian algorithm from.
+    /// * `None`: If there is no suitable vertex.
     fn find_start_virt_id(&self) -> Option<usize> {
+        // If any of the bellow searches result in a vertex id, then there is a unique vertex that is suitable for starting the search from.
         let unique_start = if Ty::is_undirected() {
+            // If graph is undirected the vertex with an odd out degree is suitable to start the search from.
             self.out_deg.iter().position(|out_deg| (*out_deg % 2) != 0)
         } else {
+            // If graph is directed the vertex with out_degree - in_degree = 1 is suitable to start the search from.
             self.diff_deg.iter().position(|diff| *diff == 1)
         };
 
+        // If there is no unique suitable vertex to start the algorithm from, any vertex with an outgoing edge is suitable.
         unique_start.or(self.out_deg.iter().position(|out_deg| *out_deg > 0))
     }
 
-    /// Finds id of the vertex to start the eulerian trail from.
+    /// Finds id of the vertex to start the Eulerian trail from.
     ///
     /// # Returns
-    /// * `Some`: Containing the id of the starting vertex.
-    /// * `None`: If can not find a starting vertex for eulerian trail.
+    /// * `Some`: Containing the id of the starting vertex of Eulerian trail.
+    /// * `None`: If can not find a starting vertex for Eulerian trail.
     pub fn start_of_eulerian_trail(&self) -> Option<usize> {
         let has_trail = if Ty::is_undirected() {
+            // An undirected graph has an Eulerian trail if and only if exactly zero or two vertices have odd degree.
             let num_of_odd_degrees = self
                 .in_deg
                 .iter()
@@ -96,102 +109,105 @@ where
                 .count();
             num_of_odd_degrees == 0 || num_of_odd_degrees == 2
         } else {
-            let pos_diff: i32 = self.diff_deg.iter().filter(|diff| **diff > 0).sum();
+            // A directed graph has an Eulerian trail if and only if at most one vertex has (out-degree) − (in-degree) = 1
+            let pos_diff = self.diff_deg.iter().filter(|diff| **diff == 1).count();
 
             pos_diff == 1 || pos_diff == 0
         };
 
-        if has_trail {
-            self.find_start_virt_id()
-        } else {
-            None
-        }
+        has_trail.then(|| self.find_start_virt_id()).flatten()
     }
 
-    /// Finds id of the vertex to start the eulerian circuit from.
+    /// Finds id of the vertex to start the Eulerian circuit from.
     ///
     /// # Returns
     /// * `Some`: Containing the id of the starting vertex.
-    /// * `None`: If can not find a starting vertex for eulerian circuit.
+    /// * `None`: If can not find a starting vertex for Eulerian circuit.
     pub fn start_of_eulerian_circuit(&self) -> Option<usize> {
         let has_circuit = if Ty::is_undirected() {
+            // An undirected graph has an Eulerian cycle if and only if every vertex has even degree.
             self.in_deg.iter().all(|in_deg| (*in_deg % 2) == 0)
         } else {
+            // A directed graph has an Eulerian cycle if and only if every vertex has equal in degree and out degree(in other words out-degree - in-degree = 0).
             self.diff_deg.iter().all(|diff| *diff == 0)
         };
 
-        if has_circuit {
-            self.find_start_virt_id()
-        } else {
-            None
-        }
+        has_circuit.then(|| self.find_start_virt_id()).flatten()
     }
 
-    /// Finds the eulerian trail if there is one.
+    /// Finds the Eulerian trail if there is one.
     ///
     /// # Arguments
-    /// `graph`: Graph to search the eulerian trail in it.
+    /// `graph`: Graph to search the Eulerian trail in it.
     ///
     /// # Returns
-    /// List of vector ids that will get visited during the eulerian trail.
-    ///
-    /// # Panics
-    /// If graph does not have eulerian trail.
-    pub fn find_trail(mut self, graph: &G) -> Vec<usize> {
+    /// * `Ok`: Containing list of vector ids that will get visited during the Eulerian trail.
+    /// * `Err`: If graph does not have Eulerian trail.
+    pub fn find_trail(mut self, graph: &G) -> Result<Vec<usize>> {
+        // If graph has only one vertex, that single vertex is an Eulerian trail.
         if self.out_deg.len() <= 1 {
-            return self.trail;
+            return Ok(self.trail);
         }
 
         let trail_start_id = self.start_of_eulerian_trail();
         let circuit_start_id = self.start_of_eulerian_circuit();
 
+        // If there is no suitable id to start the search from, graph does not have Eulerian trail.
         if trail_start_id.is_none() {
-            panic!("Graph does not have Eulerian trail.");
+            Err(Error::new_etnf())?
         }
 
+        // Make sure graph has at least one edge to traverse.
         if !self.unused_edges.is_empty() {
             self.rec_execute(graph, trail_start_id.unwrap());
         }
 
+        // Trail actually has the visited vertices in the backward order. So first visited vertex is the last item in the `trail` structure.
+        // So for trail to make sense to the user, reverse it before returning it so that first visited vertex is also the first item in the structure.
         self.trail.reverse();
 
+        // IMPORTANT: Note that recursive algorithm that finds the trail actually finds the circuit if the graph also has Eulerian circuit.
+        // So if graph also has an Eulerian circuit, pop the last item in the circuit for it to become a trail. This will convert (v1, v2, v3, v1) to (v1, v2, v3)
         if circuit_start_id.is_some() {
             self.trail.pop();
         }
 
-        self.trail
+        Ok(self.trail)
     }
 
-    /// Finds the eulerian circuit if there is one.
+    /// Finds the Eulerian circuit if there is one.
     ///
     /// # Arguments
     /// `graph`: Graph to search the eulerian circuit in it.
     ///
     /// # Returns
-    /// List of vector ids that will get visited during the eulerian circuit.
-    ///
-    /// # Panics
-    /// If graph does not have eulerian circuit.
-    pub fn find_circuit(mut self, graph: &G) -> Vec<usize> {
+    /// * `Ok`: Containing list of vector ids that will get visited during the eulerian circuit.
+    /// * `Err`: If graph does not have Eulerian circuit.
+    pub fn find_circuit(mut self, graph: &G) -> Result<Vec<usize>> {
+        // If graph has only one vertex, that single vertex is an Eulerian circuit.
         if self.out_deg.len() <= 1 {
-            return self.trail;
+            return Ok(self.trail);
         }
         let circuit_start_id = self.start_of_eulerian_circuit();
 
+        // If there is no suitable id to start the search from, graph does not have Eulerian circuit.
         if circuit_start_id.is_none() {
-            panic!("Graph does not have Eulerian circuit.");
+            Err(Error::new_ecnf())?
         }
 
+        // Make sure graph has at least one edge to traverse.
         if !self.unused_edges.is_empty() {
             self.rec_execute(graph, circuit_start_id.unwrap());
         }
 
+        // Trail actually has the visited vertices in the backward order. So first visited vertex is the last item in the `trail` structure.
+        // So for trail to make sense to the user, reverse it before returning it so that first visited vertex is also the first item in the structure.
         self.trail.reverse();
 
-        self.trail
+        Ok(self.trail)
     }
 
-    // Recursively find the next vertex id in the trail/circuit.
+    // Recursively find the next vertex id in the Eulerian trail/circuit.
     fn rec_execute(&mut self, graph: &G, v_virt_id: usize) {
         let v_real_id = self.id_map.real_id_of(v_virt_id);
 
@@ -232,7 +248,7 @@ mod tests {
         graph.add_vertex();
 
         // When: Performing Eulerian trail detection algorithm.
-        let trail = Eulerian::init(&graph).find_trail(&graph);
+        let trail = Eulerian::init(&graph).find_trail(&graph).unwrap();
 
         // Then:
         assert_eq!(trail.len(), 0);
@@ -248,7 +264,7 @@ mod tests {
         graph.add_vertex();
 
         // When: Performing Eulerian circuit detection algorithm.
-        let circuit = Eulerian::init(&graph).find_circuit(&graph);
+        let circuit = Eulerian::init(&graph).find_circuit(&graph).unwrap();
 
         // Then:
         assert_eq!(circuit.len(), 0);
@@ -264,7 +280,7 @@ mod tests {
         graph.add_vertex();
 
         // When: Performing Eulerian trail detection algorithm.
-        let trail = Eulerian::init(&graph).find_trail(&graph);
+        let trail = Eulerian::init(&graph).find_trail(&graph).unwrap();
 
         // Then:
         assert_eq!(trail.len(), 0);
@@ -280,7 +296,7 @@ mod tests {
         graph.add_vertex();
 
         // When: Performing Eulerian circuit detection algorithm.
-        let circuit = Eulerian::init(&graph).find_circuit(&graph);
+        let circuit = Eulerian::init(&graph).find_circuit(&graph).unwrap();
 
         // Then:
         assert_eq!(circuit.len(), 0);
@@ -300,7 +316,7 @@ mod tests {
         graph.add_edge_unchecked(b, c, 1.into());
 
         // When: Performing Eulerian trail detection algorithm.
-        let trail = Eulerian::init(&graph).find_trail(&graph);
+        let trail = Eulerian::init(&graph).find_trail(&graph).unwrap();
 
         // Then:
         assert_eq!(trail.len(), 3);
@@ -321,7 +337,7 @@ mod tests {
         graph.add_edge_unchecked(b, c, 1.into());
 
         // When: Performing Eulerian trail detection algorithm.
-        let trail = Eulerian::init(&graph).find_trail(&graph);
+        let trail = Eulerian::init(&graph).find_trail(&graph).unwrap();
 
         // Then:
         assert_eq!(trail.len(), 3);
@@ -346,7 +362,7 @@ mod tests {
         graph.add_edge_unchecked(c, a, 1.into());
 
         // When: Performing Eulerian trail detection algorithm.
-        let trail = Eulerian::init(&graph).find_trail(&graph);
+        let trail = Eulerian::init(&graph).find_trail(&graph).unwrap();
 
         // Then:
         assert_eq!(trail.len(), 3);
@@ -371,7 +387,7 @@ mod tests {
         graph.add_edge_unchecked(c, a, 1.into());
 
         // When: Performing Eulerian circuit detection algorithm.
-        let circuit = Eulerian::init(&graph).find_circuit(&graph);
+        let circuit = Eulerian::init(&graph).find_circuit(&graph).unwrap();
 
         // Then:
         assert_eq!(circuit.len(), 4);
@@ -395,7 +411,7 @@ mod tests {
         graph.add_edge_unchecked(c, a, 1.into());
 
         // When: Performing Eulerian trail detection algorithm.
-        let trail = Eulerian::init(&graph).find_trail(&graph);
+        let trail = Eulerian::init(&graph).find_trail(&graph).unwrap();
 
         // Then:
         assert_eq!(trail.len(), 3);
@@ -420,7 +436,7 @@ mod tests {
         graph.add_edge_unchecked(c, a, 1.into());
 
         // When: Performing Eulerian circuit detection algorithm.
-        let circuit = Eulerian::init(&graph).find_circuit(&graph);
+        let circuit = Eulerian::init(&graph).find_circuit(&graph).unwrap();
 
         // Then:
         assert_eq!(circuit.len(), 4);
@@ -452,7 +468,7 @@ mod tests {
         graph.add_edge_unchecked(c, e, 1.into());
 
         // When: Performing Eulerian trail detection algorithm.
-        let trail = Eulerian::init(&graph).find_trail(&graph);
+        let trail = Eulerian::init(&graph).find_trail(&graph).unwrap();
 
         // Then:
         assert_eq!(trail.len(), 7);
@@ -493,7 +509,7 @@ mod tests {
         graph.add_edge_unchecked(e, c, 1.into());
 
         // When: Performing Eulerian trail detection algorithm.
-        let trail = Eulerian::init(&graph).find_trail(&graph);
+        let trail = Eulerian::init(&graph).find_trail(&graph).unwrap();
 
         // Then:
         assert_eq!(trail.len(), 10);
@@ -526,7 +542,7 @@ mod tests {
         graph.add_edge_unchecked(c, e, 1.into());
 
         // When: Performing Eulerian trail detection algorithm.
-        let trail = Eulerian::init(&graph).find_circuit(&graph);
+        let trail = Eulerian::init(&graph).find_circuit(&graph).unwrap();
 
         // Then:
         assert_eq!(trail.len(), 8);
@@ -568,7 +584,7 @@ mod tests {
         graph.add_edge_unchecked(c, a, 1.into());
 
         // When: Performing Eulerian trail detection algorithm.
-        let trail = Eulerian::init(&graph).find_circuit(&graph);
+        let trail = Eulerian::init(&graph).find_circuit(&graph).unwrap();
 
         // Then:
         assert_eq!(trail.len(), 11);
@@ -593,7 +609,7 @@ mod tests {
         graph.add_edge_unchecked(a, d, 1.into());
 
         // When: Performing Eulerian trail detection algorithm.
-        let trail = Eulerian::init(&graph).find_trail(&graph);
+        let trail = Eulerian::init(&graph).find_trail(&graph).unwrap();
 
         // Then: It should start from a or d and not b.
         assert_eq!(trail.len(), 5);
@@ -619,7 +635,7 @@ mod tests {
         graph.add_edge_unchecked(a, d, 1.into());
 
         // When: Performing Eulerian trail detection algorithm.
-        let trail = Eulerian::init(&graph).find_trail(&graph);
+        let trail = Eulerian::init(&graph).find_trail(&graph).unwrap();
 
         // Then: It should start from a or d and not b.
         assert_eq!(trail.len(), 5);
@@ -652,7 +668,7 @@ mod tests {
         graph.add_edge_unchecked(c, e, 1.into());
 
         // When: Performing Eulerian trail detection algorithm.
-        let trail = Eulerian::init(&graph).find_trail(&graph);
+        let trail = Eulerian::init(&graph).find_trail(&graph).unwrap();
 
         // Then:
         assert_eq!(trail.len(), 7);
@@ -694,10 +710,12 @@ mod tests {
         graph.add_edge_unchecked(c, a, 1.into());
 
         // When: Performing Eulerian trail detection algorithm.
-        let trail = Eulerian::init(&graph).find_trail(&graph);
+        let trail = Eulerian::init(&graph).find_trail(&graph).unwrap();
 
         // Then:
         assert_eq!(trail.len(), 10);
         assert_eq!(trail, vec![a, b, c, a, g, e, c, d, e, f]);
     }
+
+    // TODO: Add test for graphs that does not have Eulerian circuit or trail and check that algorithm returns error indeed.
 }
