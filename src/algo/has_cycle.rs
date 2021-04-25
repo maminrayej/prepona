@@ -14,7 +14,8 @@ pub struct HasCycle {
 }
 
 impl HasCycle {
-    /// Initializes the structure.
+    /// # Arguments
+    /// `graph`: Graph to search for cycle in it.
     pub fn init<W, E, Dir, G>(graph: &G) -> Self
     where
         E: Edge<W>,
@@ -56,6 +57,16 @@ impl HasCycle {
         }
     }
 
+    // Recursively searches for cycles in graph
+    //
+    // # Arguments
+    // * `graph`: Graph to search for cycles in it.
+    // * `src_virt_id`: Virtual id of the current vertex.
+    // * `parent_virt_id`: Virtual id of the parent of the current vertex.
+    // 
+    // # Returns
+    // * `true`: If graph has cycle.
+    // * `false`: Otherwise.
     fn has_cycle<W, E, Dir, G>(
         &mut self,
         graph: &G,
@@ -74,17 +85,23 @@ impl HasCycle {
         for (dst_real_id, edge) in graph.edges_from_unchecked(src_real_id) {
             let dst_virt_id = self.id_map.virt_id_of(dst_real_id);
 
+            // If child is not already visited, try to find a cycle that contains (src_id, dst_id) edge.
             if !self.is_visited[dst_virt_id] {
                 self.edge_stack
                     .push((src_real_id, dst_real_id, edge.get_id()));
                 if self.has_cycle(graph, dst_virt_id, src_virt_id) {
                     return true;
                 } else {
+                    // If failed to find any cycle that contains this edge, remove it from stack.
                     self.edge_stack.pop();
                 }
             } else if !self.is_finished[dst_virt_id]
                 && (Dir::is_directed() || dst_virt_id != parent_virt_id)
             {
+                // If child is visited but not finished, means we visited it once before and got back to it using a different route.
+                // But for this route to be cycle, the graph either:
+                // * Must be directed to prevent detecting: v1 --- v2 as cycle.
+                // * Is undirected which child can not be parent of the current vertex. Again to prevent detecting cycle in scenario: v1 --- v2.
                 self.edge_stack
                     .push((src_real_id, dst_real_id, edge.get_id()));
                 return true;
