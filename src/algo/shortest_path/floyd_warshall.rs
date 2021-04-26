@@ -26,7 +26,7 @@ impl FloydWarshall {
     /// # Returns
     /// * `Ok`: Containing shortest path information in the form of: (src_id, dst_id) -> distance.
     /// * `Err`: If graph contains negative cycle.
-    pub fn execute<G, W: Copy + Zero + Any + Ord + std::fmt::Debug, E: Edge<W>>(
+    pub fn execute<G, W: Copy + Zero + Any + Ord, E: Edge<W>>(
         self,
         graph: &G,
     ) -> Result<HashMap<(usize, usize), Magnitude<W>>>

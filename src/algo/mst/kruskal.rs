@@ -35,7 +35,7 @@ impl Kruskal {
     ///
     /// # Returns
     /// MST as a subgraph of the original graph(containing vertices and selected edges)
-    pub fn execute<'a, G, W: Ord + std::fmt::Debug, E: Edge<W>>(
+    pub fn execute<'a, G, W: Ord, E: Edge<W>>(
         mut self,
         graph: &'a G,
     ) -> Subgraph<W, E, UndirectedEdge, G>
