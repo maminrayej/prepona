@@ -1,11 +1,11 @@
 [package]
 name = "prepona"
-version = "0.0.2"
+version = "0.1.0"
 authors = ["m.amin.rayej <m.amin.rayej@gmail.com>"]
 edition = "2018"
 readme = "README.md"
 license = "MIT"
-description = "A graph library with simplicity in mind"
+description = "A graph crate with simplicity in mind"
 repository = "https://github.com/maminrayej/prepona"
 homepage = "https://github.com/maminrayej/prepona"
 documentation = "https://docs.rs/prepona"
