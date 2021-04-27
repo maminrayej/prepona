@@ -6,6 +6,48 @@ use crate::graph::{subgraph::Subgraph, Edge, EdgeDir};
 use crate::provide;
 
 /// Detects cycle in a graph.
+///
+/// # Examples
+/// ```
+/// use prepona::prelude::*;
+/// use prepona::storage::DiMat;
+/// use prepona::graph::MatGraph;
+/// use prepona::algo::HasCycle;
+///
+/// // Given: Graph
+/// //
+/// //      a  -->  b  -->  c  -->  d
+/// //      ^        \              ^
+/// //      |         \             |
+/// //      |          -->  e  -----'
+/// //      |               |
+/// //      '_______________'
+/// //
+/// let mut graph = MatGraph::init(DiMat::<usize>::init());
+/// let a = graph.add_vertex();
+/// let b = graph.add_vertex();
+/// let c = graph.add_vertex();
+/// let d = graph.add_vertex();
+/// let e = graph.add_vertex();
+///
+/// let ab = graph.add_edge_unchecked(a, b, 1.into());
+/// graph.add_edge_unchecked(b, c, 1.into());
+/// graph.add_edge_unchecked(c, d, 1.into());
+/// let be = graph.add_edge_unchecked(b, e, 1.into());
+/// graph.add_edge_unchecked(e, d, 1.into());
+/// let ea = graph.add_edge_unchecked(e, a, 1.into());
+///
+/// // When: Performing cycle detection.
+/// let cycle = HasCycle::init(&graph).execute(&graph).unwrap();
+///
+/// // Cycle contains vertices a,b and e.
+/// assert_eq!(cycle.vertex_count(), 3);
+/// assert!(vec![a, b, e].iter().all(|v_id| cycle.vertices().contains(v_id)));
+///
+/// // Cycle contains edges ab, be, ea.
+/// assert_eq!(cycle.edges_count(), 3);
+/// assert!(vec![ab, be, ea].iter().all(|edge_id| cycle.edge(*edge_id).is_ok()));
+/// ```
 pub struct HasCycle {
     is_visited: Vec<bool>,
     is_finished: Vec<bool>,

@@ -9,6 +9,88 @@ use crate::graph::Edge;
 use crate::provide;
 
 /// Finds shortest path from all vertices to all the other ones using floyd-warshall algorithm.
+///
+/// # Examples
+/// ```
+/// use prepona::prelude::*;
+/// use prepona::storage::DiMat;
+/// use prepona::graph::MatGraph;
+/// use prepona::algo::FloydWarshall;
+/// use std::collections::HashMap;
+/// use magnitude::Magnitude;
+///
+/// // Given: Graph
+/// //          6       1
+/// //      a  -->  b  <--  c ---
+/// //    1 |       |           |
+/// //      |  2 /`````\ 2      |
+/// //      |````       ````|   |
+/// //      v               v   | 1
+/// //      d  ---------->  e --'
+/// //              1
+/// let mut graph = MatGraph::init(DiMat::<usize>::init());
+/// let a = graph.add_vertex(); // 0
+/// let b = graph.add_vertex(); // 1
+/// let c = graph.add_vertex(); // 2
+/// let d = graph.add_vertex(); // 3
+/// let e = graph.add_vertex(); // 4
+///
+/// graph.add_edge_unchecked(a, b, 6.into());
+/// graph.add_edge_unchecked(a, d, 1.into());
+/// graph.add_edge_unchecked(b, d, 2.into());
+/// graph.add_edge_unchecked(b, e, 2.into());
+/// graph.add_edge_unchecked(c, b, 1.into());
+/// graph.add_edge_unchecked(e, c, 1.into());
+/// graph.add_edge_unchecked(d, e, 1.into());
+///
+/// // When: Performing FloydWarshall algorithm.
+/// let distance_map = FloydWarshall::init().execute(&graph);
+///
+/// // Then:
+/// assert!(distance_map.is_ok());
+/// let distance_map = distance_map.unwrap();
+///
+/// let expected: HashMap<(usize, usize), Magnitude<usize>> = [
+///     ((a, a), 0.into()),
+///     ((a, b), 4.into()),
+///     ((a, c), 3.into()),
+///     ((a, d), 1.into()),
+///     ((a, e), 2.into()),
+///     ((b, b), 0.into()),
+///     ((b, c), 3.into()),
+///     ((b, d), 2.into()),
+///     ((b, e), 2.into()),
+///     ((c, b), 1.into()),
+///     ((c, c), 0.into()),
+///     ((c, d), 3.into()),
+///     ((c, e), 3.into()),
+///     ((d, b), 3.into()),
+///     ((d, c), 2.into()),
+///     ((d, d), 0.into()),
+///     ((d, e), 1.into()),
+///     ((e, b), 2.into()),
+///     ((e, c), 1.into()),
+///     ((e, d), 4.into()),
+///     ((e, e), 0.into()),
+/// ]
+/// .iter()
+/// .copied()
+/// .collect();
+///
+/// let vertices = [a, b, c, d, e];
+/// for v1_id in &vertices {
+///     for v2_id in &vertices {
+///         if let Some(dist) = expected.get(&(*v1_id, *v2_id)) {
+///             assert_eq!(distance_map.get(&(*v1_id, *v2_id)).unwrap(), dist)
+///         } else {
+///             assert!(distance_map
+///                 .get(&(*v1_id, *v2_id))
+///                 .unwrap()
+///                 .is_pos_infinite())
+///         }
+///     }
+/// }
+/// ```
 pub struct FloydWarshall {}
 
 impl FloydWarshall {

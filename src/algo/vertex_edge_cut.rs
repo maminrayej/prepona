@@ -8,6 +8,43 @@ use crate::{
 };
 
 /// Finds cut vertices(articulation points) and cut edges(bridges).
+///
+/// # Examples
+/// ```
+/// use prepona::prelude::*;
+/// use prepona::storage::Mat;
+/// use prepona::graph::MatGraph;
+/// use prepona::algo::VertexEdgeCut;
+///
+/// // Given:
+/// //            .-- c --.
+/// //            |       |
+/// //      a --- b ----- d --- e
+/// //
+/// let mut graph = MatGraph::init(Mat::<usize>::init());
+/// let a = graph.add_vertex();
+/// let b = graph.add_vertex();
+/// let c = graph.add_vertex();
+/// let d = graph.add_vertex();
+/// let e = graph.add_vertex();
+/// let ab = graph.add_edge_unchecked(a, b, 1.into());
+/// graph.add_edge_unchecked(b, c, 1.into());
+/// graph.add_edge_unchecked(c, d, 1.into());
+/// graph.add_edge_unchecked(b, d, 1.into());
+/// let de = graph.add_edge_unchecked(d, e, 1.into());
+///
+/// let (cut_vertices, cut_edges) = VertexEdgeCut::init(&graph).execute(&graph);
+///
+/// assert_eq!(cut_vertices.len(), 2);
+/// assert!(vec![b, d]
+///     .iter()
+///     .all(|vertex_id| cut_vertices.contains(vertex_id)));
+/// assert_eq!(cut_edges.len(), 2);
+/// assert!(vec![ab, de].into_iter().all(|edge_id| cut_edges
+///     .iter()
+///     .find(|(_, _, edge)| edge.get_id() == edge_id)
+///     .is_some()))
+/// ```
 pub struct VertexEdgeCut<'a, W, E: Edge<W>> {
     is_visited: Vec<bool>,
     depth_of: Vec<Magnitude<usize>>,

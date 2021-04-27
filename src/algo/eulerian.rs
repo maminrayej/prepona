@@ -9,6 +9,43 @@ use crate::{
 };
 
 /// Finds Eulerian trail and circuit.
+///
+/// # Examples
+/// ```
+/// use prepona::prelude::*;
+/// use prepona::algo::Eulerian;
+/// use prepona::storage::Mat;
+/// use prepona::graph::MatGraph;
+///
+/// // Given:
+/// //
+/// //      a --- b --.
+/// //     /  \       |
+/// //    e    \      |
+/// //     \    \     |
+/// //      c -- d    |
+/// //      |_________'
+/// //
+/// let mut graph = MatGraph::init(Mat::<usize>::init());
+/// let a = graph.add_vertex();
+/// let b = graph.add_vertex();
+/// let c = graph.add_vertex();
+/// let d = graph.add_vertex();
+/// let e = graph.add_vertex();
+/// graph.add_edge_unchecked(a, b, 1.into());
+/// graph.add_edge_unchecked(a, e, 1.into());
+/// graph.add_edge_unchecked(a, d, 1.into());
+/// graph.add_edge_unchecked(b, c, 1.into());
+/// graph.add_edge_unchecked(c, d, 1.into());
+/// graph.add_edge_unchecked(c, e, 1.into());
+///
+/// // When: Performing Eulerian trail detection algorithm.
+/// let trail = Eulerian::init(&graph).find_trail(&graph).unwrap();
+///
+/// // Then:
+/// assert_eq!(trail.len(), 7);
+/// assert_eq!(trail, vec![a, b, c, d, a, e, c]);
+/// ```
 pub struct Eulerian<W, E: Edge<W>, Ty: EdgeDir, G: Graph<W, E, Ty>> {
     unused_edges: HashSet<usize>,
     out_deg: Vec<u32>,

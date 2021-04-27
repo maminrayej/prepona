@@ -3,6 +3,43 @@ use crate::graph::{Edge, UndirectedEdge};
 use crate::provide;
 
 /// Finds connected components of an undirected graph.
+///
+/// # Examples
+/// ```
+/// use prepona::prelude::*;
+/// use prepona::storage::Mat;
+/// use prepona::graph::MatGraph;
+/// use prepona::algo::ConnectedComponents;
+///
+/// //      a  ---  b  ---  d               g
+/// //      |      /
+/// //      c ___/              e  --- f
+/// let mut graph = MatGraph::init(Mat::<usize>::init());
+/// let a = graph.add_vertex();
+/// let b = graph.add_vertex();
+/// let c = graph.add_vertex();
+/// let d = graph.add_vertex();
+/// let e = graph.add_vertex();
+/// let f = graph.add_vertex();
+/// let g = graph.add_vertex();
+///
+/// graph.add_edge_unchecked(a, b, 1.into());
+/// graph.add_edge_unchecked(a, c, 1.into());
+/// graph.add_edge_unchecked(c, b, 1.into());
+/// graph.add_edge_unchecked(b, d, 1.into());
+/// graph.add_edge_unchecked(e, f, 1.into());
+///
+/// let ccs = ConnectedComponents::init(&graph).execute(&graph);
+///
+/// for cc in ccs {
+///     match cc.len() {
+///         1 => assert!(cc.contains(&g)),
+///         2 => assert!(vec![e, f].iter().all(|v_id| cc.contains(v_id))),
+///         4 => assert!(vec![a, b, c, d].iter().all(|v_id| cc.contains(v_id))),
+///         _ => panic!("Unknown component: {:?}", cc),
+///     }
+/// }
+/// ```
 pub struct ConnectedComponents {
     current_component: Vec<usize>,
     ccs: Vec<Vec<usize>>,

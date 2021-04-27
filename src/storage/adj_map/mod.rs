@@ -31,6 +31,15 @@ pub type DiFlowMap<W> = AdjMap<W, FlowEdge<W>, DirectedEdge>;
 /// * |E<sub>src->dst</sub>|: Means number of edges from source to destination.
 /// * |E|: Means number of edges stored in the storage.
 ///
+/// ## Space complexity
+/// Space complexity of `AdjMap` depends on wether `Dir` is [`Directed`](crate::graph::DirectedEdge) or [`Undirected`](crate::graph::UndirectedEdge). \
+/// * **Directed**: For directed graphs `AdjMap` stores |V| + |E| elements.
+/// * **Undirected**: For undirected graphs `AdjMap` stores each edge twice so it stores |V| + 2*|E| elements.
+///
+/// ## Generic Parameters
+/// * `W`: **W**eight type associated with edges.
+/// * `E`: **E**dge type that graph uses.
+/// * `Dir`: **Dir**ection of edges: [`Directed`](crate::graph::DirectedEdge) or [`Undirected`](crate::graph::UndirectedEdge).
 pub struct AdjMap<W: Copy, E: Edge<W> + Copy, Dir: EdgeDir = UndirectedEdge> {
     map: HashMap<usize, HashMap<usize, Vec<E>>>,
 

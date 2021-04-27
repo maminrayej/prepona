@@ -24,14 +24,21 @@ For more information about each storage, graph, ... check the [documentation](ht
 # Basic Usage
 First you have to pick a storage to use. For this section we will use `AdjMatrix`. 
 ```rust
+use prepona::prelude::*;
+use prepona::storage::AdjMatrix;
+
 let adj_matrix = AdjMatrix::<usize, DefaultEdge<usize>, UndirectedEdge>::init(); 
 ```
 As you can see there are three generic parameters that must be specified. First parameter determines the type of weight is going to be stored in the storage. As you can see we set it to `usize` because we want our edges to have weights of type `usize`. Second parameter determines what type of edge is going to be stored. We use `DefaultEdge` for this example. `DefaultEdge` has only a weight. But you can define custom edge types. A good example is the `FlowEdge` which contains weight, capacity and flow. And finally the last parameter determines wether edges are `DirectedEdge` or `UndirectedEdge`. We will go with the undirected one for now. This declaration is too long so Prepona provides some aliases to make the process of initializing a storage easier and more readable. For all the aliases exposed by `AdjMatrix`, visit its documentation page. For now we use the one that is compatible with our defined `adj_matrix`:
 ```rust
+use prepona::storage::Mat;
+
 let adj_matrix = Mat::<usize>::init();
 ```
 Next we have to find a graph that is suitable for out purpose. For this example we will use `SimpleGraph` because we don't want loops or multiple edges between two vertices:
 ```rust
+use prepona::graph::SimpleGraph;
+
 // Initialize the graph with the storage you have chosen.
 let mut graph = SimpleGraph::init(adj_matrix);
 ```
@@ -61,6 +68,8 @@ As you can see we use `add_vertex` for adding a new vertex to the graph and stor
 
 Now we can execute algorithms on our graph. In this example we pretend that this graph represents a network and we want to find those vertices(connection nodes) and edges(links) that if removed, cause our network topology to become disconnected:
 ```rust
+use prepona::algo::VertexEdgeCut;
+
 let (cut_vertices, cut_edges) = VertexEdgeCut::init(&graph).execute(&graph);
 
 // We find that vertices b and d are weak points in our topology. 

@@ -6,6 +6,58 @@ use crate::graph::{subgraph::Subgraph, Edge, UndirectedEdge};
 use crate::provide;
 
 /// Finds minimum spanning tree using kruskal algorithm.
+///
+/// # Examples
+/// ```
+/// use prepona::prelude::*;
+/// use prepona::storage::Mat;
+/// use prepona::graph::MatGraph;
+/// use prepona::algo::Kruskal;
+///
+/// //  Given: Graph
+/// //                5
+/// //      f ----------------.
+/// //      |                 |
+/// //    3 |  1     1     4  |
+/// //      a --- b --- d --- e
+/// //    3 |   5 |   2 |   1 |
+/// //      |     |     |     |
+/// //      c ----'-----'-----'
+/// let mut graph = MatGraph::init(Mat::<usize>::init());
+/// let a = graph.add_vertex();
+/// let b = graph.add_vertex();
+/// let c = graph.add_vertex();
+/// let d = graph.add_vertex();
+/// let e = graph.add_vertex();
+/// let f = graph.add_vertex();
+///
+/// let ab = graph.add_edge_unchecked(a, b, 1.into());
+/// graph.add_edge_unchecked(a, c, 3.into());
+/// let af = graph.add_edge_unchecked(a, f, 3.into());
+///
+/// graph.add_edge_unchecked(b, c, 5.into());
+/// let bd = graph.add_edge_unchecked(b, d, 1.into());
+///
+/// let dc = graph.add_edge_unchecked(d, c, 2.into());
+/// graph.add_edge_unchecked(d, e, 4.into());
+///
+/// let ec = graph.add_edge_unchecked(e, c, 1.into());
+/// graph.add_edge_unchecked(e, f, 5.into());
+///
+/// let mut tags = std::collections::HashMap::<usize, &'static str>::new();
+/// tags.insert(a, "a");
+/// tags.insert(b, "b");
+/// tags.insert(c, "c");
+/// tags.insert(d, "d");
+/// tags.insert(e, "e");
+/// tags.insert(f, "f");
+///
+/// let mst = Kruskal::init(&graph).execute(&graph);
+///
+/// assert_eq!(mst.vertex_count(), 6);
+/// assert_eq!(mst.edges_count(), 5);
+/// assert!(vec![ab, af, bd, dc, ec].into_iter().all(|edge_id| mst.edge(edge_id).is_ok()))
+/// ```
 pub struct Kruskal {
     sets: Vec<Rc<RefCell<HashSet<usize>>>>,
 }

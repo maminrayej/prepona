@@ -10,6 +10,56 @@ use crate::{
 };
 
 /// Finds shortest path from a single source to all other vertices using dijkstra algorithm.
+///
+/// # Examples
+/// ```
+/// use prepona::prelude::*;
+/// use prepona::storage::DiMat;
+/// use prepona::graph::MatGraph;
+/// use prepona::algo::Dijkstra;
+///
+/// // Given: Graph
+/// //          6       1
+/// //      a  -->  b  <--  c ---
+/// //    1 |       |           |
+/// //      |  2 /`````\ 2      |
+/// //      |````       ````|   |
+/// //      v               v   | 1
+/// //      d  ---------->  e --'
+/// //              1
+/// let mut graph = MatGraph::init(DiMat::<usize>::init());
+/// let a = graph.add_vertex(); // 0
+/// let b = graph.add_vertex(); // 1
+/// let c = graph.add_vertex(); // 2
+/// let d = graph.add_vertex(); // 3
+/// let e = graph.add_vertex(); // 4
+///
+/// graph.add_edge_unchecked(a, b, 6.into());
+/// let ad = graph.add_edge_unchecked(a, d, 1.into());
+/// graph.add_edge_unchecked(b, d, 2.into());
+/// graph.add_edge_unchecked(b, e, 2.into());
+/// let cb = graph.add_edge_unchecked(c, b, 1.into());
+/// let ec = graph.add_edge_unchecked(e, c, 1.into());
+/// let de = graph.add_edge_unchecked(d, e, 1.into());
+///
+/// // When: Performing Dijkstra algorithm.
+/// let sp_subgraph = Dijkstra::init(&graph).execute(&graph, a);
+///
+/// // Then:
+/// assert_eq!(sp_subgraph.vertex_count(), 5);
+/// assert_eq!(sp_subgraph.edges_count(), 4);
+/// assert!(vec![a, b, c, d, e]
+///     .iter()
+///     .all(|vertex_id| sp_subgraph.vertices().contains(vertex_id)));
+/// assert!(vec![ad, cb, ec, de]
+///     .into_iter()
+///     .all(|edge_id| sp_subgraph.edge(edge_id).is_ok()));
+/// assert_eq!(sp_subgraph.distance_to(a).unwrap(), 0.into());
+/// assert_eq!(sp_subgraph.distance_to(b).unwrap(), 4.into());
+/// assert_eq!(sp_subgraph.distance_to(c).unwrap(), 3.into());
+/// assert_eq!(sp_subgraph.distance_to(d).unwrap(), 1.into());
+/// assert_eq!(sp_subgraph.distance_to(e).unwrap(), 2.into());
+/// ```
 pub struct Dijkstra<W> {
     visited: Vec<bool>,
     dist: Vec<Magnitude<W>>,

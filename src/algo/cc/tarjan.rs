@@ -4,6 +4,63 @@ use crate::graph::{DirectedEdge, Edge};
 use crate::provide;
 
 /// Finds connected components of a directed graph.
+///
+/// # Examples
+/// ```
+/// use prepona::prelude::*;
+/// use prepona::storage::DiMat;
+/// use prepona::graph::MatGraph;
+/// use prepona::algo::TarjanSCC;
+/// //
+/// //              .--- e <--.
+/// //              |         |
+/// //              v         |
+/// //      a  -->  b    -->  f  -->  g <----.
+/// //     ^ |      |   /     |      /       |
+/// //     | |      |  /      |     /        |
+/// //     | v      v /       v    /         |
+/// //      d  -->  c  ---->  h <------- i --'
+/// //                        |          ^
+/// //                        |          |
+/// //                        ````````````
+/// //
+/// let mut graph = MatGraph::init(DiMat::<usize>::init());
+/// let a = graph.add_vertex();
+/// let b = graph.add_vertex();
+/// let c = graph.add_vertex();
+/// let d = graph.add_vertex();
+/// let e = graph.add_vertex();
+/// let f = graph.add_vertex();
+/// let g = graph.add_vertex();
+/// let h = graph.add_vertex();
+/// let i = graph.add_vertex();
+///
+/// graph.add_edge_unchecked(a, d, 1.into());
+/// graph.add_edge_unchecked(d, a, 1.into());
+/// graph.add_edge_unchecked(a, b, 1.into());
+/// graph.add_edge_unchecked(d, c, 1.into());
+/// graph.add_edge_unchecked(b, c, 1.into());
+/// graph.add_edge_unchecked(f, e, 1.into());
+/// graph.add_edge_unchecked(e, b, 1.into());
+/// graph.add_edge_unchecked(f, h, 1.into());
+/// graph.add_edge_unchecked(c, h, 1.into());
+/// graph.add_edge_unchecked(c, f, 1.into());
+/// graph.add_edge_unchecked(f, g, 1.into());
+/// graph.add_edge_unchecked(h, i, 1.into());
+/// graph.add_edge_unchecked(g, h, 1.into());
+/// graph.add_edge_unchecked(i, g, 1.into());
+///
+/// let sccs = TarjanSCC::init(&graph).execute(&graph);
+///
+/// for scc in sccs {
+///     match scc.len() {
+///         2 => assert!(vec![d, a].iter().all(|v_id| scc.contains(v_id))),
+///         3 => assert!(vec![i, h, g].iter().all(|v_id| scc.contains(v_id))),
+///         4 => assert!(vec![e, f, c, b].iter().all(|v_id| scc.contains(v_id))),
+///         _ => unreachable!("Unknown scc"),
+///     }
+/// }
+/// ```
 pub struct TarjanSCC {
     stack: Vec<usize>,
     on_stack: Vec<bool>,

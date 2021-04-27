@@ -3,6 +3,55 @@ use crate::graph::{DirectedEdge, Edge};
 use crate::provide;
 
 /// Finds the topological sort of vertices.
+///
+/// # Examples
+/// ```
+/// use prepona::prelude::*;
+/// use prepona::storage::DiMat;
+/// use prepona::graph::MatGraph;
+/// use prepona::algo::TopologicalSort;
+///
+/// // Given: Graph
+/// //
+/// //      a  -->  b  -->  c  -->  f
+/// //      |        \      |
+/// //      |         '-----|
+/// //      |               |
+/// //      |               v
+/// //      '-----> d  -->  e
+/// let mut graph = MatGraph::init(DiMat::<usize>::init());
+/// let a = graph.add_vertex();
+/// let b = graph.add_vertex();
+/// let c = graph.add_vertex();
+/// let d = graph.add_vertex();
+/// let e = graph.add_vertex();
+/// let f = graph.add_vertex();
+///
+/// graph.add_edge_unchecked(a, b, 1.into());
+/// graph.add_edge_unchecked(a, d, 1.into());
+/// graph.add_edge_unchecked(b, c, 1.into());
+/// graph.add_edge_unchecked(b, e, 1.into());
+/// graph.add_edge_unchecked(d, e, 1.into());
+/// graph.add_edge_unchecked(c, e, 1.into());
+/// graph.add_edge_unchecked(c, f, 1.into());
+///
+/// let sorted_vertices = TopologicalSort::init().execute(&graph);
+///
+/// assert_eq!(sorted_vertices.len(), 6);
+/// for (src_id, dst_id, _) in graph.edges() {
+///     // src must appear before dst in topological sort
+///     let src_index = sorted_vertices
+///         .iter()
+///         .position(|v_id| *v_id == src_id)
+///         .unwrap();
+///     let dst_index = sorted_vertices
+///         .iter()
+///         .position(|v_id| *v_id == dst_id)
+///         .unwrap();
+///
+///     assert!(src_index < dst_index)
+/// }
+/// ```
 pub struct TopologicalSort {
     sorted_vertex_ids: Vec<usize>,
 }
