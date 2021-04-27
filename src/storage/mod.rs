@@ -1,8 +1,10 @@
 mod adj_list;
+mod adj_map;
 mod adj_matrix;
 mod error;
 
 pub use adj_list::{AdjList, DiFlowList, DiList, FlowList, List};
+pub use adj_map::{AdjMap, DiFlowMap, DiMap, FlowMap, Map};
 pub use adj_matrix::{AdjMatrix, DiFlowMat, DiMat, FlowMat, Mat};
 pub use error::{Error, ErrorKind};
 
