@@ -26,7 +26,7 @@ where
 {
     graph: &'a G,
 
-    edges: Vec<(usize, usize, usize)>,
+    edges: Vec<(usize, usize, &'a E)>,
     vertex_ids: HashSet<usize>,
 
     phantom_w: PhantomData<W>,
@@ -51,7 +51,7 @@ where
     /// An initialized subgraph containing the provided edges and vertices.
     pub fn init(
         graph: &'a G,
-        edges: Vec<(usize, usize, usize)>,
+        edges: Vec<(usize, usize, &'a E)>,
         vertex_ids: HashSet<usize>,
     ) -> Self {
         Subgraph {
@@ -82,20 +82,12 @@ where
         if !self.contains_vertex(src_id) {
             Err(Error::new_vnf(src_id))?
         } else {
-            Ok(self.neighbors_unchecked(src_id))
+            Ok(self
+                .edges
+                .iter()
+                .filter_map(|(s_id, dst_id, _)| if *s_id == src_id { Some(*dst_id) } else { None })
+                .collect())
         }
-    }
-
-    /// # Arguments:
-    /// `src_id`: Id of the source vertex.
-    ///
-    /// # Returns
-    /// Id of vertices accessible from source vertex using one edge.
-    fn neighbors_unchecked(&self, src_id: usize) -> Vec<usize> {
-        self.edges
-            .iter()
-            .filter_map(|(s_id, dst_id, _)| if *s_id == src_id { Some(*dst_id) } else { None })
-            .collect()
     }
 }
 
@@ -135,23 +127,18 @@ where
         if !self.contains_vertex(src_id) {
             Err(Error::new_vnf(src_id))?
         } else {
-            Ok(self.edges_from_unchecked(src_id))
+            Ok(self
+                .edges
+                .iter()
+                .filter_map(|(s_id, dst_id, edge)| {
+                    if *s_id == src_id {
+                        Some((*dst_id, *edge))
+                    } else {
+                        None
+                    }
+                })
+                .collect())
         }
-    }
-
-    /// # Arguments
-    /// `src_id`: Id of the source vertex.
-    ///
-    /// # Returns
-    /// * All edges from the source vertex in the format of: (`dst_id`, `edge`)
-    fn edges_from_unchecked(&self, src_id: usize) -> Vec<(usize, &E)> {
-        self.graph
-            .edges_from_unchecked(src_id)
-            .into_iter()
-            .filter(|(dst_id, edge)| {
-                self.contains_vertex(*dst_id) && self.contains_edge(edge.get_id())
-            })
-            .collect()
     }
 
     /// # Arguments
@@ -167,22 +154,18 @@ where
         } else if !self.contains_vertex(dst_id) {
             Err(Error::new_vnf(dst_id))?
         } else {
-            Ok(self.edges_between_unchecked(src_id, dst_id))
+            Ok(self
+                .edges
+                .iter()
+                .filter_map(|(s_id, d_id, edge)| {
+                    if *s_id == src_id && *d_id == dst_id {
+                        Some(*edge)
+                    } else {
+                        None
+                    }
+                })
+                .collect())
         }
-    }
-
-    /// # Arguments
-    /// * `src_id`: Id of source vertex.
-    /// * `dst_id`: Id of destination vertex.
-    ///
-    /// # Returns
-    /// Edges from source vertex to destination vertex.
-    fn edges_between_unchecked(&self, src_id: usize, dst_id: usize) -> Vec<&E> {
-        self.graph
-            .edges_between_unchecked(src_id, dst_id)
-            .into_iter()
-            .filter(|edge| self.contains_edge(edge.get_id()))
-            .collect()
     }
 
     /// # Arguments
@@ -203,19 +186,14 @@ where
         } else if !self.contains_edge(edge_id) {
             Err(Error::new_enf(edge_id))?
         } else {
-            Ok(self.edge_between_unchecked(src_id, dst_id, edge_id))
+            self.edges
+                .iter()
+                .find(|(s_id, d_id, edge)| {
+                    *s_id == src_id && *d_id == dst_id && edge.get_id() == edge_id
+                })
+                .map(|(_, _, edge)| *edge)
+                .ok_or(Error::new_iei(src_id, dst_id, edge_id).into())
         }
-    }
-
-    /// # Arguments
-    /// * `src_id`: Id of source vertex.
-    /// * `dst_id`: Id of destination vertex.
-    /// * `edge_id`: Id of the edge to retrieve.
-    ///
-    /// # Returns
-    /// Reference to edge with id: `edge_id` from `src_id` to `dst_id`.
-    fn edge_between_unchecked(&self, src_id: usize, dst_id: usize, edge_id: usize) -> &E {
-        self.graph.edge_between_unchecked(src_id, dst_id, edge_id)
     }
 
     /// # Note:
@@ -232,27 +210,11 @@ where
     /// * `Err`: If there is not edge with id: `edge_id`.
     /// * `Ok`: Containing reference to edge with id: `edge_id`.
     fn edge(&self, edge_id: usize) -> Result<&E> {
-        if !self.contains_edge(edge_id) {
-            Err(Error::new_enf(edge_id))?
-        } else {
-            Ok(self.edge_unchecked(edge_id))
-        }
-    }
-
-    /// # Note:
-    /// Consider using `edge_between_unchecked` or `edges_from_unchecked` functions instead of this one.
-    /// Because default implementation of this function iterates over all edges to find the edge with specified id.
-    /// So:
-    /// * if you have info about source of the edge, consider using `edges_from_unchecked` function instead.
-    /// * if you have info about both source and destination of the edge, consider using `edge_between_unchecked` function instead.
-    ///
-    /// # Arguments
-    /// `edge_id`: Id of the edge to be retrieved.
-    ///
-    /// # Returns
-    /// Reference to edge with id: `edge_id`.
-    fn edge_unchecked(&self, edge_id: usize) -> &E {
-        self.graph.edge_unchecked(edge_id)
+        self.edges
+            .iter()
+            .find(|(_, _, edge)| edge.get_id() == edge_id)
+            .map(|(_, _, edge)| *edge)
+            .ok_or(Error::new_enf(edge_id).into())
     }
 
     /// # Arguments
@@ -268,34 +230,19 @@ where
         } else if !self.contains_vertex(dst_id) {
             Err(Error::new_vnf(dst_id))?
         } else {
-            Ok(self.has_any_edge_unchecked(src_id, dst_id))
+            Ok(self
+                .edges
+                .iter()
+                .any(|(s_id, d_id, _)| *s_id == src_id && *d_id == dst_id))
         }
-    }
-
-    /// # Arguments
-    /// * `src_id`: Id of the source vertex.
-    /// * `dst_id`: Id of the destination vertex.
-    ///
-    /// # Returns
-    /// `true` if there is at least one edge from `src_id` to `dst_id` and `false` otherwise.
-    fn has_any_edge_unchecked(&self, src_id: usize, dst_id: usize) -> bool {
-        self.edges
-            .iter()
-            .find(|(s_id, d_id, _)| *s_id == src_id && *d_id == dst_id)
-            .is_some()
     }
 
     /// # Returns
     /// All edges in the subgraph in the format: (`src_id`, `dst_id`, `edge`).
     fn edges(&self) -> Vec<(usize, usize, &E)> {
-        self.graph
-            .edges()
-            .into_iter()
-            .filter(|(src_id, dst_id, edge)| {
-                self.contains_vertex(*src_id)
-                    && self.contains_vertex(*dst_id)
-                    && self.contains_edge(edge.get_id())
-            })
+        self.edges
+            .iter()
+            .map(|(src_id, dst_id, edge)| (*src_id, *dst_id, *edge))
             .collect()
     }
 
@@ -334,7 +281,7 @@ where
     fn contains_edge(&self, edge_id: usize) -> bool {
         self.edges
             .iter()
-            .find(|(_, _, e_id)| *e_id == edge_id)
+            .find(|(_, _, edge)| edge.get_id() == edge_id)
             .is_some()
     }
 }
@@ -373,18 +320,16 @@ where
         } else if !self.contains_edge(edge_id) {
             Err(Error::new_enf(edge_id))?
         } else {
-            Ok(self.remove_edge_unchecked(src_id, dst_id, edge_id))
-        }
-    }
+            if let Some(index) = self.edges.iter().position(|(s_id, d_id, edge)| {
+                *s_id == src_id && *d_id == dst_id && edge.get_id() == edge_id
+            }) {
+                self.edges.swap_remove(index);
 
-    /// Removes an edge from the subgraph.
-    ///
-    /// # Arguments
-    /// * `src_id`: Id of the source vertex.
-    /// * `dst_id`: Id of the destination vertex.
-    /// * `edge_id`: Id of the edge from source to destination to be removed.
-    fn remove_edge_unchecked(&mut self, _: usize, _: usize, edge_id: usize) {
-        self.edges.retain(|(_, _, e_id)| *e_id != edge_id)
+                Ok(())
+            } else {
+                Err(Error::new_iei(src_id, dst_id, edge_id))?
+            }
+        }
     }
 
     /// Removes a vertex from the subgraph.
@@ -399,19 +344,13 @@ where
         if !self.contains_vertex(vertex_id) {
             Err(Error::new_vnf(vertex_id))?
         } else {
-            Ok(self.remove_vertex_unchecked(vertex_id))
+            self.vertex_ids.remove(&vertex_id);
+
+            self.edges
+                .retain(|(src_id, dst_id, _)| *src_id != vertex_id || *dst_id != vertex_id);
+
+            Ok(())
         }
-    }
-
-    /// Removes a vertex from the subgraph.
-    ///
-    /// # Arguments
-    /// `vertex_id`: Id of the vertex to be removed.
-    fn remove_vertex_unchecked(&mut self, vertex_id: usize) {
-        self.vertex_ids.retain(|v_id| *v_id != vertex_id);
-
-        self.edges
-            .retain(|(src_id, dst_id, _)| *src_id != vertex_id && *dst_id != vertex_id);
     }
 
     /// Adds a vertex from the graph to subgraph.
@@ -425,17 +364,13 @@ where
     fn add_vertex_from_graph(&mut self, vertex_id: usize) -> Result<()> {
         if !self.graph.contains_vertex(vertex_id) {
             Err(Error::new_vnf(vertex_id))?
+        } else if self.contains_vertex(vertex_id) {
+            Err(Error::new_vae(vertex_id))?
         } else {
-            Ok(self.add_vertex_from_graph_unchecked(vertex_id))
-        }
-    }
+            self.vertex_ids.insert(vertex_id);
 
-    /// Adds a vertex from the graph to subgraph.
-    ///
-    /// # Arguments
-    /// `vertex_id`: Id of the vertex to be added.
-    fn add_vertex_from_graph_unchecked(&mut self, vertex_id: usize) {
-        self.vertex_ids.insert(vertex_id);
+            Ok(())
+        }
     }
 
     /// Adds an edge from the graph to subgraph.
@@ -453,29 +388,24 @@ where
     ///     * If edge already exists in the subgraph.
     /// * `Ok`:
     fn add_edge_from_graph(&mut self, src_id: usize, dst_id: usize, edge_id: usize) -> Result<()> {
-        if !self.graph.contains_vertex(src_id) {
-            Err(Error::new_vnf(src_id))?
-        } else if !self.graph.contains_vertex(dst_id) {
-            Err(Error::new_vnf(dst_id))?
-        } else if !self.graph.contains_edge(edge_id) {
-            Err(Error::new_enf(edge_id))?
-        } else if self.contains_edge(edge_id) {
+        if self.contains_edge(edge_id) {
             Err(Error::new_eae(edge_id))?
         } else {
-            Ok(self.add_edge_from_graph_unchecked(src_id, dst_id, edge_id))
+            if let Some(edge) = self
+                .graph
+                .edges_between(src_id, dst_id)?
+                .into_iter()
+                .find(|edge| edge.get_id() == edge_id)
+            {
+                self.edges.push((src_id, dst_id, edge));
+
+                self.vertex_ids.insert(src_id);
+                self.vertex_ids.insert(dst_id);
+
+                Ok(())
+            } else {
+                Err(Error::new_iei(src_id, dst_id, edge_id))?
+            }
         }
-    }
-
-    /// Adds an edge from the graph to subgraph.
-    ///
-    /// # Arguments
-    /// * `src_id`: Id of the source vertex.
-    /// * `dst_id`: Id of the destination vertex.
-    /// * `edge_id`: Id of the edge to be added.
-    fn add_edge_from_graph_unchecked(&mut self, src_id: usize, dst_id: usize, edge_id: usize) {
-        self.edges.push((src_id, dst_id, edge_id));
-
-        self.vertex_ids.insert(src_id);
-        self.vertex_ids.insert(dst_id);
     }
 }

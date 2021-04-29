@@ -44,7 +44,7 @@ where
     /// Initialized subgraph containing the specified `edges` and `vertices`.
     pub fn init(
         graph: &'a G,
-        edges: Vec<(usize, usize, usize)>,
+        edges: Vec<(usize, usize, &'a E)>,
         vertices: HashSet<usize>,
         distance_map: HashMap<usize, Magnitude<W>>,
     ) -> Self {
@@ -78,10 +78,6 @@ where
     fn neighbors(&self, src_id: usize) -> anyhow::Result<Vec<usize>> {
         self.subgraph.neighbors(src_id)
     }
-
-    fn neighbors_unchecked(&self, src_id: usize) -> Vec<usize> {
-        self.subgraph.neighbors_unchecked(src_id)
-    }
 }
 
 /// `ShortestPathSubgraph` uses `Subgraph` internally so for more info checkout [`Subgraph`](crate::graph::subgraph::Subgraph).
@@ -111,41 +107,20 @@ where
         self.subgraph.edges_from(src_id)
     }
 
-    fn edges_from_unchecked(&self, src_id: usize) -> Vec<(usize, &E)> {
-        self.subgraph.edges_from_unchecked(src_id)
-    }
-
     fn edges_between(&self, src_id: usize, dst_id: usize) -> anyhow::Result<Vec<&E>> {
         self.subgraph.edges_between(src_id, dst_id)
-    }
-
-    fn edges_between_unchecked(&self, src_id: usize, dst_id: usize) -> Vec<&E> {
-        self.subgraph.edges_between_unchecked(src_id, dst_id)
     }
 
     fn edge_between(&self, src_id: usize, dst_id: usize, edge_id: usize) -> anyhow::Result<&E> {
         self.subgraph.edge_between(src_id, dst_id, edge_id)
     }
 
-    fn edge_between_unchecked(&self, src_id: usize, dst_id: usize, edge_id: usize) -> &E {
-        self.subgraph
-            .edge_between_unchecked(src_id, dst_id, edge_id)
-    }
-
     fn edge(&self, edge_id: usize) -> anyhow::Result<&E> {
         self.subgraph.edge(edge_id)
     }
 
-    fn edge_unchecked(&self, edge_id: usize) -> &E {
-        self.subgraph.edge_unchecked(edge_id)
-    }
-
     fn has_any_edge(&self, src_id: usize, dst_id: usize) -> anyhow::Result<bool> {
         self.subgraph.has_any_edge(src_id, dst_id)
-    }
-
-    fn has_any_edge_unchecked(&self, src_id: usize, dst_id: usize) -> bool {
-        self.subgraph.has_any_edge_unchecked(src_id, dst_id)
     }
 
     fn edges(&self) -> Vec<(usize, usize, &E)> {

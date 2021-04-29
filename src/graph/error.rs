@@ -3,9 +3,11 @@ pub enum ErrorKind {
     Loop,
     MultiEdge,
     VertexNotFound,
+    VertexAlreadyExists,
     EdgeNotFound,
     EdgeAlreadyExists,
     RootAlreadyExists,
+    InvalidEdgeId,
 }
 
 /// Error type returns in [`graph`](crate::graph) module.
@@ -110,6 +112,25 @@ impl Error {
         Error {
             kind: ErrorKind::RootAlreadyExists,
             msg: format!("Vertex with id: {} is already a root", vertex_id),
+        }
+    }
+
+    // TODO: document it.
+    pub fn new_iei(src_id: usize, dst_id: usize, edge_id: usize) -> Self {
+        Error {
+            kind: ErrorKind::InvalidEdgeId,
+            msg: format!(
+                "There is no edge with id: {} from vertex with id: {} to vertex with id: {}",
+                edge_id, src_id, dst_id
+            ),
+        }
+    }
+
+    // TODO: document it.
+    pub fn new_vae(vertex_id: usize) -> Self {
+        Error {
+            kind: ErrorKind::VertexAlreadyExists,
+            msg: format!("There exists already a vertex with id: {}", vertex_id),
         }
     }
 

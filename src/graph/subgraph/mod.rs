@@ -44,14 +44,6 @@ pub trait AsSubgraph<W, E: Edge<W>>: AsFrozenSubgraph<W, E> {
     /// * `Ok`: If removal was successful.
     fn remove_edge(&mut self, src_id: usize, dst_id: usize, edge_id: usize) -> Result<()>;
 
-    /// Removes the edge with id: `edge_id`.
-    ///
-    /// # Arguments
-    /// * `src_id`: Id of source vertex.
-    /// * `dst_id`: Id of destination vertex.
-    /// * `edge_id`: Id of edge to be removed.
-    fn remove_edge_unchecked(&mut self, src_id: usize, dst_id: usize, edge_id: usize);
-
     /// Removes the vertex with id: `vertex_id` from subgraph.
     ///
     /// # Arguments
@@ -62,12 +54,6 @@ pub trait AsSubgraph<W, E: Edge<W>>: AsFrozenSubgraph<W, E> {
     /// * `Ok`: If removal was successful.
     fn remove_vertex(&mut self, vertex_id: usize) -> Result<()>;
 
-    /// Removes the vertex with id: `vertex_id` from subgraph.
-    ///
-    /// # Arguments
-    /// `vertex_id`: Id of the vertex to be removed.
-    fn remove_vertex_unchecked(&mut self, vertex_id: usize);
-
     /// Adds a vertex that is already in the graph, to the subgraph.
     ///
     /// # Arguments
@@ -77,12 +63,6 @@ pub trait AsSubgraph<W, E: Edge<W>>: AsFrozenSubgraph<W, E> {
     /// * `Err`
     /// * `Ok`: If addition was successful.
     fn add_vertex_from_graph(&mut self, vertex_id: usize) -> Result<()>;
-
-    /// Adds a vertex that is already in the graph, to the subgraph.
-    ///
-    /// # Arguments
-    /// `vertex_id`: Id of the vertex to be added from graph to subgraph.
-    fn add_vertex_from_graph_unchecked(&mut self, vertex_id: usize);
 
     /// Adds an edge that is already in the graph, to the subgraph.
     ///
@@ -95,14 +75,6 @@ pub trait AsSubgraph<W, E: Edge<W>>: AsFrozenSubgraph<W, E> {
     /// * `Err`
     /// * `Ok`: If addition was successful.
     fn add_edge_from_graph(&mut self, src_id: usize, dst_id: usize, edge_id: usize) -> Result<()>;
-
-    /// Adds an edge that is already in the graph, to the subgraph.
-    ///
-    /// # Arguments
-    /// * `src_id`: Id of the source vertex.
-    /// * `dst_id`: Id of the destination vertex.
-    /// * `edge_id`: Id of the edge from source vertex to destination vertex.
-    fn add_edge_from_graph_unchecked(&mut self, src_id: usize, dst_id: usize, edge_id: usize);
 }
 
 /// Describes a subgraph that can mutate and also can mutate the graph it's representing.
@@ -129,13 +101,6 @@ pub trait AsMutSubgraph<W, E: Edge<W>>: AsSubgraph<W, E> {
     /// * `Ok`: If removal was successful.
     fn remove_vertex_from_graph(&mut self, vertex_id: usize) -> Result<()>;
 
-    /// Removes a vertex from the graph.
-    /// If the vertex is present in the subgraph, It will get removed from the subgraph as well.
-    ///
-    /// # Arguments
-    /// `vertex_id`: Id of the vertex to get removed.
-    fn remove_vertex_from_graph_unchecked(&mut self, vertex_id: usize);
-
     /// Removes an edge from the graph.
     /// If the edge is present in the subgraph, It will get removed from the subgraph as well.
     ///
@@ -149,23 +114,6 @@ pub trait AsMutSubgraph<W, E: Edge<W>>: AsSubgraph<W, E> {
     /// * `Ok`: Containing the removed edge.
     fn remove_edge_from_graph(&mut self, src_id: usize, dst_id: usize, edge_id: usize)
         -> Result<E>;
-
-    /// Removes an edge from the graph.
-    /// If the edge is present in the subgraph, It will get removed from the subgraph as well.
-    ///
-    /// # Arguments
-    /// * `src_id`: Id of the source vertex.
-    /// * `dst_id`: Id of the destination vertex.
-    /// * `edge_id`: Id of the edge from source vertex to destination vertex.
-    ///
-    /// # Returns
-    /// The removed edge.
-    fn remove_edge_from_graph_unchecked(
-        &mut self,
-        src_id: usize,
-        dst_id: usize,
-        edge_id: usize,
-    ) -> E;
 
     /// Adds a new vertex to subgraph and the graph it's representing.
     ///
@@ -184,15 +132,4 @@ pub trait AsMutSubgraph<W, E: Edge<W>>: AsSubgraph<W, E> {
     /// * `Err`:
     /// * `Ok`: Containing the id of the newly added edge.
     fn add_edge(&mut self, src_id: usize, dst_id: usize, edge: E) -> Result<usize>;
-
-    /// Adds a new edge to subgraph and the graph it's representing.
-    ///
-    /// # Arguments
-    /// * `src_id`: Id of the source vertex.
-    /// * `dst_id`: Id of the destination vertex.
-    /// * `edge`: Edge to be added to subgraph.
-    ///
-    /// # Returns
-    /// The id of the newly added edge.
-    fn add_edge_unchecked(&mut self, src_id: usize, dst_id: usize, edge: E) -> usize;
 }

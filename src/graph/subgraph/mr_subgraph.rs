@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 
 use crate::{
     graph::error::Error,
@@ -47,7 +47,7 @@ where
     /// Initialized subgraph containing the specified `edges` and `vertices` and `roots` as roots of the subgraph.
     pub fn init(
         graph: &'a G,
-        edges: Vec<(usize, usize, usize)>,
+        edges: Vec<(usize, usize, &'a E)>,
         vertices: HashSet<usize>,
         roots: Vec<usize>,
     ) -> Self {
@@ -91,7 +91,7 @@ where
     /// * `Ok`:
     pub fn add_root(&mut self, vertex_id: usize) -> Result<()> {
         if self.is_root(vertex_id) {
-            Err(Error::new_rae(vertex_id)).with_context(|| "MultiRootSubgraph failed")?
+            Err(Error::new_rae(vertex_id))?
         } else {
             self.add_vertex_from_graph(vertex_id)?;
 
@@ -99,16 +99,6 @@ where
 
             Ok(())
         }
-    }
-
-    /// Adds a new root to the set of roots.
-    ///
-    /// # Arguments
-    /// `vertex_id`: Id of the vertex to be added as root.
-    pub fn add_root_unchecked(&mut self, vertex_id: usize) {
-        self.add_vertex_from_graph_unchecked(vertex_id);
-
-        self.roots.push(vertex_id);
     }
 }
 
@@ -121,10 +111,6 @@ where
 {
     fn neighbors(&self, src_id: usize) -> anyhow::Result<Vec<usize>> {
         self.subgraph.neighbors(src_id)
-    }
-
-    fn neighbors_unchecked(&self, src_id: usize) -> Vec<usize> {
-        self.subgraph.neighbors_unchecked(src_id)
     }
 }
 
@@ -155,41 +141,20 @@ where
         self.subgraph.edges_from(src_id)
     }
 
-    fn edges_from_unchecked(&self, src_id: usize) -> Vec<(usize, &E)> {
-        self.subgraph.edges_from_unchecked(src_id)
-    }
-
     fn edges_between(&self, src_id: usize, dst_id: usize) -> anyhow::Result<Vec<&E>> {
         self.subgraph.edges_between(src_id, dst_id)
-    }
-
-    fn edges_between_unchecked(&self, src_id: usize, dst_id: usize) -> Vec<&E> {
-        self.subgraph.edges_between_unchecked(src_id, dst_id)
     }
 
     fn edge_between(&self, src_id: usize, dst_id: usize, edge_id: usize) -> anyhow::Result<&E> {
         self.subgraph.edge_between(src_id, dst_id, edge_id)
     }
 
-    fn edge_between_unchecked(&self, src_id: usize, dst_id: usize, edge_id: usize) -> &E {
-        self.subgraph
-            .edge_between_unchecked(src_id, dst_id, edge_id)
-    }
-
     fn edge(&self, edge_id: usize) -> anyhow::Result<&E> {
         self.subgraph.edge(edge_id)
     }
 
-    fn edge_unchecked(&self, edge_id: usize) -> &E {
-        self.subgraph.edge_unchecked(edge_id)
-    }
-
     fn has_any_edge(&self, src_id: usize, dst_id: usize) -> anyhow::Result<bool> {
         self.subgraph.has_any_edge(src_id, dst_id)
-    }
-
-    fn has_any_edge_unchecked(&self, src_id: usize, dst_id: usize) -> bool {
-        self.subgraph.has_any_edge_unchecked(src_id, dst_id)
     }
 
     fn edges(&self) -> Vec<(usize, usize, &E)> {
@@ -228,10 +193,6 @@ where
         self.subgraph.remove_edge(src_id, dst_id, edge_id)
     }
 
-    fn remove_edge_unchecked(&mut self, src_id: usize, dst_id: usize, edge_id: usize) {
-        self.subgraph.remove_edge_unchecked(src_id, dst_id, edge_id)
-    }
-
     fn remove_vertex(&mut self, vertex_id: usize) -> Result<()> {
         self.subgraph.remove_vertex(vertex_id)?;
 
@@ -240,26 +201,11 @@ where
         Ok(())
     }
 
-    fn remove_vertex_unchecked(&mut self, vertex_id: usize) {
-        self.subgraph.remove_vertex_unchecked(vertex_id);
-
-        self.roots.retain(|v_id| *v_id != vertex_id);
-    }
-
     fn add_vertex_from_graph(&mut self, vertex_id: usize) -> Result<()> {
         self.subgraph.add_vertex_from_graph(vertex_id)
     }
 
-    fn add_vertex_from_graph_unchecked(&mut self, vertex_id: usize) {
-        self.subgraph.add_vertex_from_graph_unchecked(vertex_id)
-    }
-
     fn add_edge_from_graph(&mut self, src_id: usize, dst_id: usize, edge_id: usize) -> Result<()> {
         self.subgraph.add_edge_from_graph(src_id, dst_id, edge_id)
-    }
-
-    fn add_edge_from_graph_unchecked(&mut self, src_id: usize, dst_id: usize, edge_id: usize) {
-        self.subgraph
-            .add_edge_from_graph_unchecked(src_id, dst_id, edge_id)
     }
 }
