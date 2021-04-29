@@ -35,13 +35,13 @@ use crate::provide;
 /// let d = graph.add_vertex(); // 3
 /// let e = graph.add_vertex(); // 4
 ///
-/// graph.add_edge_unchecked(a, b, 6.into());
-/// graph.add_edge_unchecked(a, d, 1.into());
-/// graph.add_edge_unchecked(b, d, 2.into());
-/// graph.add_edge_unchecked(b, e, 2.into());
-/// graph.add_edge_unchecked(c, b, 1.into());
-/// graph.add_edge_unchecked(e, c, 1.into());
-/// graph.add_edge_unchecked(d, e, 1.into());
+/// graph.add_edge(a, b, 6.into());
+/// graph.add_edge(a, d, 1.into());
+/// graph.add_edge(b, d, 2.into());
+/// graph.add_edge(b, e, 2.into());
+/// graph.add_edge(c, b, 1.into());
+/// graph.add_edge(e, c, 1.into());
+/// graph.add_edge(d, e, 1.into());
 ///
 /// // When: Performing FloydWarshall algorithm.
 /// let distance_map = FloydWarshall::init().execute(&graph);
@@ -130,7 +130,7 @@ impl FloydWarshall {
         for &u_real_id in &vertices {
             let u_virt_id = id_map.virt_id_of(u_real_id);
 
-            for (v_real_id, edge) in graph.edges_from_unchecked(u_real_id) {
+            for (v_real_id, edge) in graph.edges_from(u_real_id).unwrap() {
                 let v_virt_id = id_map.virt_id_of(v_real_id);
                 dist[u_virt_id][v_virt_id] = edge.get_weight().clone();
             }
@@ -217,13 +217,13 @@ mod tests {
         let d = graph.add_vertex();
         let e = graph.add_vertex();
 
-        graph.add_edge_unchecked(a, b, 6.into());
-        graph.add_edge_unchecked(a, d, 1.into());
-        graph.add_edge_unchecked(b, d, 2.into());
-        graph.add_edge_unchecked(b, c, 5.into());
-        graph.add_edge_unchecked(b, e, 2.into());
-        graph.add_edge_unchecked(c, e, 5.into());
-        graph.add_edge_unchecked(d, e, 1.into());
+        graph.add_edge(a, b, 6.into()).unwrap();
+        graph.add_edge(a, d, 1.into()).unwrap();
+        graph.add_edge(b, d, 2.into()).unwrap();
+        graph.add_edge(b, c, 5.into()).unwrap();
+        graph.add_edge(b, e, 2.into()).unwrap();
+        graph.add_edge(c, e, 5.into()).unwrap();
+        graph.add_edge(d, e, 1.into()).unwrap();
 
         // When: Performing FloydWarshall algorithm.
         let distance_map = FloydWarshall::init().execute(&graph);
@@ -292,13 +292,13 @@ mod tests {
         let d = graph.add_vertex(); // 3
         let e = graph.add_vertex(); // 4
 
-        graph.add_edge_unchecked(a, b, 6.into());
-        graph.add_edge_unchecked(a, d, 1.into());
-        graph.add_edge_unchecked(b, d, 2.into());
-        graph.add_edge_unchecked(b, e, 2.into());
-        graph.add_edge_unchecked(c, b, 1.into());
-        graph.add_edge_unchecked(e, c, 1.into());
-        graph.add_edge_unchecked(d, e, 1.into());
+        graph.add_edge(a, b, 6.into()).unwrap();
+        graph.add_edge(a, d, 1.into()).unwrap();
+        graph.add_edge(b, d, 2.into()).unwrap();
+        graph.add_edge(b, e, 2.into()).unwrap();
+        graph.add_edge(c, b, 1.into()).unwrap();
+        graph.add_edge(e, c, 1.into()).unwrap();
+        graph.add_edge(d, e, 1.into()).unwrap();
 
         // When: Performing FloydWarshall algorithm.
         let distance_map = FloydWarshall::init().execute(&graph);
@@ -362,9 +362,9 @@ mod tests {
         let a = graph.add_vertex();
         let b = graph.add_vertex();
         let c = graph.add_vertex();
-        graph.add_edge_unchecked(a, b, 1.into());
-        graph.add_edge_unchecked(b, c, 2.into());
-        graph.add_edge_unchecked(c, a, (-5).into());
+        graph.add_edge(a, b, 1.into()).unwrap();
+        graph.add_edge(b, c, 2.into()).unwrap();
+        graph.add_edge(c, a, (-5).into()).unwrap();
 
         // When: Performing FloydWarshall algorithm.
         let distance_map = FloydWarshall::init().execute(&graph);
@@ -381,7 +381,7 @@ mod tests {
         let mut graph = MatGraph::init(Mat::<isize>::init());
         let a = graph.add_vertex();
         let b = graph.add_vertex();
-        graph.add_edge_unchecked(a, b, (-1).into());
+        graph.add_edge(a, b, (-1).into()).unwrap();
 
         let shortest_paths = FloydWarshall::init().execute(&graph);
 
@@ -402,9 +402,9 @@ mod tests {
         let a = graph.add_vertex();
         let b = graph.add_vertex();
         let c = graph.add_vertex();
-        graph.add_edge_unchecked(a, b, 1.into());
-        graph.add_edge_unchecked(b, c, 2.into());
-        graph.add_edge_unchecked(c, a, (-5).into());
+        graph.add_edge(a, b, 1.into()).unwrap();
+        graph.add_edge(b, c, 2.into()).unwrap();
+        graph.add_edge(c, a, (-5).into()).unwrap();
 
         // When: Performing FloydWarshall algorithm.
         let shortest_paths = FloydWarshall::init().execute(&graph);

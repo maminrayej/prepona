@@ -23,11 +23,11 @@ use crate::provide;
 /// let f = graph.add_vertex();
 /// let g = graph.add_vertex();
 ///
-/// graph.add_edge_unchecked(a, b, 1.into());
-/// graph.add_edge_unchecked(a, c, 1.into());
-/// graph.add_edge_unchecked(c, b, 1.into());
-/// graph.add_edge_unchecked(b, d, 1.into());
-/// graph.add_edge_unchecked(e, f, 1.into());
+/// graph.add_edge(a, b, 1.into());
+/// graph.add_edge(a, c, 1.into());
+/// graph.add_edge(c, b, 1.into());
+/// graph.add_edge(b, d, 1.into());
+/// graph.add_edge(e, f, 1.into());
 ///
 /// let ccs = ConnectedComponents::init(&graph).execute(&graph);
 ///
@@ -123,13 +123,13 @@ mod tests {
         let f = graph.add_vertex();
         let g = graph.add_vertex();
 
-        graph.add_edge_unchecked(a, b, 1.into());
-        graph.add_edge_unchecked(a, c, 1.into());
-        graph.add_edge_unchecked(c, b, 1.into());
-        graph.add_edge_unchecked(b, d, 1.into());
-        graph.add_edge_unchecked(d, e, 1.into());
-        graph.add_edge_unchecked(e, f, 1.into());
-        graph.add_edge_unchecked(f, g, 1.into());
+        graph.add_edge(a, b, 1.into()).unwrap();
+        graph.add_edge(a, c, 1.into()).unwrap();
+        graph.add_edge(c, b, 1.into()).unwrap();
+        graph.add_edge(b, d, 1.into()).unwrap();
+        graph.add_edge(d, e, 1.into()).unwrap();
+        graph.add_edge(e, f, 1.into()).unwrap();
+        graph.add_edge(f, g, 1.into()).unwrap();
 
         let ccs = ConnectedComponents::init(&graph).execute(&graph);
 
@@ -154,11 +154,11 @@ mod tests {
         let f = graph.add_vertex();
         let g = graph.add_vertex();
 
-        graph.add_edge_unchecked(a, b, 1.into());
-        graph.add_edge_unchecked(a, c, 1.into());
-        graph.add_edge_unchecked(c, b, 1.into());
-        graph.add_edge_unchecked(b, d, 1.into());
-        graph.add_edge_unchecked(e, f, 1.into());
+        graph.add_edge(a, b, 1.into()).unwrap();
+        graph.add_edge(a, c, 1.into()).unwrap();
+        graph.add_edge(c, b, 1.into()).unwrap();
+        graph.add_edge(b, d, 1.into()).unwrap();
+        graph.add_edge(e, f, 1.into()).unwrap();
 
         let ccs = ConnectedComponents::init(&graph).execute(&graph);
 

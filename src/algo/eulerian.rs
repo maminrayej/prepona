@@ -32,12 +32,12 @@ use crate::{
 /// let c = graph.add_vertex();
 /// let d = graph.add_vertex();
 /// let e = graph.add_vertex();
-/// graph.add_edge_unchecked(a, b, 1.into());
-/// graph.add_edge_unchecked(a, e, 1.into());
-/// graph.add_edge_unchecked(a, d, 1.into());
-/// graph.add_edge_unchecked(b, c, 1.into());
-/// graph.add_edge_unchecked(c, d, 1.into());
-/// graph.add_edge_unchecked(c, e, 1.into());
+/// graph.add_edge(a, b, 1.into());
+/// graph.add_edge(a, e, 1.into());
+/// graph.add_edge(a, d, 1.into());
+/// graph.add_edge(b, c, 1.into());
+/// graph.add_edge(c, d, 1.into());
+/// graph.add_edge(c, e, 1.into());
 ///
 /// // When: Performing Eulerian trail detection algorithm.
 /// let trail = Eulerian::init(&graph).find_trail(&graph).unwrap();
@@ -251,7 +251,7 @@ where
         if self.out_deg[v_virt_id] == 0 {
             self.trail.push(v_real_id)
         } else {
-            for (dst_real_id, edge) in graph.edges_from_unchecked(v_real_id) {
+            for (dst_real_id, edge) in graph.edges_from(v_real_id).unwrap() {
                 let dst_virt_id = self.id_map.virt_id_of(dst_real_id);
                 if self.unused_edges.contains(&edge.get_id()) {
                     self.unused_edges.remove(&edge.get_id());
@@ -349,8 +349,8 @@ mod tests {
         let a = graph.add_vertex();
         let b = graph.add_vertex();
         let c = graph.add_vertex();
-        graph.add_edge_unchecked(a, b, 1.into());
-        graph.add_edge_unchecked(b, c, 1.into());
+        graph.add_edge(a, b, 1.into()).unwrap();
+        graph.add_edge(b, c, 1.into()).unwrap();
 
         // When: Performing Eulerian trail detection algorithm.
         let trail = Eulerian::init(&graph).find_trail(&graph).unwrap();
@@ -370,8 +370,8 @@ mod tests {
         let a = graph.add_vertex();
         let b = graph.add_vertex();
         let c = graph.add_vertex();
-        graph.add_edge_unchecked(a, b, 1.into());
-        graph.add_edge_unchecked(b, c, 1.into());
+        graph.add_edge(a, b, 1.into()).unwrap();
+        graph.add_edge(b, c, 1.into()).unwrap();
 
         // When: Performing Eulerian trail detection algorithm.
         let trail = Eulerian::init(&graph).find_trail(&graph).unwrap();
@@ -394,9 +394,9 @@ mod tests {
         let a = graph.add_vertex();
         let b = graph.add_vertex();
         let c = graph.add_vertex();
-        graph.add_edge_unchecked(a, b, 1.into());
-        graph.add_edge_unchecked(b, c, 1.into());
-        graph.add_edge_unchecked(c, a, 1.into());
+        graph.add_edge(a, b, 1.into()).unwrap();
+        graph.add_edge(b, c, 1.into()).unwrap();
+        graph.add_edge(c, a, 1.into()).unwrap();
 
         // When: Performing Eulerian trail detection algorithm.
         let trail = Eulerian::init(&graph).find_trail(&graph).unwrap();
@@ -419,9 +419,9 @@ mod tests {
         let a = graph.add_vertex();
         let b = graph.add_vertex();
         let c = graph.add_vertex();
-        graph.add_edge_unchecked(a, b, 1.into());
-        graph.add_edge_unchecked(b, c, 1.into());
-        graph.add_edge_unchecked(c, a, 1.into());
+        graph.add_edge(a, b, 1.into()).unwrap();
+        graph.add_edge(b, c, 1.into()).unwrap();
+        graph.add_edge(c, a, 1.into()).unwrap();
 
         // When: Performing Eulerian circuit detection algorithm.
         let circuit = Eulerian::init(&graph).find_circuit(&graph).unwrap();
@@ -443,9 +443,9 @@ mod tests {
         let a = graph.add_vertex();
         let b = graph.add_vertex();
         let c = graph.add_vertex();
-        graph.add_edge_unchecked(a, b, 1.into());
-        graph.add_edge_unchecked(b, c, 1.into());
-        graph.add_edge_unchecked(c, a, 1.into());
+        graph.add_edge(a, b, 1.into()).unwrap();
+        graph.add_edge(b, c, 1.into()).unwrap();
+        graph.add_edge(c, a, 1.into()).unwrap();
 
         // When: Performing Eulerian trail detection algorithm.
         let trail = Eulerian::init(&graph).find_trail(&graph).unwrap();
@@ -468,9 +468,9 @@ mod tests {
         let a = graph.add_vertex();
         let b = graph.add_vertex();
         let c = graph.add_vertex();
-        graph.add_edge_unchecked(a, b, 1.into());
-        graph.add_edge_unchecked(b, c, 1.into());
-        graph.add_edge_unchecked(c, a, 1.into());
+        graph.add_edge(a, b, 1.into()).unwrap();
+        graph.add_edge(b, c, 1.into()).unwrap();
+        graph.add_edge(c, a, 1.into()).unwrap();
 
         // When: Performing Eulerian circuit detection algorithm.
         let circuit = Eulerian::init(&graph).find_circuit(&graph).unwrap();
@@ -497,12 +497,12 @@ mod tests {
         let c = graph.add_vertex();
         let d = graph.add_vertex();
         let e = graph.add_vertex();
-        graph.add_edge_unchecked(a, b, 1.into());
-        graph.add_edge_unchecked(a, e, 1.into());
-        graph.add_edge_unchecked(a, d, 1.into());
-        graph.add_edge_unchecked(b, c, 1.into());
-        graph.add_edge_unchecked(c, d, 1.into());
-        graph.add_edge_unchecked(c, e, 1.into());
+        graph.add_edge(a, b, 1.into()).unwrap();
+        graph.add_edge(a, e, 1.into()).unwrap();
+        graph.add_edge(a, d, 1.into()).unwrap();
+        graph.add_edge(b, c, 1.into()).unwrap();
+        graph.add_edge(c, d, 1.into()).unwrap();
+        graph.add_edge(c, e, 1.into()).unwrap();
 
         // When: Performing Eulerian trail detection algorithm.
         let trail = Eulerian::init(&graph).find_trail(&graph).unwrap();
@@ -535,15 +535,15 @@ mod tests {
         let e = graph.add_vertex();
         let f = graph.add_vertex();
         let g = graph.add_vertex();
-        graph.add_edge_unchecked(a, b, 1.into());
-        graph.add_edge_unchecked(b, c, 1.into());
-        graph.add_edge_unchecked(c, d, 1.into());
-        graph.add_edge_unchecked(d, e, 1.into());
-        graph.add_edge_unchecked(e, f, 1.into());
-        graph.add_edge_unchecked(f, a, 1.into());
-        graph.add_edge_unchecked(a, g, 1.into());
-        graph.add_edge_unchecked(g, e, 1.into());
-        graph.add_edge_unchecked(e, c, 1.into());
+        graph.add_edge(a, b, 1.into()).unwrap();
+        graph.add_edge(b, c, 1.into()).unwrap();
+        graph.add_edge(c, d, 1.into()).unwrap();
+        graph.add_edge(d, e, 1.into()).unwrap();
+        graph.add_edge(e, f, 1.into()).unwrap();
+        graph.add_edge(f, a, 1.into()).unwrap();
+        graph.add_edge(a, g, 1.into()).unwrap();
+        graph.add_edge(g, e, 1.into()).unwrap();
+        graph.add_edge(e, c, 1.into()).unwrap();
 
         // When: Performing Eulerian trail detection algorithm.
         let trail = Eulerian::init(&graph).find_trail(&graph).unwrap();
@@ -570,13 +570,13 @@ mod tests {
         let c = graph.add_vertex();
         let d = graph.add_vertex();
         let e = graph.add_vertex();
-        graph.add_edge_unchecked(a, b, 1.into());
-        graph.add_edge_unchecked(a, e, 1.into());
-        graph.add_edge_unchecked(a, d, 1.into());
-        graph.add_edge_unchecked(a, c, 1.into());
-        graph.add_edge_unchecked(b, c, 1.into());
-        graph.add_edge_unchecked(c, d, 1.into());
-        graph.add_edge_unchecked(c, e, 1.into());
+        graph.add_edge(a, b, 1.into()).unwrap();
+        graph.add_edge(a, e, 1.into()).unwrap();
+        graph.add_edge(a, d, 1.into()).unwrap();
+        graph.add_edge(a, c, 1.into()).unwrap();
+        graph.add_edge(b, c, 1.into()).unwrap();
+        graph.add_edge(c, d, 1.into()).unwrap();
+        graph.add_edge(c, e, 1.into()).unwrap();
 
         // When: Performing Eulerian trail detection algorithm.
         let trail = Eulerian::init(&graph).find_circuit(&graph).unwrap();
@@ -609,16 +609,16 @@ mod tests {
         let e = graph.add_vertex();
         let f = graph.add_vertex();
         let g = graph.add_vertex();
-        graph.add_edge_unchecked(a, b, 1.into());
-        graph.add_edge_unchecked(b, c, 1.into());
-        graph.add_edge_unchecked(c, d, 1.into());
-        graph.add_edge_unchecked(d, e, 1.into());
-        graph.add_edge_unchecked(e, f, 1.into());
-        graph.add_edge_unchecked(f, a, 1.into());
-        graph.add_edge_unchecked(a, g, 1.into());
-        graph.add_edge_unchecked(g, e, 1.into());
-        graph.add_edge_unchecked(e, c, 1.into());
-        graph.add_edge_unchecked(c, a, 1.into());
+        graph.add_edge(a, b, 1.into()).unwrap();
+        graph.add_edge(b, c, 1.into()).unwrap();
+        graph.add_edge(c, d, 1.into()).unwrap();
+        graph.add_edge(d, e, 1.into()).unwrap();
+        graph.add_edge(e, f, 1.into()).unwrap();
+        graph.add_edge(f, a, 1.into()).unwrap();
+        graph.add_edge(a, g, 1.into()).unwrap();
+        graph.add_edge(g, e, 1.into()).unwrap();
+        graph.add_edge(e, c, 1.into()).unwrap();
+        graph.add_edge(c, a, 1.into()).unwrap();
 
         // When: Performing Eulerian trail detection algorithm.
         let trail = Eulerian::init(&graph).find_circuit(&graph).unwrap();
@@ -640,10 +640,10 @@ mod tests {
         let d = graph.add_vertex();
         let c = graph.add_vertex();
         let a = graph.add_vertex();
-        graph.add_edge_unchecked(a, b, 1.into());
-        graph.add_edge_unchecked(b, c, 1.into());
-        graph.add_edge_unchecked(c, a, 1.into());
-        graph.add_edge_unchecked(a, d, 1.into());
+        graph.add_edge(a, b, 1.into()).unwrap();
+        graph.add_edge(b, c, 1.into()).unwrap();
+        graph.add_edge(c, a, 1.into()).unwrap();
+        graph.add_edge(a, d, 1.into()).unwrap();
 
         // When: Performing Eulerian trail detection algorithm.
         let trail = Eulerian::init(&graph).find_trail(&graph).unwrap();
@@ -666,10 +666,10 @@ mod tests {
         let d = graph.add_vertex();
         let c = graph.add_vertex();
         let a = graph.add_vertex();
-        graph.add_edge_unchecked(a, c, 1.into());
-        graph.add_edge_unchecked(c, b, 1.into());
-        graph.add_edge_unchecked(b, a, 1.into());
-        graph.add_edge_unchecked(a, d, 1.into());
+        graph.add_edge(a, c, 1.into()).unwrap();
+        graph.add_edge(c, b, 1.into()).unwrap();
+        graph.add_edge(b, a, 1.into()).unwrap();
+        graph.add_edge(a, d, 1.into()).unwrap();
 
         // When: Performing Eulerian trail detection algorithm.
         let trail = Eulerian::init(&graph).find_trail(&graph).unwrap();
@@ -696,13 +696,13 @@ mod tests {
         let c = graph.add_vertex();
         let d = graph.add_vertex();
         let e = graph.add_vertex();
-        graph.add_edge_unchecked(a, b, 1.into());
-        graph.add_edge_unchecked(a, e, 1.into());
-        graph.add_edge_unchecked(a, d, 1.into());
-        graph.add_edge_unchecked(a, c, 1.into());
-        graph.add_edge_unchecked(b, c, 1.into());
-        graph.add_edge_unchecked(c, d, 1.into());
-        graph.add_edge_unchecked(c, e, 1.into());
+        graph.add_edge(a, b, 1.into()).unwrap();
+        graph.add_edge(a, e, 1.into()).unwrap();
+        graph.add_edge(a, d, 1.into()).unwrap();
+        graph.add_edge(a, c, 1.into()).unwrap();
+        graph.add_edge(b, c, 1.into()).unwrap();
+        graph.add_edge(c, d, 1.into()).unwrap();
+        graph.add_edge(c, e, 1.into()).unwrap();
 
         // When: Performing Eulerian trail detection algorithm.
         let trail = Eulerian::init(&graph).find_trail(&graph).unwrap();
@@ -735,16 +735,16 @@ mod tests {
         let e = graph.add_vertex();
         let f = graph.add_vertex();
         let g = graph.add_vertex();
-        graph.add_edge_unchecked(a, b, 1.into());
-        graph.add_edge_unchecked(b, c, 1.into());
-        graph.add_edge_unchecked(c, d, 1.into());
-        graph.add_edge_unchecked(d, e, 1.into());
-        graph.add_edge_unchecked(e, f, 1.into());
-        graph.add_edge_unchecked(f, a, 1.into());
-        graph.add_edge_unchecked(a, g, 1.into());
-        graph.add_edge_unchecked(g, e, 1.into());
-        graph.add_edge_unchecked(e, c, 1.into());
-        graph.add_edge_unchecked(c, a, 1.into());
+        graph.add_edge(a, b, 1.into()).unwrap();
+        graph.add_edge(b, c, 1.into()).unwrap();
+        graph.add_edge(c, d, 1.into()).unwrap();
+        graph.add_edge(d, e, 1.into()).unwrap();
+        graph.add_edge(e, f, 1.into()).unwrap();
+        graph.add_edge(f, a, 1.into()).unwrap();
+        graph.add_edge(a, g, 1.into()).unwrap();
+        graph.add_edge(g, e, 1.into()).unwrap();
+        graph.add_edge(e, c, 1.into()).unwrap();
+        graph.add_edge(c, a, 1.into()).unwrap();
 
         // When: Performing Eulerian trail detection algorithm.
         let trail = Eulerian::init(&graph).find_trail(&graph).unwrap();

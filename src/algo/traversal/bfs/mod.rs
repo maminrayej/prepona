@@ -99,7 +99,8 @@ impl<'a, L: BfsListener> Bfs<'a, L> {
                         let real_id = self.id_map.real_id_of(virt_id);
 
                         let mut neighbors = graph
-                            .neighbors_unchecked(real_id)
+                            .neighbors(real_id)
+                            .unwrap()
                             .into_iter()
                             .map(|real_id| self.id_map.virt_id_of(real_id))
                             .filter(|virt_id| self.colors[*virt_id] == Color::White)

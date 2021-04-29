@@ -27,13 +27,13 @@ use crate::provide;
 /// let e = graph.add_vertex();
 /// let f = graph.add_vertex();
 ///
-/// graph.add_edge_unchecked(a, b, 1.into());
-/// graph.add_edge_unchecked(a, d, 1.into());
-/// graph.add_edge_unchecked(b, c, 1.into());
-/// graph.add_edge_unchecked(b, e, 1.into());
-/// graph.add_edge_unchecked(d, e, 1.into());
-/// graph.add_edge_unchecked(c, e, 1.into());
-/// graph.add_edge_unchecked(c, f, 1.into());
+/// graph.add_edge(a, b, 1.into());
+/// graph.add_edge(a, d, 1.into());
+/// graph.add_edge(b, c, 1.into());
+/// graph.add_edge(b, e, 1.into());
+/// graph.add_edge(d, e, 1.into());
+/// graph.add_edge(c, e, 1.into());
+/// graph.add_edge(c, f, 1.into());
 ///
 /// let sorted_vertices = TopologicalSort::init().execute(&graph);
 ///
@@ -145,13 +145,13 @@ mod tests {
         let e = graph.add_vertex();
         let f = graph.add_vertex();
 
-        graph.add_edge_unchecked(a, b, 1.into());
-        graph.add_edge_unchecked(a, d, 1.into());
-        graph.add_edge_unchecked(b, c, 1.into());
-        graph.add_edge_unchecked(b, e, 1.into());
-        graph.add_edge_unchecked(d, e, 1.into());
-        graph.add_edge_unchecked(c, e, 1.into());
-        graph.add_edge_unchecked(c, f, 1.into());
+        graph.add_edge(a, b, 1.into()).unwrap();
+        graph.add_edge(a, d, 1.into()).unwrap();
+        graph.add_edge(b, c, 1.into()).unwrap();
+        graph.add_edge(b, e, 1.into()).unwrap();
+        graph.add_edge(d, e, 1.into()).unwrap();
+        graph.add_edge(c, e, 1.into()).unwrap();
+        graph.add_edge(c, f, 1.into()).unwrap();
 
         let sorted_vertices = TopologicalSort::init().execute(&graph);
 

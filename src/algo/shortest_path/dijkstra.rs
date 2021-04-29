@@ -34,13 +34,13 @@ use crate::{
 /// let d = graph.add_vertex(); // 3
 /// let e = graph.add_vertex(); // 4
 ///
-/// graph.add_edge_unchecked(a, b, 6.into());
-/// let ad = graph.add_edge_unchecked(a, d, 1.into());
-/// graph.add_edge_unchecked(b, d, 2.into());
-/// graph.add_edge_unchecked(b, e, 2.into());
-/// let cb = graph.add_edge_unchecked(c, b, 1.into());
-/// let ec = graph.add_edge_unchecked(e, c, 1.into());
-/// let de = graph.add_edge_unchecked(d, e, 1.into());
+/// graph.add_edge(a, b, 6.into());
+/// let ad = graph.add_edge(a, d, 1.into());
+/// graph.add_edge(b, d, 2.into());
+/// graph.add_edge(b, e, 2.into());
+/// let cb = graph.add_edge(c, b, 1.into());
+/// let ec = graph.add_edge(e, c, 1.into());
+/// let de = graph.add_edge(d, e, 1.into());
 ///
 /// // When: Performing Dijkstra algorithm.
 /// let sp_subgraph = Dijkstra::init(&graph).execute(&graph, a);
@@ -124,7 +124,7 @@ impl<W: Copy + Ord + Zero + Any + Unsigned> Dijkstra<W> {
 
             let real_id = id_map.real_id_of(virt_id);
 
-            for (n_id, edge) in graph.edges_from_unchecked(real_id) {
+            for (n_id, edge) in graph.edges_from(real_id).unwrap() {
                 let n_virt_id = id_map.virt_id_of(n_id);
 
                 let alt = self.dist[virt_id] + *edge.get_weight();
@@ -133,7 +133,7 @@ impl<W: Copy + Ord + Zero + Any + Unsigned> Dijkstra<W> {
                     self.prev[n_virt_id] = virt_id.into();
 
                     edges.retain(|(_, dst_id, _)| *dst_id != n_id); // remove edge to neighbor
-                    edges.push((real_id, n_id, edge.get_id())); // add new edge
+                    edges.push((real_id, n_id, edge)); // add new edge
                 }
             }
         }
@@ -213,13 +213,13 @@ mod tests {
         let d = graph.add_vertex();
         let e = graph.add_vertex();
 
-        graph.add_edge_unchecked(a, b, 6.into());
-        let ad = graph.add_edge_unchecked(a, d, 1.into());
-        let bd = graph.add_edge_unchecked(b, d, 2.into());
-        graph.add_edge_unchecked(b, c, 5.into());
-        graph.add_edge_unchecked(b, e, 2.into());
-        let ce = graph.add_edge_unchecked(c, e, 5.into());
-        let de = graph.add_edge_unchecked(d, e, 1.into());
+        graph.add_edge(a, b, 6.into()).unwrap();
+        let ad = graph.add_edge(a, d, 1.into()).unwrap();
+        let bd = graph.add_edge(b, d, 2.into()).unwrap();
+        graph.add_edge(b, c, 5.into()).unwrap();
+        graph.add_edge(b, e, 2.into()).unwrap();
+        let ce = graph.add_edge(c, e, 5.into()).unwrap();
+        let de = graph.add_edge(d, e, 1.into()).unwrap();
 
         // When: Performing Dijkstra algorithm.
         let sp_subgraph = Dijkstra::init(&graph).execute(&graph, a);
@@ -258,13 +258,13 @@ mod tests {
         let d = graph.add_vertex(); // 3
         let e = graph.add_vertex(); // 4
 
-        graph.add_edge_unchecked(a, b, 6.into());
-        let ad = graph.add_edge_unchecked(a, d, 1.into());
-        graph.add_edge_unchecked(b, d, 2.into());
-        graph.add_edge_unchecked(b, e, 2.into());
-        let cb = graph.add_edge_unchecked(c, b, 1.into());
-        let ec = graph.add_edge_unchecked(e, c, 1.into());
-        let de = graph.add_edge_unchecked(d, e, 1.into());
+        graph.add_edge(a, b, 6.into()).unwrap();
+        let ad = graph.add_edge(a, d, 1.into()).unwrap();
+        graph.add_edge(b, d, 2.into()).unwrap();
+        graph.add_edge(b, e, 2.into()).unwrap();
+        let cb = graph.add_edge(c, b, 1.into()).unwrap();
+        let ec = graph.add_edge(e, c, 1.into()).unwrap();
+        let de = graph.add_edge(d, e, 1.into()).unwrap();
 
         // When: Performing Dijkstra algorithm.
         let sp_subgraph = Dijkstra::init(&graph).execute(&graph, a);

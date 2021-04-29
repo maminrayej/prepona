@@ -31,18 +31,18 @@ use crate::provide;
 /// let e = graph.add_vertex();
 /// let f = graph.add_vertex();
 ///
-/// let ab = graph.add_edge_unchecked(a, b, 1.into());
-/// graph.add_edge_unchecked(a, c, 3.into());
-/// let af = graph.add_edge_unchecked(a, f, 3.into());
+/// let ab = graph.add_edge(a, b, 1.into());
+/// graph.add_edge(a, c, 3.into());
+/// let af = graph.add_edge(a, f, 3.into());
 ///
-/// graph.add_edge_unchecked(b, c, 5.into());
-/// let bd = graph.add_edge_unchecked(b, d, 1.into());
+/// graph.add_edge(b, c, 5.into());
+/// let bd = graph.add_edge(b, d, 1.into());
 ///
-/// let dc = graph.add_edge_unchecked(d, c, 2.into());
-/// graph.add_edge_unchecked(d, e, 4.into());
+/// let dc = graph.add_edge(d, c, 2.into());
+/// graph.add_edge(d, e, 4.into());
 ///
-/// let ec = graph.add_edge_unchecked(e, c, 1.into());
-/// graph.add_edge_unchecked(e, f, 5.into());
+/// let ec = graph.add_edge(e, c, 1.into());
+/// graph.add_edge(e, f, 5.into());
 ///
 /// let mut tags = std::collections::HashMap::<usize, &'static str>::new();
 /// tags.insert(a, "a");
@@ -97,7 +97,7 @@ impl Kruskal {
             + provide::Vertices
             + provide::Graph<W, E, UndirectedEdge>,
     {
-        let mut mst = Vec::<(usize, usize, usize)>::new();
+        let mut mst = Vec::<(usize, usize, &'a E)>::new();
 
         let id_map = graph.continuos_id_map();
 
@@ -113,7 +113,7 @@ impl Kruskal {
                 .borrow()
                 .eq(&*self.sets[u_virt_id].borrow())
             {
-                mst.push((v_real_id, u_real_id, edge.get_id()));
+                mst.push((v_real_id, u_real_id, edge));
 
                 let union_set = self.sets[v_virt_id]
                     .borrow()
@@ -173,18 +173,18 @@ mod tests {
         let e = graph.add_vertex();
         let f = graph.add_vertex();
 
-        let ab = graph.add_edge_unchecked(a, b, 1.into());
-        graph.add_edge_unchecked(a, c, 3.into());
-        let af = graph.add_edge_unchecked(a, f, 3.into());
+        let ab = graph.add_edge(a, b, 1.into()).unwrap();
+        graph.add_edge(a, c, 3.into()).unwrap();
+        let af = graph.add_edge(a, f, 3.into()).unwrap();
 
-        graph.add_edge_unchecked(b, c, 5.into());
-        let bd = graph.add_edge_unchecked(b, d, 1.into());
+        graph.add_edge(b, c, 5.into()).unwrap();
+        let bd = graph.add_edge(b, d, 1.into()).unwrap();
 
-        let dc = graph.add_edge_unchecked(d, c, 2.into());
-        graph.add_edge_unchecked(d, e, 4.into());
+        let dc = graph.add_edge(d, c, 2.into()).unwrap();
+        graph.add_edge(d, e, 4.into()).unwrap();
 
-        let ec = graph.add_edge_unchecked(e, c, 1.into());
-        graph.add_edge_unchecked(e, f, 5.into());
+        let ec = graph.add_edge(e, c, 1.into()).unwrap();
+        graph.add_edge(e, f, 5.into()).unwrap();
 
         let mut tags = std::collections::HashMap::<usize, &'static str>::new();
         tags.insert(a, "a");

@@ -35,20 +35,20 @@ use crate::provide;
 /// let h = graph.add_vertex();
 /// let i = graph.add_vertex();
 ///
-/// graph.add_edge_unchecked(a, d, 1.into());
-/// graph.add_edge_unchecked(d, a, 1.into());
-/// graph.add_edge_unchecked(a, b, 1.into());
-/// graph.add_edge_unchecked(d, c, 1.into());
-/// graph.add_edge_unchecked(b, c, 1.into());
-/// graph.add_edge_unchecked(f, e, 1.into());
-/// graph.add_edge_unchecked(e, b, 1.into());
-/// graph.add_edge_unchecked(f, h, 1.into());
-/// graph.add_edge_unchecked(c, h, 1.into());
-/// graph.add_edge_unchecked(c, f, 1.into());
-/// graph.add_edge_unchecked(f, g, 1.into());
-/// graph.add_edge_unchecked(h, i, 1.into());
-/// graph.add_edge_unchecked(g, h, 1.into());
-/// graph.add_edge_unchecked(i, g, 1.into());
+/// graph.add_edge(a, d, 1.into());
+/// graph.add_edge(d, a, 1.into());
+/// graph.add_edge(a, b, 1.into());
+/// graph.add_edge(d, c, 1.into());
+/// graph.add_edge(b, c, 1.into());
+/// graph.add_edge(f, e, 1.into());
+/// graph.add_edge(e, b, 1.into());
+/// graph.add_edge(f, h, 1.into());
+/// graph.add_edge(c, h, 1.into());
+/// graph.add_edge(c, f, 1.into());
+/// graph.add_edge(f, g, 1.into());
+/// graph.add_edge(h, i, 1.into());
+/// graph.add_edge(g, h, 1.into());
+/// graph.add_edge(i, g, 1.into());
 ///
 /// let sccs = TarjanSCC::init(&graph).execute(&graph);
 ///
@@ -124,7 +124,7 @@ impl TarjanSCC {
 
         let real_id = self.id_map.real_id_of(virt_id);
 
-        for dst_real_id in graph.neighbors_unchecked(real_id) {
+        for dst_real_id in graph.neighbors(real_id).unwrap() {
             let dst_virt_id = self.id_map.virt_id_of(dst_real_id);
 
             if self.index_of[dst_virt_id].is_pos_infinite() {
@@ -184,9 +184,9 @@ mod tests {
         let a = graph.add_vertex();
         let b = graph.add_vertex();
         let c = graph.add_vertex();
-        graph.add_edge_unchecked(a, b, 1.into());
-        graph.add_edge_unchecked(b, c, 1.into());
-        graph.add_edge_unchecked(c, a, 1.into());
+        graph.add_edge(a, b, 1.into()).unwrap();
+        graph.add_edge(b, c, 1.into()).unwrap();
+        graph.add_edge(c, a, 1.into()).unwrap();
 
         // When: Performing Tarjan.
         let sccs = TarjanSCC::init(&graph).execute(&graph);
@@ -241,20 +241,20 @@ mod tests {
         let h = graph.add_vertex();
         let i = graph.add_vertex();
 
-        graph.add_edge_unchecked(a, d, 1.into());
-        graph.add_edge_unchecked(d, a, 1.into());
-        graph.add_edge_unchecked(a, b, 1.into());
-        graph.add_edge_unchecked(d, c, 1.into());
-        graph.add_edge_unchecked(b, c, 1.into());
-        graph.add_edge_unchecked(f, e, 1.into());
-        graph.add_edge_unchecked(e, b, 1.into());
-        graph.add_edge_unchecked(f, h, 1.into());
-        graph.add_edge_unchecked(c, h, 1.into());
-        graph.add_edge_unchecked(c, f, 1.into());
-        graph.add_edge_unchecked(f, g, 1.into());
-        graph.add_edge_unchecked(h, i, 1.into());
-        graph.add_edge_unchecked(g, h, 1.into());
-        graph.add_edge_unchecked(i, g, 1.into());
+        graph.add_edge(a, d, 1.into()).unwrap();
+        graph.add_edge(d, a, 1.into()).unwrap();
+        graph.add_edge(a, b, 1.into()).unwrap();
+        graph.add_edge(d, c, 1.into()).unwrap();
+        graph.add_edge(b, c, 1.into()).unwrap();
+        graph.add_edge(f, e, 1.into()).unwrap();
+        graph.add_edge(e, b, 1.into()).unwrap();
+        graph.add_edge(f, h, 1.into()).unwrap();
+        graph.add_edge(c, h, 1.into()).unwrap();
+        graph.add_edge(c, f, 1.into()).unwrap();
+        graph.add_edge(f, g, 1.into()).unwrap();
+        graph.add_edge(h, i, 1.into()).unwrap();
+        graph.add_edge(g, h, 1.into()).unwrap();
+        graph.add_edge(i, g, 1.into()).unwrap();
 
         let sccs = TarjanSCC::init(&graph).execute(&graph);
 

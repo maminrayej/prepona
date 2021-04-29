@@ -27,11 +27,11 @@ use crate::{
 /// let c = graph.add_vertex();
 /// let d = graph.add_vertex();
 /// let e = graph.add_vertex();
-/// let ab = graph.add_edge_unchecked(a, b, 1.into());
-/// graph.add_edge_unchecked(b, c, 1.into());
-/// graph.add_edge_unchecked(c, d, 1.into());
-/// graph.add_edge_unchecked(b, d, 1.into());
-/// let de = graph.add_edge_unchecked(d, e, 1.into());
+/// let ab = graph.add_edge(a, b, 1.into());
+/// graph.add_edge(b, c, 1.into());
+/// graph.add_edge(c, d, 1.into());
+/// graph.add_edge(b, d, 1.into());
+/// let de = graph.add_edge(d, e, 1.into());
 ///
 /// let (cut_vertices, cut_edges) = VertexEdgeCut::init(&graph).execute(&graph);
 ///
@@ -110,7 +110,7 @@ impl<'a, W, E: Edge<W>> VertexEdgeCut<'a, W, E> {
         self.depth_of[virt_id] = depth;
         self.low_of[virt_id] = depth;
 
-        for (n_real_id, edge) in graph.edges_from_unchecked(real_id) {
+        for (n_real_id, edge) in graph.edges_from(real_id).unwrap() {
             let n_virt_id = self.id_map.virt_id_of(n_real_id);
 
             if !self.is_visited[n_virt_id] {
@@ -168,7 +168,7 @@ mod tests {
         let mut graph = MatGraph::init(Mat::<usize>::init());
         let a = graph.add_vertex();
         let b = graph.add_vertex();
-        let ab = graph.add_edge_unchecked(a, b, 1.into());
+        let ab = graph.add_edge(a, b, 1.into()).unwrap();
 
         let (cut_vertices, cut_edges) = VertexEdgeCut::init(&graph).execute(&graph);
 
@@ -191,8 +191,8 @@ mod tests {
         let a = graph.add_vertex();
         let b = graph.add_vertex();
         let c = graph.add_vertex();
-        let ab = graph.add_edge_unchecked(a, b, 1.into());
-        let ac = graph.add_edge_unchecked(a, c, 1.into());
+        let ab = graph.add_edge(a, b, 1.into()).unwrap();
+        let ac = graph.add_edge(a, c, 1.into()).unwrap();
 
         let (cut_vertices, cut_edges) = VertexEdgeCut::init(&graph).execute(&graph);
 
@@ -218,9 +218,9 @@ mod tests {
         let b = graph.add_vertex();
         let c = graph.add_vertex();
         let d = graph.add_vertex();
-        let ab = graph.add_edge_unchecked(a, b, 1.into());
-        let bc = graph.add_edge_unchecked(a, d, 1.into());
-        let ad = graph.add_edge_unchecked(b, c, 1.into());
+        let ab = graph.add_edge(a, b, 1.into()).unwrap();
+        let bc = graph.add_edge(a, d, 1.into()).unwrap();
+        let ad = graph.add_edge(b, c, 1.into()).unwrap();
 
         let (cut_vertices, cut_edges) = VertexEdgeCut::init(&graph).execute(&graph);
 
@@ -261,32 +261,32 @@ mod tests {
         let l = graph.add_vertex();
         let m = graph.add_vertex();
         let n = graph.add_vertex();
-        graph.add_edge_unchecked(a, b, 1.into());
-        graph.add_edge_unchecked(a, c, 1.into());
+        graph.add_edge(a, b, 1.into()).unwrap();
+        graph.add_edge(a, c, 1.into()).unwrap();
 
-        graph.add_edge_unchecked(b, d, 1.into());
+        graph.add_edge(b, d, 1.into()).unwrap();
 
-        graph.add_edge_unchecked(c, d, 1.into());
+        graph.add_edge(c, d, 1.into()).unwrap();
 
-        let de = graph.add_edge_unchecked(d, e, 1.into());
+        let de = graph.add_edge(d, e, 1.into()).unwrap();
 
-        let ef = graph.add_edge_unchecked(e, f, 1.into());
+        let ef = graph.add_edge(e, f, 1.into()).unwrap();
 
-        let fh = graph.add_edge_unchecked(f, h, 1.into());
+        let fh = graph.add_edge(f, h, 1.into()).unwrap();
 
-        graph.add_edge_unchecked(h, i, 1.into());
-        let hg = graph.add_edge_unchecked(h, g, 1.into());
-        graph.add_edge_unchecked(h, m, 1.into());
+        graph.add_edge(h, i, 1.into()).unwrap();
+        let hg = graph.add_edge(h, g, 1.into()).unwrap();
+        graph.add_edge(h, m, 1.into()).unwrap();
 
-        graph.add_edge_unchecked(i, j, 1.into());
+        graph.add_edge(i, j, 1.into()).unwrap();
 
-        graph.add_edge_unchecked(j, k, 1.into());
+        graph.add_edge(j, k, 1.into()).unwrap();
 
-        graph.add_edge_unchecked(k, l, 1.into());
+        graph.add_edge(k, l, 1.into()).unwrap();
 
-        graph.add_edge_unchecked(l, m, 1.into());
+        graph.add_edge(l, m, 1.into()).unwrap();
 
-        let mn = graph.add_edge_unchecked(m, n, 1.into());
+        let mn = graph.add_edge(m, n, 1.into()).unwrap();
 
         let (cut_vertices, cut_edges) = VertexEdgeCut::init(&graph).execute(&graph);
 
@@ -314,11 +314,11 @@ mod tests {
         let c = graph.add_vertex();
         let d = graph.add_vertex();
         let e = graph.add_vertex();
-        let ab = graph.add_edge_unchecked(a, b, 1.into());
-        graph.add_edge_unchecked(b, c, 1.into());
-        graph.add_edge_unchecked(c, d, 1.into());
-        graph.add_edge_unchecked(b, d, 1.into());
-        let de = graph.add_edge_unchecked(d, e, 1.into());
+        let ab = graph.add_edge(a, b, 1.into()).unwrap();
+        graph.add_edge(b, c, 1.into()).unwrap();
+        graph.add_edge(c, d, 1.into()).unwrap();
+        graph.add_edge(b, d, 1.into()).unwrap();
+        let de = graph.add_edge(d, e, 1.into()).unwrap();
 
         let (cut_vertices, cut_edges) = VertexEdgeCut::init(&graph).execute(&graph);
 
