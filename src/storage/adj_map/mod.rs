@@ -9,7 +9,9 @@ use crate::{
     prelude::{DefaultEdge, DirectedEdge, UndirectedEdge},
 };
 
-use super::GraphStorage;
+use anyhow::Result;
+
+use super::{Error, GraphStorage};
 
 /// An adjacency map that uses [`undirected`](crate::graph::UndirectedEdge) [`default edges`](crate::graph::DefaultEdge).
 pub type Map<W, Dir = UndirectedEdge> = AdjMap<W, DefaultEdge<W>, Dir>;
@@ -128,6 +130,49 @@ impl<W: Copy, E: Edge<W> + Copy, Dir: EdgeDir> AdjMap<W, E, Dir> {
             None
         }
     }
+
+    fn get_map(&self, vertex_id: usize) -> Result<&HashMap<usize, Vec<E>>> {
+        if !self.contains_vertex(vertex_id) {
+            Err(Error::new_vnf(vertex_id))?
+        } else {
+            Ok(&self.map[&vertex_id])
+        }
+    }
+
+    fn get_map_mut(&mut self, vertex_id: usize) -> Result<&mut HashMap<usize, Vec<E>>> {
+        self.map
+            .get_mut(&vertex_id)
+            .ok_or(Error::new_vnf(vertex_id).into())
+    }
+
+    // TODO: achieve the same effect without using `mut` on `self`.
+    fn get_edges(&self, src_id: usize, dst_id: usize) -> Result<&Vec<E>> {
+        if !self.contains_vertex(src_id) {
+            Err(Error::new_vnf(src_id))?
+        } else if !self.contains_vertex(dst_id) {
+            Err(Error::new_vnf(dst_id))?
+        } else {
+            self.map
+                .get(&src_id)
+                .unwrap()
+                .get(&dst_id)
+                .ok_or(Error::new_eel(src_id, dst_id).into())
+        }
+    }
+
+    fn get_edges_mut(&mut self, src_id: usize, dst_id: usize) -> Result<&mut Vec<E>> {
+        if !self.contains_vertex(src_id) {
+            Err(Error::new_vnf(src_id))?
+        } else if !self.contains_vertex(dst_id) {
+            Err(Error::new_vnf(dst_id))?
+        } else {
+            self.map
+                .get_mut(&src_id)
+                .unwrap()
+                .get_mut(&dst_id)
+                .ok_or(Error::new_eel(src_id, dst_id).into())
+        }
+    }
 }
 
 impl<W: Copy, E: Edge<W> + Copy, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjMap<W, E, Dir> {
@@ -156,41 +201,29 @@ impl<W: Copy, E: Edge<W> + Copy, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjMa
         }
     }
 
-    /// Removes the vertex with id: `vertex_id` from graph.
-    ///
-    /// # Arguments
-    /// `vertex_id`: Id of the vertex to be removed.
-    ///
-    /// # Complexity
-    /// O(|V|)
-    fn remove_vertex_unchecked(&mut self, vertex_id: usize) {
-        self.map.remove(&vertex_id);
+    fn remove_vertex(&mut self, vertex_id: usize) -> Result<()> {
+        if let Some(_) = self.map.remove(&vertex_id) {
+            // `v_id` comes from `vertices()`. So it's always valid.
+            // So it's reasonable to use `index_mut`.
+            for v_id in self.vertices() {
+                self[v_id].remove(&vertex_id);
+            }
 
-        for v_id in self.vertices() {
-            self[v_id].remove(&vertex_id);
+            self.reusable_vertex_ids.insert(vertex_id);
+
+            self.vertex_count -= 1;
+
+            Ok(())
+        } else {
+            Err(Error::new_vnf(vertex_id))?
         }
-
-        self.reusable_vertex_ids.insert(vertex_id);
-
-        self.vertex_count -= 1;
     }
 
-    /// Adds `edge` from vertex with id `src_id`: to vertex with id: `dst_id`.
-    ///
-    /// # Arguments
-    /// * `src_id`: Id of the source vertex.
-    /// * `dst_id`: Id of the destination vertex.
-    /// * `edge`: Edge to be added from source to destination.
-    ///
-    /// # Returns
-    /// Unique id of the newly added edge.
-    ///
-    /// # Complexity
-    /// O(1)
-    ///
-    /// # Panics
-    /// If `src_id` or `dst_id` is not in 0..|V| range.
-    fn add_edge_unchecked(&mut self, src_id: usize, dst_id: usize, mut edge: E) -> usize {
+    fn add_edge(&mut self, src_id: usize, dst_id: usize, mut edge: E) -> Result<usize> {
+        if !self.contains_vertex(dst_id) {
+            Err(Error::new_vnf(dst_id))?
+        }
+
         let edge_id = if let Some(id) = self.next_reusable_edge_id() {
             id
         } else {
@@ -201,77 +234,53 @@ impl<W: Copy, E: Edge<W> + Copy, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjMa
 
         edge.set_id(edge_id);
 
-        self[src_id].entry(dst_id).or_insert(vec![]).push(edge);
+        self.get_map_mut(src_id)?
+            .entry(dst_id)
+            .or_insert(vec![])
+            .push(edge);
 
         if Dir::is_undirected() {
+            // `dst_id` is checked to be valid at the start of this function.
+            // So it's reasonable to use `index_mut`.
             self[dst_id].entry(src_id).or_insert(vec![]).push(edge);
         }
 
-        edge_id
+        Ok(edge_id)
     }
 
-    /// Replaces the edge with id: `edge_id` with `edge`.
-    ///
-    /// # Arguments
-    /// * `src_id`: Id of source vertex.
-    /// * `dst_id`: Id of destination vertex.
-    /// * `edge_id`: Id of the to be updated edge.
-    /// * `edge`: New edge to replace the old one.
-    ///
-    /// # Complexity
-    /// O(|E|)
-    ///
-    /// # Panics
-    /// * If `src_id` or `dst_id` is not in range 0..|V|.
-    /// * If there is no edge with id: `edge_id` from `src_id` to `dst_id`.
-    fn update_edge_unchecked(&mut self, src_id: usize, dst_id: usize, edge_id: usize, mut edge: E) {
-        let removed_edge = self.remove_edge_unchecked(src_id, dst_id, edge_id);
+    fn update_edge(
+        &mut self,
+        src_id: usize,
+        dst_id: usize,
+        edge_id: usize,
+        mut edge: E,
+    ) -> Result<()> {
+        let removed_edge = self.remove_edge(src_id, dst_id, edge_id)?;
 
         edge.set_id(removed_edge.get_id());
 
-        self.add_edge_unchecked(src_id, dst_id, edge);
+        self.add_edge(src_id, dst_id, edge)?;
+
+        Ok(())
     }
 
-    /// Removes the edge with id: `edge_id`.
-    ///
-    /// # Arguments
-    /// * `src_id`: Id of source vertex.
-    /// * `dst_id`: Id of destination vertex.
-    /// * `edge_id`: Id of edge to be removed.
-    ///
-    /// # Returns
-    /// * `Some`: Containing the removed edge.
-    /// * `None`: If edge with `edge_id` does not exist in the graph.
-    ///
-    /// # Complexity
-    /// O(|E<sub>src->dst</sub>|)
-    ///
-    /// # Panics
-    /// * If `src_id` or `dst_id` is not in range 0..|V|.
-    /// * If there is no edge with id: `edge_id` from `src_id` to `dst_id`.
-    fn remove_edge_unchecked(&mut self, src_id: usize, dst_id: usize, edge_id: usize) -> E {
-        let edge_vec = &mut self[(src_id, dst_id)];
+    fn remove_edge(&mut self, src_id: usize, dst_id: usize, edge_id: usize) -> Result<E> {
+        let edges_vec = self.get_edges_mut(src_id, dst_id)?;
 
-        let index = edge_vec.iter().position(|e| e.get_id() == edge_id).unwrap();
+        if let Some(index) = edges_vec.iter().position(|e| e.get_id() == edge_id) {
+            let edge = edges_vec.swap_remove(index);
 
-        let edge = edge_vec.swap_remove(index);
+            self.reusable_edge_ids.insert(edge_id);
 
-        if edge_vec.is_empty() {
-            self[src_id].remove(&dst_id);
-        }
-
-        self.reusable_edge_ids.insert(edge_id);
-
-        if Dir::is_undirected() {
-            let edge_vec = &mut self[(dst_id, src_id)];
-            edge_vec.retain(|e| e.get_id() != edge_id);
-
-            if edge_vec.is_empty() {
-                self[dst_id].remove(&src_id);
+            if Dir::is_undirected() {
+                self.get_edges_mut(dst_id, src_id)?
+                    .retain(|e| e.get_id() != edge_id);
             }
-        }
 
-        edge
+            Ok(edge)
+        } else {
+            Err(Error::new_iei(src_id, dst_id, edge_id))?
+        }
     }
 
     /// # Returns
@@ -301,31 +310,58 @@ impl<W: Copy, E: Edge<W> + Copy, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjMa
         self.map.keys().copied().collect()
     }
 
-    /// # Arguments
-    /// `src_id`: Id of the source vertex.
-    ///
-    /// # Returns
-    /// * All edges from the source vertex in the format of: (`dst_id`, `edge`)
-    ///
-    /// # Complexity
-    /// O(|E|)
-    ///
-    /// # Panics
-    /// If `src_id` is not in range 0..|V|.
-    fn edges_from_unchecked(&self, src_id: usize) -> Vec<(usize, &E)> {
-        let edge_map = &self.map[&src_id];
-
-        let edges = edge_map
+    fn edges_from(&self, src_id: usize) -> Result<Vec<(usize, &E)>> {
+        Ok(self
+            .get_map(src_id)?
             .iter()
-            .flat_map(|(dst_id, edge_vec)| {
-                edge_vec
-                    .iter()
+            .flat_map(|(dst_id, edges)| {
+                edges
+                    .into_iter()
                     .map(|edge| (*dst_id, edge))
                     .collect::<Vec<(usize, &E)>>()
             })
-            .collect::<Vec<(usize, &E)>>();
+            .collect())
+    }
 
-        edges
+    fn neighbors(&self, src_id: usize) -> Result<Vec<usize>> {
+        Ok(self
+            .get_map(src_id)?
+            .into_iter()
+            .filter_map(|(dst_id, edges)| {
+                if !edges.is_empty() {
+                    Some(*dst_id)
+                } else {
+                    None
+                }
+            })
+            .collect())
+    }
+
+    fn edges_between(&self, src_id: usize, dst_id: usize) -> Result<Vec<&E>> {
+        Ok(self.get_edges(src_id, dst_id)?.into_iter().collect())
+    }
+
+    fn edge_between(&self, src_id: usize, dst_id: usize, edge_id: usize) -> Result<&E> {
+        self.edges_between(src_id, dst_id)?
+            .into_iter()
+            .find(|edge| edge.get_id() == edge_id)
+            .ok_or(Error::new_iei(src_id, dst_id, edge_id).into())
+    }
+
+    fn as_directed_edges(&self) -> Vec<(usize, usize, &E)> {
+        vec![]
+    }
+
+    fn has_any_edge(&self, src_id: usize, dst_id: usize) -> Result<bool> {
+        Ok(!self.get_edges(src_id, dst_id)?.is_empty())
+    }
+
+    fn edge(&self, edge_id: usize) -> Result<&E> {
+        self.as_directed_edges()
+            .into_iter()
+            .find(|(_, _, edge)| edge.get_id() == edge_id)
+            .map(|(_, _, edge)| edge)
+            .ok_or(Error::new_enf(edge_id).into())
     }
 
     /// # Arguments
@@ -433,7 +469,7 @@ mod tests {
         assert!(vec![a, b, c]
             .into_iter()
             .flat_map(|vertex_id| vec![(vertex_id, a), (vertex_id, b), (vertex_id, c)])
-            .all(|(src_id, dst_id)| !map.has_any_edge_unchecked(src_id, dst_id)));
+            .all(|(src_id, dst_id)| !map.has_any_edge(src_id, dst_id).unwrap()));
     }
 
     #[test]
@@ -460,7 +496,7 @@ mod tests {
         assert!(vec![a, b, c]
             .into_iter()
             .flat_map(|vertex_id| vec![(vertex_id, a), (vertex_id, b), (vertex_id, c)])
-            .all(|(src_id, dst_id)| !map.has_any_edge_unchecked(src_id, dst_id)));
+            .all(|(src_id, dst_id)| !map.has_any_edge(src_id, dst_id).unwrap()));
     }
 
     #[test]
@@ -475,8 +511,8 @@ mod tests {
         let c = map.add_vertex();
 
         // When: Removing vertices a and b.
-        map.remove_vertex_unchecked(a);
-        map.remove_vertex_unchecked(b);
+        map.remove_vertex(a).unwrap();
+        map.remove_vertex(b).unwrap();
 
         // Then:
         assert_eq!(map.vertex_count(), 1);
@@ -491,7 +527,7 @@ mod tests {
         assert_eq!(map.vertices().len(), 1);
         assert!(map.vertices().contains(&c));
 
-        assert!(!map.has_any_edge_unchecked(c, c));
+        assert!(!map.has_any_edge(c, c).unwrap());
     }
 
     #[test]
@@ -506,8 +542,8 @@ mod tests {
         let c = map.add_vertex();
 
         // When: Removing vertices a and b.
-        map.remove_vertex_unchecked(a);
-        map.remove_vertex_unchecked(b);
+        map.remove_vertex(a).unwrap();
+        map.remove_vertex(b).unwrap();
 
         // Then:
         assert_eq!(map.vertex_count(), 1);
@@ -522,7 +558,7 @@ mod tests {
         assert_eq!(map.vertices().len(), 1);
         assert!(map.vertices().contains(&c));
 
-        assert!(!map.has_any_edge_unchecked(c, c));
+        assert!(!map.has_any_edge(c, c).unwrap());
     }
 
     #[test]
@@ -537,8 +573,8 @@ mod tests {
         let c = map.add_vertex();
 
         // When: Removing vertices a and b and afterwards adding two new vertices.
-        map.remove_vertex_unchecked(a);
-        map.remove_vertex_unchecked(b);
+        map.remove_vertex(a).unwrap();
+        map.remove_vertex(b).unwrap();
         let _ = map.add_vertex();
         let _ = map.add_vertex();
 
@@ -559,7 +595,7 @@ mod tests {
         assert!(vec![a, b, c]
             .into_iter()
             .flat_map(|vertex_id| vec![(vertex_id, a), (vertex_id, b), (vertex_id, c)])
-            .all(|(src_id, dst_id)| !map.has_any_edge_unchecked(src_id, dst_id)));
+            .all(|(src_id, dst_id)| !map.has_any_edge(src_id, dst_id).unwrap()));
     }
 
     #[test]
@@ -574,8 +610,8 @@ mod tests {
         let c = map.add_vertex();
 
         // When: Removing vertices a and b and afterwards adding two new vertices.
-        map.remove_vertex_unchecked(a);
-        map.remove_vertex_unchecked(b);
+        map.remove_vertex(a).unwrap();
+        map.remove_vertex(b).unwrap();
         let _ = map.add_vertex();
         let _ = map.add_vertex();
 
@@ -596,7 +632,7 @@ mod tests {
         assert!(vec![a, b, c]
             .into_iter()
             .flat_map(|vertex_id| vec![(vertex_id, a), (vertex_id, b), (vertex_id, c)])
-            .all(|(src_id, dst_id)| !map.has_any_edge_unchecked(src_id, dst_id)));
+            .all(|(src_id, dst_id)| !map.has_any_edge(src_id, dst_id).unwrap()));
     }
 
     #[test]
@@ -616,9 +652,9 @@ mod tests {
         //      ^               |
         //      '----------------
         //
-        map.add_edge_unchecked(a, b, 1.into());
-        map.add_edge_unchecked(b, c, 2.into());
-        map.add_edge_unchecked(c, a, 3.into());
+        map.add_edge(a, b, 1.into()).unwrap();
+        map.add_edge(b, c, 2.into()).unwrap();
+        map.add_edge(c, a, 3.into()).unwrap();
 
         // Then:
         assert_eq!(map.vertex_count(), 3);
@@ -651,9 +687,9 @@ mod tests {
         //      |               |
         //      '----------------
         //
-        map.add_edge_unchecked(a, b, 1.into());
-        map.add_edge_unchecked(b, c, 2.into());
-        map.add_edge_unchecked(c, a, 3.into());
+        map.add_edge(a, b, 1.into()).unwrap();
+        map.add_edge(b, c, 2.into()).unwrap();
+        map.add_edge(c, a, 3.into()).unwrap();
 
         // Then:
         assert_eq!(map.vertex_count(), 3);
@@ -681,16 +717,16 @@ mod tests {
         let a = map.add_vertex();
         let b = map.add_vertex();
         let c = map.add_vertex();
-        map.add_edge_unchecked(a, b, 1.into());
-        map.add_edge_unchecked(b, c, 2.into());
-        map.add_edge_unchecked(c, a, 3.into());
+        map.add_edge(a, b, 1.into()).unwrap();
+        map.add_edge(b, c, 2.into()).unwrap();
+        map.add_edge(c, a, 3.into()).unwrap();
 
         // When: Doing nothing.
 
         // Then:
-        assert!(map.has_any_edge_unchecked(a, b));
-        assert!(map.has_any_edge_unchecked(b, c));
-        assert!(map.has_any_edge_unchecked(c, a));
+        assert!(map.has_any_edge(a, b).unwrap());
+        assert!(map.has_any_edge(b, c).unwrap());
+        assert!(map.has_any_edge(c, a).unwrap());
     }
 
     #[test]
@@ -705,21 +741,21 @@ mod tests {
         let a = map.add_vertex();
         let b = map.add_vertex();
         let c = map.add_vertex();
-        map.add_edge_unchecked(a, b, 1.into());
-        map.add_edge_unchecked(b, c, 2.into());
-        map.add_edge_unchecked(c, a, 3.into());
+        map.add_edge(a, b, 1.into()).unwrap();
+        map.add_edge(b, c, 2.into()).unwrap();
+        map.add_edge(c, a, 3.into()).unwrap();
 
         // When: Doing nothing.
 
         // Then:
-        assert!(map.has_any_edge_unchecked(a, b));
-        assert!(map.has_any_edge_unchecked(b, a));
+        assert!(map.has_any_edge(a, b).unwrap());
+        assert!(map.has_any_edge(b, a).unwrap());
 
-        assert!(map.has_any_edge_unchecked(b, c));
-        assert!(map.has_any_edge_unchecked(c, b));
+        assert!(map.has_any_edge(b, c).unwrap());
+        assert!(map.has_any_edge(c, b).unwrap());
 
-        assert!(map.has_any_edge_unchecked(c, a));
-        assert!(map.has_any_edge_unchecked(a, c));
+        assert!(map.has_any_edge(c, a).unwrap());
+        assert!(map.has_any_edge(a, c).unwrap());
     }
 
     #[test]
@@ -735,14 +771,14 @@ mod tests {
         let b = map.add_vertex();
         let c = map.add_vertex();
 
-        let ab = map.add_edge_unchecked(a, b, 1.into());
-        let bc = map.add_edge_unchecked(b, c, 2.into());
-        let ca = map.add_edge_unchecked(c, a, 3.into());
+        let ab = map.add_edge(a, b, 1.into()).unwrap();
+        let bc = map.add_edge(b, c, 2.into()).unwrap();
+        let ca = map.add_edge(c, a, 3.into()).unwrap();
 
         // When: Incrementing edge of each edge by 1.
-        map.update_edge_unchecked(a, b, ab, 2.into());
-        map.update_edge_unchecked(b, c, bc, 3.into());
-        map.update_edge_unchecked(c, a, ca, 4.into());
+        map.update_edge(a, b, ab, 2.into()).unwrap();
+        map.update_edge(b, c, bc, 3.into()).unwrap();
+        map.update_edge(c, a, ca, 4.into()).unwrap();
 
         // Then:
         assert_eq!(map.vertex_count(), 3);
@@ -771,14 +807,14 @@ mod tests {
         let b = map.add_vertex();
         let c = map.add_vertex();
 
-        let ab = map.add_edge_unchecked(a, b, 1.into());
-        let bc = map.add_edge_unchecked(b, c, 2.into());
-        let ca = map.add_edge_unchecked(c, a, 3.into());
+        let ab = map.add_edge(a, b, 1.into()).unwrap();
+        let bc = map.add_edge(b, c, 2.into()).unwrap();
+        let ca = map.add_edge(c, a, 3.into()).unwrap();
 
         // When: Incrementing edge of each edge by 1.
-        map.update_edge_unchecked(a, b, ab, 2.into());
-        map.update_edge_unchecked(b, c, bc, 3.into());
-        map.update_edge_unchecked(c, a, ca, 4.into());
+        map.update_edge(a, b, ab, 2.into()).unwrap();
+        map.update_edge(b, c, bc, 3.into()).unwrap();
+        map.update_edge(c, a, ca, 4.into()).unwrap();
 
         // Then:
         assert_eq!(map.vertex_count(), 3);
@@ -806,9 +842,9 @@ mod tests {
         let a = map.add_vertex();
         let b = map.add_vertex();
         let c = map.add_vertex();
-        let ab = map.add_edge_unchecked(a, b, 1.into());
-        let bc = map.add_edge_unchecked(b, c, 2.into());
-        map.add_edge_unchecked(c, a, 3.into());
+        let ab = map.add_edge(a, b, 1.into()).unwrap();
+        let bc = map.add_edge(b, c, 2.into()).unwrap();
+        map.add_edge(c, a, 3.into()).unwrap();
 
         // When: Removing edges a --> b and b --> c
         //
@@ -816,8 +852,8 @@ mod tests {
         //      ^       |
         //      '--------
         //
-        map.remove_edge_unchecked(a, b, ab);
-        map.remove_edge_unchecked(b, c, bc);
+        map.remove_edge(a, b, ab).unwrap();
+        map.remove_edge(b, c, bc).unwrap();
 
         // Then:
         assert_eq!(map.vertex_count(), 3);
@@ -827,10 +863,7 @@ mod tests {
         assert_eq!(map[c].len(), 1);
 
         assert_eq!(map.edges().len(), 1);
-        assert_eq!(
-            map.edges_between_unchecked(c, a)[0].get_weight().unwrap(),
-            3
-        );
+        assert_eq!(map.edges_between(c, a).unwrap()[0].get_weight().unwrap(), 3);
     }
 
     #[test]
@@ -845,9 +878,9 @@ mod tests {
         let a = map.add_vertex();
         let b = map.add_vertex();
         let c = map.add_vertex();
-        let ab = map.add_edge_unchecked(a, b, 1.into());
-        let bc = map.add_edge_unchecked(b, c, 2.into());
-        map.add_edge_unchecked(c, a, 3.into());
+        let ab = map.add_edge(a, b, 1.into()).unwrap();
+        let bc = map.add_edge(b, c, 2.into()).unwrap();
+        map.add_edge(c, a, 3.into()).unwrap();
 
         // When: Removing edges a --- b and b --- c
         //
@@ -855,8 +888,8 @@ mod tests {
         //      |       |
         //      '--------
         //
-        map.remove_edge_unchecked(a, b, ab);
-        map.remove_edge_unchecked(b, c, bc);
+        map.remove_edge(a, b, ab).unwrap();
+        map.remove_edge(b, c, bc).unwrap();
 
         // Then:
         assert_eq!(map.vertex_count(), 3);
@@ -865,10 +898,7 @@ mod tests {
         assert_eq!(map[c].len(), 1);
 
         assert_eq!(map.edges().len(), 1);
-        assert_eq!(
-            map.edges_between_unchecked(a, c)[0].get_weight().unwrap(),
-            3
-        );
+        assert_eq!(map.edges_between(a, c).unwrap()[0].get_weight().unwrap(), 3);
     }
 
     #[test]
@@ -883,23 +913,23 @@ mod tests {
         let a = map.add_vertex();
         let b = map.add_vertex();
         let c = map.add_vertex();
-        map.add_edge_unchecked(a, b, 1.into());
-        map.add_edge_unchecked(b, c, 2.into());
-        map.add_edge_unchecked(c, a, 3.into());
+        map.add_edge(a, b, 1.into()).unwrap();
+        map.add_edge(b, c, 2.into()).unwrap();
+        map.add_edge(c, a, 3.into()).unwrap();
 
         // When: Doing nothing.
 
         // Then:
         assert_eq!(map.vertex_count(), 3);
 
-        assert_eq!(map.neighbors_unchecked(a).len(), 1);
-        assert_eq!(*map.neighbors_unchecked(a).get(0).unwrap(), b);
+        assert_eq!(map.neighbors(a).unwrap().len(), 1);
+        assert_eq!(*map.neighbors(a).unwrap().get(0).unwrap(), b);
 
-        assert_eq!(map.neighbors_unchecked(b).len(), 1);
-        assert_eq!(*map.neighbors_unchecked(b).get(0).unwrap(), c);
+        assert_eq!(map.neighbors(b).unwrap().len(), 1);
+        assert_eq!(*map.neighbors(b).unwrap().get(0).unwrap(), c);
 
-        assert_eq!(map.neighbors_unchecked(c).len(), 1);
-        assert_eq!(*map.neighbors_unchecked(c).get(0).unwrap(), a);
+        assert_eq!(map.neighbors(c).unwrap().len(), 1);
+        assert_eq!(*map.neighbors(c).unwrap().get(0).unwrap(), a);
     }
 
     #[test]
@@ -914,29 +944,29 @@ mod tests {
         let a = map.add_vertex();
         let b = map.add_vertex();
         let c = map.add_vertex();
-        map.add_edge_unchecked(a, b, 1.into());
-        map.add_edge_unchecked(b, c, 2.into());
-        map.add_edge_unchecked(c, a, 3.into());
+        map.add_edge(a, b, 1.into()).unwrap();
+        map.add_edge(b, c, 2.into()).unwrap();
+        map.add_edge(c, a, 3.into()).unwrap();
 
         // When: Doing nothing.
 
         // Then:
         assert_eq!(map.vertex_count(), 3);
 
-        assert_eq!(map.neighbors_unchecked(a).len(), 2);
+        assert_eq!(map.neighbors(a).unwrap().len(), 2);
         assert!(vec![b, c]
             .iter()
-            .all(|vertex_id| map.neighbors_unchecked(a).contains(vertex_id)));
+            .all(|vertex_id| map.neighbors(a).unwrap().contains(vertex_id)));
 
-        assert_eq!(map.neighbors_unchecked(b).len(), 2);
+        assert_eq!(map.neighbors(b).unwrap().len(), 2);
         assert!(vec![a, c]
             .iter()
-            .all(|vertex_id| map.neighbors_unchecked(b).contains(vertex_id)));
+            .all(|vertex_id| map.neighbors(b).unwrap().contains(vertex_id)));
 
-        assert_eq!(map.neighbors_unchecked(c).len(), 2);
+        assert_eq!(map.neighbors(c).unwrap().len(), 2);
         assert!(vec![a, b]
             .iter()
-            .all(|vertex_id| map.neighbors_unchecked(c).contains(vertex_id)));
+            .all(|vertex_id| map.neighbors(c).unwrap().contains(vertex_id)));
     }
 
     #[test]
@@ -949,17 +979,17 @@ mod tests {
         let a = mat.add_vertex();
         let b = mat.add_vertex();
         let c = mat.add_vertex();
-        let ab = mat.add_edge_unchecked(a, b, 1.into());
-        let bc = mat.add_edge_unchecked(b, c, 1.into());
-        let ca = mat.add_edge_unchecked(c, a, 1.into());
+        let ab = mat.add_edge(a, b, 1.into()).unwrap();
+        let bc = mat.add_edge(b, c, 1.into()).unwrap();
+        let ca = mat.add_edge(c, a, 1.into()).unwrap();
 
         // Then: it must have 3 edges.
         assert_eq!(mat.edge_count(), 3);
 
         // When removing the 3 edges.
-        mat.remove_edge_unchecked(a, b, ab);
-        mat.remove_edge_unchecked(b, c, bc);
-        mat.remove_edge_unchecked(c, a, ca);
+        mat.remove_edge(a, b, ab).unwrap();
+        mat.remove_edge(b, c, bc).unwrap();
+        mat.remove_edge(c, a, ca).unwrap();
 
         // Then: it must have zero edges again.
         assert_eq!(mat.edge_count(), 0);
@@ -972,17 +1002,17 @@ mod tests {
         let a = di_mat.add_vertex();
         let b = di_mat.add_vertex();
         let c = di_mat.add_vertex();
-        let ab = di_mat.add_edge_unchecked(a, b, 1.into());
-        let bc = di_mat.add_edge_unchecked(b, c, 1.into());
-        let ca = di_mat.add_edge_unchecked(c, a, 1.into());
+        let ab = di_mat.add_edge(a, b, 1.into()).unwrap();
+        let bc = di_mat.add_edge(b, c, 1.into()).unwrap();
+        let ca = di_mat.add_edge(c, a, 1.into()).unwrap();
 
         // Then: it must have 3 edges.
         assert_eq!(di_mat.edge_count(), 3);
 
         // When: removing the 3 edges.
-        di_mat.remove_edge_unchecked(a, b, ab);
-        di_mat.remove_edge_unchecked(b, c, bc);
-        di_mat.remove_edge_unchecked(c, a, ca);
+        di_mat.remove_edge(a, b, ab).unwrap();
+        di_mat.remove_edge(b, c, bc).unwrap();
+        di_mat.remove_edge(c, a, ca).unwrap();
 
         // Then: it must have zero edges again.
         assert_eq!(di_mat.edge_count(), 0);

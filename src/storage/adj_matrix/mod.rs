@@ -21,7 +21,7 @@ pub type FlowMat<W, Dir = UndirectedEdge> = AdjMatrix<W, FlowEdge<W>, Dir>;
 /// An adjacency matrix that uses [`directed`](crate::graph::DirectedEdge) [`flow edges`](crate::graph::FlowEdge).
 pub type DiFlowMat<W> = AdjMatrix<W, FlowEdge<W>, DirectedEdge>;
 
-// TODO: State in documentation that `unchecked` means as little checking as possible.
+// TODO: choose clear vocabulary to distinguish between "stored" and "present" vertex ids.
 
 /// `AdjMatrix` is a matrix used to represent a finite graph.
 /// The elements of the matrix indicate whether pairs of vertices are adjacent or not in the graph.
@@ -142,10 +142,8 @@ impl<W: Any, E: Edge<W>, Dir: EdgeDir> AdjMatrix<W, E, Dir> {
     }
 
     ////////// Checked Edges Vec Retrieval Functions //////////
-    // `get` and `get_mut` are "checked" alternatives for `index` and `index_mut` functions.
-    // It means that if you use `self[(src_id, dst_id)]` and any of the two vertex ids are invalid, It causes the function to panic.
-    // On the other hand `get(src_id, dst_id)` just returns an `Error`.
-    // So in unchecked version of a function use `index` or `index_mut` and in checked version use `get` or `get_mut`.
+    // `get` and `get_mut` are "checked" function to retrieve vector of edges from source to destination.
+    // It means that if you use `get(src_id, dst_id)` and any of the two vertex ids are invalid, It causes the function to return an `Error`.
     //////////////////////////////////////////////
 
     // # Arguments
@@ -154,7 +152,7 @@ impl<W: Any, E: Edge<W>, Dir: EdgeDir> AdjMatrix<W, E, Dir> {
     //
     // # Returns
     // * `Ok`: Containing vector of edges from source to destination.
-    // * `Err`: If either source vertex or destination vertex does not exist in the storage.
+    // * `Err`: If either source vertex or destination vertex does not exist in the storage. // TODO: state what kind of Error will be returned.
     ///
     /// # Complexity
     /// O(1)
@@ -176,7 +174,7 @@ impl<W: Any, E: Edge<W>, Dir: EdgeDir> AdjMatrix<W, E, Dir> {
     //
     // # Returns
     // * `Ok`: Containing vector of edges from source to destination.
-    // * `Err`: If either source vertex or destination vertex does not exist in the storage.
+    // * `Err`: If either source vertex or destination vertex does not exist in the storage. // TODO: state what kind of Error will be returned.
     ///
     /// # Complexity
     /// O(1)
@@ -193,19 +191,20 @@ impl<W: Any, E: Edge<W>, Dir: EdgeDir> AdjMatrix<W, E, Dir> {
     }
 
     ////////// Unsafe Edges Vec Retrieval Functions //////////
-    // `get_unsafe` and `get_mut_unsafe` are "unsafe" alternatives tor `index` and `index_mut` functions.
-    // It means that if you use `self[(src_id, dst_id)]` and any of the two vertex ids are invalid, It causes the function to panic.
-    // On the other hand `get_unsafe(src_id, dst_id)` will return a vector that belongs to a "reusable" vertex id if src_id and dst_id are in 0..|V| range and panics otherwise.
+    // `get_unsafe` and `get_mut_unsafe` are "unsafe" alternatives tor `get` and `get_mut` functions.
+    // It means that if you use `get_unsafe(src_id, dst_id)` and any of the two vertex ids are invalid,
+    // It causes the function to return a vector that belongs to a "reusable" vertex id if src_id and dst_id are in 0..|V| range and panics otherwise.
     // So it does not always panic. The returned vector is invalid and mutating it may leave the storage in an inconsistent state.
     // The only place that you should use them is when you are absolutely sure `src_id` and `dst_id` are both valid.
-    // One good example is the implementation of `edges_from_unchecked`:
+    // One good example is the implementation of `edges_from`:
     //
-    //    fn edges_from_unchecked(&self, src_id: usize) -> Vec<(usize, &E)> {
+    //    fn edges_from(&self, src_id: usize) -> Vec<(usize, &E)> {
     //        if !self.contains_vertex(src_id) {
-    //            panic!("Vertex with id: {} does not exist", src_id);
+    //            Err(Error::new_vnf(src_id))?
     //        }
     //
-    //        self.vertices()
+    //        Ok(self
+    //            .vertices()
     //            .into_iter()
     //            .flat_map(|dst_id| {
     //                self.get_unsafe(src_id, dst_id)
@@ -214,10 +213,12 @@ impl<W: Any, E: Edge<W>, Dir: EdgeDir> AdjMatrix<W, E, Dir> {
     //                    .map(|edge| (dst_id, edge))
     //                    .collect::<Vec<(usize, &E)>>()
     //            })
-    //            .collect()
+    //            .collect())
     //    }
     // As you can see `dst_id` is always valid because it comes from the vertices() function. On the other hand `src_id` is checked to be valid at the start of the function.
     // calling self.get(src_id, dst_id) for every dst_id in flat_map() is not optimal and is not even needed. Therefore calling get_unsafe is reasonable and leads to better performance.
+    //
+    // ** Note **: Be sure to document why your usage is reasonable whenever you use `get_unsafe` or `get_mut_unsafe`.
     //////////////////////////////////////////////
 
     // # Arguments
@@ -231,7 +232,7 @@ impl<W: Any, E: Edge<W>, Dir: EdgeDir> AdjMatrix<W, E, Dir> {
     /// O(1)
     //
     // # Panics
-    // If `src_id` or `dst_id` are not stored in the storage.
+    // If `src_id` or `dst_id` are are not in range 0..|V|.
     fn get_unsafe(&self, src_id: usize, dst_id: usize) -> &Vec<E> {
         let index = utils::from_ij(src_id, dst_id, Dir::is_directed());
 
@@ -249,7 +250,7 @@ impl<W: Any, E: Edge<W>, Dir: EdgeDir> AdjMatrix<W, E, Dir> {
     /// O(1)
     //
     // # Panics
-    // If `src_id` or `dst_id` are not stored in the storage.
+    // If `src_id` or `dst_id` are are not in range 0..|V|.
     fn get_mut_unsafe(&mut self, src_id: usize, dst_id: usize) -> &mut Vec<E> {
         let index = utils::from_ij(src_id, dst_id, Dir::is_directed());
 
@@ -298,27 +299,6 @@ impl<W: Any, E: Edge<W>, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjMatrix<W, 
         }
     }
 
-    /// Removes the vertex with id: `vertex_id` from graph.
-    ///
-    /// # Arguments
-    /// `vertex_id`: Id of the vertex to be removed.
-    ///
-    /// # Complexity
-    /// O(|V|)
-    ///
-    /// # Panics
-    /// If there is no vertex with id: `vertex_id` in the storage.
-    fn remove_vertex_unchecked(&mut self, vertex_id: usize) {
-        for other_id in self.vertices() {
-            self[(vertex_id, other_id)].clear();
-            self[(other_id, vertex_id)].clear();
-        }
-
-        self.reusable_vertex_ids.insert(vertex_id);
-
-        self.vertex_count -= 1;
-    }
-
     /// Removes the vertex with id: `vertex_id` from storage.
     ///
     /// # Arguments
@@ -347,37 +327,6 @@ impl<W: Any, E: Edge<W>, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjMatrix<W, 
         self.vertex_count -= 1;
 
         Ok(())
-    }
-
-    /// Adds `edge` from vertex with id :`src_id` to vertex with id: `dst_id`.
-    ///
-    /// # Arguments
-    /// * `src_id`: Id of the source vertex.
-    /// * `dst_id`: Id of the destination vertex.
-    /// * `edge`: Edge to be added from source to destination.
-    ///
-    /// # Returns
-    /// Unique id of the newly added edge.
-    ///
-    /// # Complexity
-    /// O(1)
-    ///
-    /// # Panics
-    /// If `src_id` or `dst_id` are not stored in the storage.
-    fn add_edge_unchecked(&mut self, src_id: usize, dst_id: usize, mut edge: E) -> usize {
-        let edge_id = if let Some(id) = self.next_reusable_edge_id() {
-            id
-        } else {
-            self.max_edge_id += 1;
-
-            self.max_edge_id - 1
-        };
-
-        edge.set_id(edge_id);
-
-        self[(src_id, dst_id)].push(edge);
-
-        edge_id
     }
 
     /// Adds `edge` from vertex with id `src_id`: to vertex with id: `dst_id`.
@@ -417,32 +366,6 @@ impl<W: Any, E: Edge<W>, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjMatrix<W, 
     /// * `edge_id`: Id of the to be updated edge.
     /// * `edge`: New edge to replace the old one.
     ///
-    /// # Complexity
-    /// O(|E<sub>src->dst</sub>|)
-    ///
-    /// # Panics
-    /// * If `src_id` or `dst_id` are not stored in the storage.
-    /// * If there is no edge from source to destination with id: `edge_id`.
-    fn update_edge_unchecked(&mut self, src_id: usize, dst_id: usize, edge_id: usize, mut edge: E) {
-        let edges_vec = &mut self[(src_id, dst_id)];
-
-        let index = edges_vec
-            .iter()
-            .position(|edge| edge.get_id() == edge_id)
-            .unwrap();
-
-        edge.set_id(edge_id);
-        edges_vec[index] = edge;
-    }
-
-    /// Replaces the edge with id: `edge_id` with `edge`.
-    ///
-    /// # Arguments
-    /// * `src_id`: Id of source vertex.
-    /// * `dst_id`: Id of destination vertex.
-    /// * `edge_id`: Id of the to be updated edge.
-    /// * `edge`: New edge to replace the old one.
-    ///
     /// # Returns
     /// * `Ok`: If edge updated successfully.
     /// * `Err`: [`VertexNotFound`](crate::storage::ErrorKind::VertexNotFound) if vertex with either id: `src_id` or `dst_id` does not exist.
@@ -467,36 +390,6 @@ impl<W: Any, E: Edge<W>, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjMatrix<W, 
         } else {
             Err(Error::new_iei(src_id, dst_id, edge_id))?
         }
-    }
-
-    /// Removes the edge with id: `edge_id`.
-    ///
-    /// # Arguments
-    /// * `src_id`: Id of source vertex.
-    /// * `dst_id`: Id of destination vertex.
-    /// * `edge_id`: Id of edge to be removed.
-    ///
-    /// # Returns
-    /// * `Some`: Containing the removed edge.
-    /// * `None`: If edge with `edge_id` does not exist in the graph.
-    ///
-    /// # Complexity
-    /// O(|E<sub>src->dst</sub>|)
-    ///
-    /// # Panics
-    /// * If `src_id` or `dst_id` are not stored in the storage.
-    /// * If there is no edge with id: `edge_id` from `src_id` to `dst_id`.
-    fn remove_edge_unchecked(&mut self, src_id: usize, dst_id: usize, edge_id: usize) -> E {
-        let index = self[(src_id, dst_id)]
-            .iter()
-            .position(|edge| edge.get_id() == edge_id)
-            .unwrap();
-
-        self.reusable_edge_ids.insert(edge_id);
-
-        // If any of `src_id` or `dst_id` were invalid, self[(src_id, dst_id)] would have panicked.
-        // So calling `get_mut_unsafe` is reasonable.
-        self.get_mut_unsafe(src_id, dst_id).swap_remove(index)
     }
 
     /// Removes the edge with id: `edge_id`.
@@ -560,38 +453,6 @@ impl<W: Any, E: Edge<W>, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjMatrix<W, 
     /// `src_id`: Id of the source vertex.
     ///
     /// # Returns
-    /// * All edges from the source vertex in the format of: (`dst_id`, `edge`)
-    ///
-    /// # Complexity
-    /// O(|E<sup>out</sup>|)
-    ///
-    /// # Panics
-    /// If `src_id` is not stored in the storage.
-    fn edges_from_unchecked(&self, src_id: usize) -> Vec<(usize, &E)> {
-        if !self.contains_vertex(src_id) {
-            panic!("Vertex with id: {} does not exist", src_id);
-        }
-
-        // Map each dst_id to the list of edges that start from src_id and end in dst_id.
-        // Then flatten all the lists into a final list that contains all the outgoing edges of vertex with id: src_id.
-        self.vertices()
-            .into_iter()
-            .flat_map(|dst_id| {
-                // `dst_id` comes from  `vertices()` so it's always valid. `src_id` is checked to be valid at the start of this function.
-                // So it's reasonable to use `get_unsafe`.
-                self.get_unsafe(src_id, dst_id)
-                    .iter()
-                    .into_iter()
-                    .map(|edge| (dst_id, edge))
-                    .collect::<Vec<(usize, &E)>>()
-            })
-            .collect()
-    }
-
-    /// # Arguments
-    /// `src_id`: Id of the source vertex.
-    ///
-    /// # Returns
     /// * `Ok`: Containing all edges from the source vertex in the format of: (`dst_id`, `edge`).
     /// * `Err`: [`VertexNotFound`](crate::storage::ErrorKind::VertexNotFound) if vertex with id: `src_id` does not exist.
     ///
@@ -623,30 +484,6 @@ impl<W: Any, E: Edge<W>, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjMatrix<W, 
     /// `src_id`: Id of the source vertex.
     ///
     /// # Returns
-    /// Id of vertices accessible from source vertex using one edge.
-    ///
-    /// Complexity
-    /// O(|V|)
-    ///
-    /// # Panics
-    /// If `src_id` is not stored in the storage.
-    fn neighbors_unchecked(&self, src_id: usize) -> Vec<usize> {
-        if !self.contains_vertex(src_id) {
-            panic!("Vertex with id: {} does not exist", src_id);
-        }
-
-        // `dst_id` comes from `vertices()` so it's always valid. `src_id` is checked to be valid at the start of this function.
-        // So it's reasonable to call `get_unsafe`.
-        self.vertices()
-            .into_iter()
-            .filter(|dst_id| !self.get_unsafe(src_id, *dst_id).is_empty())
-            .collect()
-    }
-
-    /// # Arguments:
-    /// `src_id`: Id of the source vertex.
-    ///
-    /// # Returns
     /// * `Ok`: Containing id of vertices accessible from source vertex using one edge.
     /// * `Err`: [`VertexNotFound`](crate::storage::ErrorKind::VertexNotFound) if vertex with id: `src_id` does not exist.
     ///
@@ -664,22 +501,6 @@ impl<W: Any, E: Edge<W>, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjMatrix<W, 
             .into_iter()
             .filter(|dst_id| !self.get_unsafe(src_id, *dst_id).is_empty())
             .collect())
-    }
-
-    /// # Arguments
-    /// * `src_id`: Id of source vertex.
-    /// * `dst_id`: Id of destination vertex.
-    ///
-    /// # Returns
-    /// Edges from source vertex to destination vertex.
-    ///
-    /// # Complexity
-    /// O(|E<sub>src->dst</sub>|)
-    ///
-    /// # Panics
-    /// * If vertex with either id: `src_id` or `dst_id` does not exist in the storage.
-    fn edges_between_unchecked(&self, src_id: usize, dst_id: usize) -> Vec<&E> {
-        self[(src_id, dst_id)].iter().collect()
     }
 
     /// # Arguments
@@ -714,27 +535,6 @@ impl<W: Any, E: Edge<W>, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjMatrix<W, 
             .into_iter()
             .find(|edge| edge.get_id() == edge_id)
             .ok_or(Error::new_iei(src_id, dst_id, edge_id).into())
-    }
-
-    /// # Arguments
-    /// * `src_id`: Id of source vertex.
-    /// * `dst_id`: Id of destination vertex.
-    /// * `edge_id`: Id of the edge to retrieve.
-    ///
-    /// # Returns
-    /// Edge between specified source and destination with specified id.
-    ///
-    /// # Complexity
-    /// O(|E<sub>src->dst</sub>|)
-    ///
-    /// # Panics
-    /// * If vertex with either id: `src_id` or `dst_id` does not exist in the storage.
-    /// * If there is no edge with id: `edge_id` from source to destination.    
-    fn edge_between_unchecked(&self, src_id: usize, dst_id: usize, edge_id: usize) -> &E {
-        self.edges_between_unchecked(src_id, dst_id)
-            .into_iter()
-            .find(|edge| edge.get_id() == edge_id)
-            .unwrap()
     }
 
     /// Difference between this function and `edges` is that this function treats each edge as a directed edge.
@@ -785,22 +585,6 @@ impl<W: Any, E: Edge<W>, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjMatrix<W, 
         Ok(!self.get(src_id, dst_id)?.is_empty())
     }
 
-    /// # Arguments
-    /// * `src_id`: Id of the source vertex.
-    /// * `dst_id`: Id of the destination vertex.
-    ///
-    /// # Returns
-    /// `true` if there is any edge between specified source and destination, `false` otherwise.
-    ///
-    /// # Complexity
-    /// O(1)
-    ///
-    /// # Panics
-    /// * If vertex with either id: `src_id` or `dst_id` does not exist in the storage.
-    fn has_any_edge_unchecked(&self, src_id: usize, dst_id: usize) -> bool {
-        !self[(src_id, dst_id)].is_empty()
-    }
-
     /// # Note:
     /// Consider using `edge_between` or `edges_from` functions instead of this one.
     /// Because default implementation of this function iterates over all edges to find the edge with specified id.
@@ -823,32 +607,6 @@ impl<W: Any, E: Edge<W>, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjMatrix<W, 
             .find(|(_, _, edge)| edge.get_id() == edge_id)
             .map(|(_, _, edge)| edge)
             .ok_or(Error::new_enf(edge_id).into())
-    }
-
-    /// # Note:
-    /// Consider using `edge_between_unchecked` or `edges_from_unchecked` functions instead of this one.
-    /// Because default implementation of this function iterates over all edges to find the edge with specified id.
-    /// And it's likely that other storages use the same approach. So:
-    /// * if you have info about source of the edge, consider using `edges_from_unchecked` function instead.
-    /// * if you have info about both source and destination of the edge, consider using `edge_between_unchecked` function instead.
-    ///
-    /// # Arguments
-    /// `edge_id`: Id of the edge to be retrieved.
-    ///
-    /// # Returns
-    /// Containing reference to the edge with specified id.
-    ///
-    /// # Complexity
-    /// O(|E|)
-    ///
-    /// # Panics
-    /// If there is no edge with id: `edge_id` stored in the storage.
-    fn edge_unchecked(&self, edge_id: usize) -> &E {
-        self.edges()
-            .into_iter()
-            .find(|(_, _, edge)| edge.get_id() == edge_id)
-            .map(|(_, _, edge)| edge)
-            .unwrap()
     }
 
     /// # Arguments
@@ -875,59 +633,6 @@ impl<W: Any, E: Edge<W>, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjMatrix<W, 
     /// O(1)
     fn contains_edge(&self, edge_id: usize) -> bool {
         edge_id < self.max_edge_id && !self.reusable_edge_ids.contains(&edge_id)
-    }
-}
-
-use std::ops::{Index, IndexMut};
-impl<W: Any, E: Edge<W>, Dir: EdgeDir> Index<(usize, usize)> for AdjMatrix<W, E, Dir> {
-    type Output = Vec<E>;
-
-    /// # Arguments
-    /// * (`src_id`, `dst_id`): (Id of the source vertex, Id of the destination vertex).
-    ///
-    /// # Returns
-    /// Edges from vertex with id: `src_id` to vertex with id: `dst_id`.
-    ///
-    /// # Complexity
-    /// O(1)
-    ///
-    /// # Panics
-    /// * If `src_id` or `dst_id` are not stored in the storage.
-    fn index(&self, (src_id, dst_id): (usize, usize)) -> &Self::Output {
-        if !self.contains_vertex(src_id) {
-            panic!("Vertex with id: {} does not exist", src_id)
-        } else if !self.contains_vertex(dst_id) {
-            panic!("Vertex with id: {} does not exist", dst_id)
-        } else {
-            let index = utils::from_ij(src_id, dst_id, self.is_directed());
-
-            &self.vec[index]
-        }
-    }
-}
-
-impl<W: Any, E: Edge<W>, Dir: EdgeDir> IndexMut<(usize, usize)> for AdjMatrix<W, E, Dir> {
-    /// # Arguments
-    /// * (`src_id`, `dst_id`): (Id of the source vertex, Id of the destination vertex).
-    ///
-    /// # Returns
-    /// Edges from vertex with id: `src_id` to vertex with id: `dst_id`.
-    ///
-    /// # Complexity
-    /// O(1)
-    ///
-    /// # Panics
-    /// * If `src_id` or `dst_id` is not stored in the storage.
-    fn index_mut(&mut self, (src_id, dst_id): (usize, usize)) -> &mut Self::Output {
-        if !self.contains_vertex(src_id) {
-            panic!("Vertex with id: {} does not exist", src_id)
-        } else if !self.contains_vertex(dst_id) {
-            panic!("Vertex with id: {} does not exist", dst_id)
-        } else {
-            let index = utils::from_ij(src_id, dst_id, self.is_directed());
-
-            &mut self.vec[index]
-        }
     }
 }
 
@@ -989,7 +694,7 @@ mod tests {
         assert!(vec![a, b, c]
             .into_iter()
             .flat_map(|vertex_id| vec![(vertex_id, a), (vertex_id, b), (vertex_id, c)])
-            .all(|(src_id, dst_id)| !matrix.has_any_edge_unchecked(src_id, dst_id)));
+            .all(|(src_id, dst_id)| !matrix.has_any_edge(src_id, dst_id).unwrap()));
     }
 
     #[test]
@@ -1018,7 +723,7 @@ mod tests {
         assert!(vec![a, b, c]
             .into_iter()
             .flat_map(|vertex_id| vec![(vertex_id, a), (vertex_id, b), (vertex_id, c)])
-            .all(|(src_id, dst_id)| !matrix.has_any_edge_unchecked(src_id, dst_id)));
+            .all(|(src_id, dst_id)| !matrix.has_any_edge(src_id, dst_id).unwrap()));
     }
 
     #[test]
@@ -1033,8 +738,8 @@ mod tests {
         let c = matrix.add_vertex();
 
         // When: Removing vertices a and b.
-        matrix.remove_vertex_unchecked(a);
-        matrix.remove_vertex_unchecked(b);
+        matrix.remove_vertex(a).unwrap();
+        matrix.remove_vertex(b).unwrap();
 
         // Then:
         assert_eq!(matrix.edges().len(), 0);
@@ -1051,7 +756,7 @@ mod tests {
         // Matrix must only contain c.
         assert_eq!(matrix.vertices().len(), 1);
         assert!(matrix.vertices().contains(&c));
-        assert!(!matrix.has_any_edge_unchecked(c, c));
+        assert!(!matrix.has_any_edge(c, c).unwrap());
     }
 
     #[test]
@@ -1066,8 +771,8 @@ mod tests {
         let c = matrix.add_vertex();
 
         // When: Removing vertices a and b.
-        matrix.remove_vertex_unchecked(a);
-        matrix.remove_vertex_unchecked(b);
+        matrix.remove_vertex(a).unwrap();
+        matrix.remove_vertex(b).unwrap();
 
         // Then:
         assert_eq!(matrix.vertex_count(), 1);
@@ -1084,7 +789,7 @@ mod tests {
         assert_eq!(matrix.vertices().len(), 1);
         assert!(matrix.vertices().contains(&c));
 
-        assert!(!matrix.has_any_edge_unchecked(c, c));
+        assert!(!matrix.has_any_edge(c, c).unwrap());
     }
 
     #[test]
@@ -1099,8 +804,8 @@ mod tests {
         let c = matrix.add_vertex();
 
         // When: Removing vertices a and b and afterwards adding two new vertices.
-        matrix.remove_vertex_unchecked(a);
-        matrix.remove_vertex_unchecked(b);
+        matrix.remove_vertex(a).unwrap();
+        matrix.remove_vertex(b).unwrap();
         let _ = matrix.add_vertex();
         let _ = matrix.add_vertex();
 
@@ -1123,7 +828,7 @@ mod tests {
         assert!(vec![a, b, c]
             .into_iter()
             .flat_map(|vertex_id| vec![(vertex_id, a), (vertex_id, b), (vertex_id, c)])
-            .all(|(src_id, dst_id)| !matrix.has_any_edge_unchecked(src_id, dst_id)));
+            .all(|(src_id, dst_id)| !matrix.has_any_edge(src_id, dst_id).unwrap()));
     }
 
     #[test]
@@ -1138,8 +843,8 @@ mod tests {
         let c = matrix.add_vertex();
 
         // When: Removing vertices a and b and afterwards adding two new vertices.
-        matrix.remove_vertex_unchecked(a);
-        matrix.remove_vertex_unchecked(b);
+        matrix.remove_vertex(a).unwrap();
+        matrix.remove_vertex(b).unwrap();
         let _ = matrix.add_vertex();
         let _ = matrix.add_vertex();
 
@@ -1162,7 +867,7 @@ mod tests {
         assert!(vec![a, b, c]
             .into_iter()
             .flat_map(|vertex_id| vec![(vertex_id, a), (vertex_id, b), (vertex_id, c)])
-            .all(|(src_id, dst_id)| !matrix.has_any_edge_unchecked(src_id, dst_id)));
+            .all(|(src_id, dst_id)| !matrix.has_any_edge(src_id, dst_id).unwrap()));
     }
 
     #[test]
@@ -1182,9 +887,9 @@ mod tests {
         //      ^               |
         //      '----------------
         //
-        matrix.add_edge_unchecked(a, b, 1.into());
-        matrix.add_edge_unchecked(b, c, 2.into());
-        matrix.add_edge_unchecked(c, a, 3.into());
+        matrix.add_edge(a, b, 1.into()).unwrap();
+        matrix.add_edge(b, c, 2.into()).unwrap();
+        matrix.add_edge(c, a, 3.into()).unwrap();
 
         // Then:
         assert_eq!(matrix.vertex_count(), 3);
@@ -1219,9 +924,9 @@ mod tests {
         //      |               |
         //      '----------------
         //
-        matrix.add_edge_unchecked(a, b, 1.into());
-        matrix.add_edge_unchecked(b, c, 2.into());
-        matrix.add_edge_unchecked(c, a, 3.into());
+        matrix.add_edge(a, b, 1.into()).unwrap();
+        matrix.add_edge(b, c, 2.into()).unwrap();
+        matrix.add_edge(c, a, 3.into()).unwrap();
 
         // Then:
         assert_eq!(matrix.vertex_count(), 3);
@@ -1251,16 +956,16 @@ mod tests {
         let a = matrix.add_vertex();
         let b = matrix.add_vertex();
         let c = matrix.add_vertex();
-        matrix.add_edge_unchecked(a, b, 1.into());
-        matrix.add_edge_unchecked(b, c, 2.into());
-        matrix.add_edge_unchecked(c, a, 3.into());
+        matrix.add_edge(a, b, 1.into()).unwrap();
+        matrix.add_edge(b, c, 2.into()).unwrap();
+        matrix.add_edge(c, a, 3.into()).unwrap();
 
         // When: Doing nothing.
 
         // Then:
-        assert!(matrix.has_any_edge_unchecked(a, b));
-        assert!(matrix.has_any_edge_unchecked(b, c));
-        assert!(matrix.has_any_edge_unchecked(c, a));
+        assert!(matrix.has_any_edge(a, b).unwrap());
+        assert!(matrix.has_any_edge(b, c).unwrap());
+        assert!(matrix.has_any_edge(c, a).unwrap());
     }
 
     #[test]
@@ -1275,21 +980,21 @@ mod tests {
         let a = matrix.add_vertex();
         let b = matrix.add_vertex();
         let c = matrix.add_vertex();
-        matrix.add_edge_unchecked(a, b, 1.into());
-        matrix.add_edge_unchecked(b, c, 2.into());
-        matrix.add_edge_unchecked(c, a, 3.into());
+        matrix.add_edge(a, b, 1.into()).unwrap();
+        matrix.add_edge(b, c, 2.into()).unwrap();
+        matrix.add_edge(c, a, 3.into()).unwrap();
 
         // When: Doing nothing.
 
         // Then:
-        assert!(matrix.has_any_edge_unchecked(a, b));
-        assert!(matrix.has_any_edge_unchecked(b, a));
+        assert!(matrix.has_any_edge(a, b).unwrap());
+        assert!(matrix.has_any_edge(b, a).unwrap());
 
-        assert!(matrix.has_any_edge_unchecked(b, c));
-        assert!(matrix.has_any_edge_unchecked(c, b));
+        assert!(matrix.has_any_edge(b, c).unwrap());
+        assert!(matrix.has_any_edge(c, b).unwrap());
 
-        assert!(matrix.has_any_edge_unchecked(c, a));
-        assert!(matrix.has_any_edge_unchecked(a, c));
+        assert!(matrix.has_any_edge(c, a).unwrap());
+        assert!(matrix.has_any_edge(a, c).unwrap());
     }
 
     #[test]
@@ -1304,14 +1009,14 @@ mod tests {
         let a = matrix.add_vertex();
         let b = matrix.add_vertex();
         let c = matrix.add_vertex();
-        let ab = matrix.add_edge_unchecked(a, b, 1.into());
-        let bc = matrix.add_edge_unchecked(b, c, 2.into());
-        let ca = matrix.add_edge_unchecked(c, a, 3.into());
+        let ab = matrix.add_edge(a, b, 1.into()).unwrap();
+        let bc = matrix.add_edge(b, c, 2.into()).unwrap();
+        let ca = matrix.add_edge(c, a, 3.into()).unwrap();
 
         // When: Incrementing weight of each edge by 1.
-        matrix.update_edge_unchecked(a, b, ab, 2.into());
-        matrix.update_edge_unchecked(b, c, bc, 3.into());
-        matrix.update_edge_unchecked(c, a, ca, 4.into());
+        matrix.update_edge(a, b, ab, 2.into()).unwrap();
+        matrix.update_edge(b, c, bc, 3.into()).unwrap();
+        matrix.update_edge(c, a, ca, 4.into()).unwrap();
 
         // Then:
         assert_eq!(matrix.vertex_count(), 3);
@@ -1341,14 +1046,14 @@ mod tests {
         let a = matrix.add_vertex();
         let b = matrix.add_vertex();
         let c = matrix.add_vertex();
-        let ab = matrix.add_edge_unchecked(a, b, 1.into());
-        let bc = matrix.add_edge_unchecked(b, c, 2.into());
-        let ca = matrix.add_edge_unchecked(c, a, 3.into());
+        let ab = matrix.add_edge(a, b, 1.into()).unwrap();
+        let bc = matrix.add_edge(b, c, 2.into()).unwrap();
+        let ca = matrix.add_edge(c, a, 3.into()).unwrap();
 
         // When: Incrementing weight of each edge by 1.
-        matrix.update_edge_unchecked(a, b, ab, 2.into());
-        matrix.update_edge_unchecked(b, c, bc, 3.into());
-        matrix.update_edge_unchecked(c, a, ca, 4.into());
+        matrix.update_edge(a, b, ab, 2.into()).unwrap();
+        matrix.update_edge(b, c, bc, 3.into()).unwrap();
+        matrix.update_edge(c, a, ca, 4.into()).unwrap();
 
         // Then:
         assert_eq!(matrix.vertex_count(), 3);
@@ -1378,9 +1083,9 @@ mod tests {
         let a = matrix.add_vertex();
         let b = matrix.add_vertex();
         let c = matrix.add_vertex();
-        let ab = matrix.add_edge_unchecked(a, b, 1.into());
-        let bc = matrix.add_edge_unchecked(b, c, 2.into());
-        matrix.add_edge_unchecked(c, a, 3.into());
+        let ab = matrix.add_edge(a, b, 1.into()).unwrap();
+        let bc = matrix.add_edge(b, c, 2.into()).unwrap();
+        matrix.add_edge(c, a, 3.into()).unwrap();
 
         // When: Removing edges a --> b and b --> c
         //
@@ -1388,8 +1093,8 @@ mod tests {
         //      ^       |
         //      '--------
         //
-        matrix.remove_edge_unchecked(a, b, ab);
-        matrix.remove_edge_unchecked(b, c, bc);
+        matrix.remove_edge(a, b, ab).unwrap();
+        matrix.remove_edge(b, c, bc).unwrap();
 
         // Then:
         assert_eq!(matrix.vertex_count(), 3);
@@ -1398,9 +1103,7 @@ mod tests {
 
         assert_eq!(matrix.edges().len(), 1);
         assert_eq!(
-            matrix.edges_between_unchecked(c, a)[0]
-                .get_weight()
-                .unwrap(),
+            matrix.edges_between(c, a).unwrap()[0].get_weight().unwrap(),
             3
         );
     }
@@ -1417,9 +1120,9 @@ mod tests {
         let a = matrix.add_vertex();
         let b = matrix.add_vertex();
         let c = matrix.add_vertex();
-        let ab = matrix.add_edge_unchecked(a, b, 1.into());
-        let bc = matrix.add_edge_unchecked(b, c, 2.into());
-        matrix.add_edge_unchecked(c, a, 3.into());
+        let ab = matrix.add_edge(a, b, 1.into()).unwrap();
+        let bc = matrix.add_edge(b, c, 2.into()).unwrap();
+        matrix.add_edge(c, a, 3.into()).unwrap();
 
         // When: Removing edges a --- b and b --- c
         //
@@ -1427,8 +1130,8 @@ mod tests {
         //      |       |
         //      '--------
         //
-        matrix.remove_edge_unchecked(a, b, ab);
-        matrix.remove_edge_unchecked(b, c, bc);
+        matrix.remove_edge(a, b, ab).unwrap();
+        matrix.remove_edge(b, c, bc).unwrap();
 
         // Then:
         assert_eq!(matrix.vertex_count(), 3);
@@ -1437,9 +1140,7 @@ mod tests {
 
         assert_eq!(matrix.edges().len(), 1);
         assert_eq!(
-            matrix.edges_between_unchecked(a, c)[0]
-                .get_weight()
-                .unwrap(),
+            matrix.edges_between(a, c).unwrap()[0].get_weight().unwrap(),
             3
         );
     }
@@ -1456,9 +1157,9 @@ mod tests {
         let a = matrix.add_vertex();
         let b = matrix.add_vertex();
         let c = matrix.add_vertex();
-        matrix.add_edge_unchecked(a, b, 1.into());
-        matrix.add_edge_unchecked(b, c, 2.into());
-        matrix.add_edge_unchecked(c, a, 3.into());
+        matrix.add_edge(a, b, 1.into()).unwrap();
+        matrix.add_edge(b, c, 2.into()).unwrap();
+        matrix.add_edge(c, a, 3.into()).unwrap();
 
         // When: Doing nothing.
 
@@ -1467,14 +1168,14 @@ mod tests {
         assert_eq!(matrix.total_vertex_count(), 3);
         assert_eq!(matrix.vec.len(), 9);
 
-        assert_eq!(matrix.neighbors_unchecked(a).len(), 1);
-        assert_eq!(*matrix.neighbors_unchecked(a).get(0).unwrap(), b);
+        assert_eq!(matrix.neighbors(a).unwrap().len(), 1);
+        assert_eq!(*matrix.neighbors(a).unwrap().get(0).unwrap(), b);
 
-        assert_eq!(matrix.neighbors_unchecked(b).len(), 1);
-        assert_eq!(*matrix.neighbors_unchecked(b).get(0).unwrap(), c);
+        assert_eq!(matrix.neighbors(b).unwrap().len(), 1);
+        assert_eq!(*matrix.neighbors(b).unwrap().get(0).unwrap(), c);
 
-        assert_eq!(matrix.neighbors_unchecked(c).len(), 1);
-        assert_eq!(*matrix.neighbors_unchecked(c).get(0).unwrap(), a);
+        assert_eq!(matrix.neighbors(c).unwrap().len(), 1);
+        assert_eq!(*matrix.neighbors(c).unwrap().get(0).unwrap(), a);
     }
 
     #[test]
@@ -1489,9 +1190,9 @@ mod tests {
         let a = matrix.add_vertex();
         let b = matrix.add_vertex();
         let c = matrix.add_vertex();
-        matrix.add_edge_unchecked(a, b, 1.into());
-        matrix.add_edge_unchecked(b, c, 2.into());
-        matrix.add_edge_unchecked(c, a, 3.into());
+        matrix.add_edge(a, b, 1.into()).unwrap();
+        matrix.add_edge(b, c, 2.into()).unwrap();
+        matrix.add_edge(c, a, 3.into()).unwrap();
 
         // When: Doing nothing.
 
@@ -1500,20 +1201,20 @@ mod tests {
         assert_eq!(matrix.total_vertex_count(), 3);
         assert_eq!(matrix.vec.len(), 6);
 
-        assert_eq!(matrix.neighbors_unchecked(a).len(), 2);
+        assert_eq!(matrix.neighbors(a).unwrap().len(), 2);
         assert!(vec![b, c]
             .iter()
-            .all(|vertex_id| matrix.neighbors_unchecked(a).contains(vertex_id)));
+            .all(|vertex_id| matrix.neighbors(a).unwrap().contains(vertex_id)));
 
-        assert_eq!(matrix.neighbors_unchecked(b).len(), 2);
+        assert_eq!(matrix.neighbors(b).unwrap().len(), 2);
         assert!(vec![a, c]
             .iter()
-            .all(|vertex_id| matrix.neighbors_unchecked(b).contains(vertex_id)));
+            .all(|vertex_id| matrix.neighbors(b).unwrap().contains(vertex_id)));
 
-        assert_eq!(matrix.neighbors_unchecked(c).len(), 2);
+        assert_eq!(matrix.neighbors(c).unwrap().len(), 2);
         assert!(vec![a, b]
             .iter()
-            .all(|vertex_id| matrix.neighbors_unchecked(c).contains(vertex_id)));
+            .all(|vertex_id| matrix.neighbors(c).unwrap().contains(vertex_id)));
     }
 
     #[test]
@@ -1526,17 +1227,17 @@ mod tests {
         let a = mat.add_vertex();
         let b = mat.add_vertex();
         let c = mat.add_vertex();
-        let ab = mat.add_edge_unchecked(a, b, 1.into());
-        let bc = mat.add_edge_unchecked(b, c, 1.into());
-        let ca = mat.add_edge_unchecked(c, a, 1.into());
+        let ab = mat.add_edge(a, b, 1.into()).unwrap();
+        let bc = mat.add_edge(b, c, 1.into()).unwrap();
+        let ca = mat.add_edge(c, a, 1.into()).unwrap();
 
         // Then: it must have 3 edges.
         assert_eq!(mat.edge_count(), 3);
 
         // When removing the 3 edges.
-        mat.remove_edge_unchecked(a, b, ab);
-        mat.remove_edge_unchecked(b, c, bc);
-        mat.remove_edge_unchecked(c, a, ca);
+        mat.remove_edge(a, b, ab).unwrap();
+        mat.remove_edge(b, c, bc).unwrap();
+        mat.remove_edge(c, a, ca).unwrap();
 
         // Then: it must have zero edges again.
         assert_eq!(mat.edge_count(), 0);
@@ -1549,31 +1250,19 @@ mod tests {
         let a = di_mat.add_vertex();
         let b = di_mat.add_vertex();
         let c = di_mat.add_vertex();
-        let ab = di_mat.add_edge_unchecked(a, b, 1.into());
-        let bc = di_mat.add_edge_unchecked(b, c, 1.into());
-        let ca = di_mat.add_edge_unchecked(c, a, 1.into());
+        let ab = di_mat.add_edge(a, b, 1.into()).unwrap();
+        let bc = di_mat.add_edge(b, c, 1.into()).unwrap();
+        let ca = di_mat.add_edge(c, a, 1.into()).unwrap();
 
         // Then: it must have 3 edges.
         assert_eq!(di_mat.edge_count(), 3);
 
         // When: removing the 3 edges.
-        di_mat.remove_edge_unchecked(a, b, ab);
-        di_mat.remove_edge_unchecked(b, c, bc);
-        di_mat.remove_edge_unchecked(c, a, ca);
+        di_mat.remove_edge(a, b, ab).unwrap();
+        di_mat.remove_edge(b, c, bc).unwrap();
+        di_mat.remove_edge(c, a, ca).unwrap();
 
         // Then: it must have zero edges again.
         assert_eq!(di_mat.edge_count(), 0);
-    }
-
-    #[test]
-    #[should_panic]
-    fn index_out_of_bounds() {
-        let mut mat = DiMat::<usize>::init();
-        mat.add_vertex();
-        mat.add_vertex();
-
-        mat.remove_vertex_unchecked(0);
-
-        &mat[(0, 0)];
     }
 }

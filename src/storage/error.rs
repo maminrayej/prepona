@@ -2,7 +2,8 @@
 pub enum ErrorKind {
     VertexNotFound,
     EdgeNotFound,
-    InvalidEdgeId,
+    InvalidEdgeId, // TODO: change the default message to edge_id not found between src and dst.
+    EmptyEdgeList,
 }
 
 /// Error type returned by storages in `storage` module.
@@ -57,6 +58,14 @@ impl Error {
                 "Edge with id: {} exists but it's not from vertex: {} to vertex: {}",
                 edge_id, src_id, dst_id
             ),
+        }
+    }
+
+    // TODO: document this.
+    pub fn new_eel(src_id: usize, dst_id: usize) -> Self {
+        Error {
+            kind: ErrorKind::EmptyEdgeList,
+            msg: format!("There is no edge from {} to {}", src_id, dst_id),
         }
     }
 
