@@ -37,12 +37,12 @@ use crate::{
 /// let e = graph.add_vertex(); // 4
 ///
 /// graph.add_edge(a, b, 6.into());
-/// let ad = graph.add_edge(a, d, 1.into());
+/// let ad = graph.add_edge(a, d, 1.into()).unwrap();
 /// graph.add_edge(b, d, 2.into());
 /// graph.add_edge(b, e, 2.into());
-/// let cb = graph.add_edge(c, b, 1.into());
-/// let ec = graph.add_edge(e, c, 1.into());
-/// let de = graph.add_edge(d, e, 1.into());
+/// let cb = graph.add_edge(c, b, 1.into()).unwrap();
+/// let ec = graph.add_edge(e, c, 1.into()).unwrap();
+/// let de = graph.add_edge(d, e, 1.into()).unwrap();
 ///
 /// // When: Performing BellmanFord algorithm.
 /// let sp_subgraph = BellmanFord::init(&graph).execute(&graph, a).unwrap();

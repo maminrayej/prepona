@@ -27,11 +27,11 @@ use crate::{
 /// let c = graph.add_vertex();
 /// let d = graph.add_vertex();
 /// let e = graph.add_vertex();
-/// let ab = graph.add_edge(a, b, 1.into());
+/// let ab = graph.add_edge(a, b, 1.into()).unwrap();
 /// graph.add_edge(b, c, 1.into());
 /// graph.add_edge(c, d, 1.into());
 /// graph.add_edge(b, d, 1.into());
-/// let de = graph.add_edge(d, e, 1.into());
+/// let de = graph.add_edge(d, e, 1.into()).unwrap();
 ///
 /// let (cut_vertices, cut_edges) = VertexEdgeCut::init(&graph).execute(&graph);
 ///

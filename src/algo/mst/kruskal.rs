@@ -31,17 +31,17 @@ use crate::provide;
 /// let e = graph.add_vertex();
 /// let f = graph.add_vertex();
 ///
-/// let ab = graph.add_edge(a, b, 1.into());
+/// let ab = graph.add_edge(a, b, 1.into()).unwrap();
 /// graph.add_edge(a, c, 3.into());
-/// let af = graph.add_edge(a, f, 3.into());
+/// let af = graph.add_edge(a, f, 3.into()).unwrap();
 ///
 /// graph.add_edge(b, c, 5.into());
-/// let bd = graph.add_edge(b, d, 1.into());
+/// let bd = graph.add_edge(b, d, 1.into()).unwrap();
 ///
-/// let dc = graph.add_edge(d, c, 2.into());
+/// let dc = graph.add_edge(d, c, 2.into()).unwrap();
 /// graph.add_edge(d, e, 4.into());
 ///
-/// let ec = graph.add_edge(e, c, 1.into());
+/// let ec = graph.add_edge(e, c, 1.into()).unwrap();
 /// graph.add_edge(e, f, 5.into());
 ///
 /// let mut tags = std::collections::HashMap::<usize, &'static str>::new();

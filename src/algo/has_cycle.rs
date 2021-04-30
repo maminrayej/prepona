@@ -30,12 +30,12 @@ use crate::provide;
 /// let d = graph.add_vertex();
 /// let e = graph.add_vertex();
 ///
-/// let ab = graph.add_edge(a, b, 1.into());
+/// let ab = graph.add_edge(a, b, 1.into()).unwrap();
 /// graph.add_edge(b, c, 1.into());
 /// graph.add_edge(c, d, 1.into());
-/// let be = graph.add_edge(b, e, 1.into());
+/// let be = graph.add_edge(b, e, 1.into()).unwrap();
 /// graph.add_edge(e, d, 1.into());
-/// let ea = graph.add_edge(e, a, 1.into());
+/// let ea = graph.add_edge(e, a, 1.into()).unwrap();
 ///
 /// // When: Performing cycle detection.
 /// let cycle = HasCycle::init(&graph).execute(&graph).unwrap();
