@@ -21,20 +21,17 @@ pub type FlowMat<W, Dir = UndirectedEdge> = AdjMatrix<W, FlowEdge<W>, Dir>;
 /// An adjacency matrix that uses [`directed`](crate::graph::DirectedEdge) [`flow edges`](crate::graph::FlowEdge).
 pub type DiFlowMat<W> = AdjMatrix<W, FlowEdge<W>, DirectedEdge>;
 
-// TODO: choose clear vocabulary to distinguish between "stored" and "present" vertex ids.
-
 /// `AdjMatrix` is a matrix used to represent a finite graph.
 /// The elements of the matrix indicate whether pairs of vertices are adjacent or not in the graph.
 ///
 /// ## Note
 /// From now on
 /// * |V|: Means total number of vertices that are stored in the storage.
-/// Note that this is different from number of vertices that are present in the graph.
+/// Note that this is different from number of vertices that are valid.
 /// Because even if you remove a vertex from storage, the allocated memory for that vertex will not get freed and will be reused again when adding a new vertex.
-/// You can retrieve the amount of |V| using `total_vertex_count` function(as opposed to number of vertices present in the graph which can be retrieved using `vertex_count` function).
-/// For more info and examples refer to `total_vertex_count` documentation.
-/// * |E|: Means number of edges present in the graph.
-/// * |E<sup>out</sup>|: Means number of edges exiting a vertex(out degree of the vertex).
+/// You can retrieve the amount of |V| using `total_vertex_count` function(as opposed to number of vertices which can be retrieved using `vertex_count` function).
+/// * |E|: Means total number of edges.
+/// * |E<sub>out</sub>|: Means number of edges exiting a vertex(out degree of the vertex).
 /// * |E<sub>src->dst</sub>|: Means number of edges from vertex with id: `src` to vertex with id: `dst`.
 ///
 /// ## Space complexity
@@ -43,7 +40,7 @@ pub type DiFlowMat<W> = AdjMatrix<W, FlowEdge<W>, DirectedEdge>;
 /// * **Undirected**: For undirected graphs `AdjMatrix` stores a lower triangle matrix with (|V|<sup>2</sup> + |V|)/2 + |E| elements.
 ///
 /// ## Generic Parameters
-/// * `W`: **W**eight type associated with edges.
+/// * `W`: **W**eight type of edges.
 /// * `E`: **E**dge type that graph uses.
 /// * `Dir`: **Dir**ection of edges: [`Directed`](crate::graph::DirectedEdge) or [`Undirected`](crate::graph::UndirectedEdge)(default value).
 pub struct AdjMatrix<W, E: Edge<W>, Dir: EdgeDir = UndirectedEdge> {
@@ -133,7 +130,7 @@ impl<W: Any, E: Edge<W>, Dir: EdgeDir> AdjMatrix<W, E, Dir> {
     }
 
     /// # Returns
-    /// Total number of vertices in the storage(|V|).
+    /// Total number of vertices stored in the storage(|V|).
     ///
     /// # Complexity
     /// O(1)
@@ -141,8 +138,8 @@ impl<W: Any, E: Edge<W>, Dir: EdgeDir> AdjMatrix<W, E, Dir> {
         self.vertex_count + self.reusable_vertex_ids.len()
     }
 
-    ////////// Checked Edges Vec Retrieval Functions //////////
-    // `get` and `get_mut` are "checked" function to retrieve vector of edges from source to destination.
+    ////////// Checked "Vector of Edges" Retrieval Functions //////////
+    // `get` and `get_mut` are "checked" functions to retrieve vector of edges from source to destination.
     // It means that if you use `get(src_id, dst_id)` and any of the two vertex ids are invalid, It causes the function to return an `Error`.
     //////////////////////////////////////////////
 
@@ -152,7 +149,7 @@ impl<W: Any, E: Edge<W>, Dir: EdgeDir> AdjMatrix<W, E, Dir> {
     //
     // # Returns
     // * `Ok`: Containing vector of edges from source to destination.
-    // * `Err`: If either source vertex or destination vertex does not exist in the storage. // TODO: state what kind of Error will be returned.
+    // * `Err`: [`VertexNotFound`](crate::storage::ErrorKind::VertexNotFound) If either source vertex or destination vertex does not exist in the storage.
     ///
     /// # Complexity
     /// O(1)
@@ -174,7 +171,7 @@ impl<W: Any, E: Edge<W>, Dir: EdgeDir> AdjMatrix<W, E, Dir> {
     //
     // # Returns
     // * `Ok`: Containing vector of edges from source to destination.
-    // * `Err`: If either source vertex or destination vertex does not exist in the storage. // TODO: state what kind of Error will be returned.
+    // * `Err`: [`VertexNotFound`](crate::storage::ErrorKind::VertexNotFound) If either source vertex or destination vertex does not exist in the storage.
     ///
     /// # Complexity
     /// O(1)
@@ -190,10 +187,9 @@ impl<W: Any, E: Edge<W>, Dir: EdgeDir> AdjMatrix<W, E, Dir> {
         }
     }
 
-    ////////// Unsafe Edges Vec Retrieval Functions //////////
-    // `get_unsafe` and `get_mut_unsafe` are "unsafe" alternatives tor `get` and `get_mut` functions.
-    // It means that if you use `get_unsafe(src_id, dst_id)` and any of the two vertex ids are invalid,
-    // It causes the function to return a vector that belongs to a "reusable" vertex id if src_id and dst_id are in 0..|V| range and panics otherwise.
+    ////////// Unsafe "Vector of Edges" Retrieval Functions //////////
+    // `get_unsafe` and `get_mut_unsafe` are "unsafe" alternatives for `get` and `get_mut` functions.
+    // It means that if you use `get_unsafe(src_id, dst_id)` it causes the function to return a vector that belongs to a "reusable" vertex id if src_id and dst_id are in 0..|V| range and, panics otherwise.
     // So it does not always panic. The returned vector is invalid and mutating it may leave the storage in an inconsistent state.
     // The only place that you should use them is when you are absolutely sure `src_id` and `dst_id` are both valid.
     // One good example is the implementation of `edges_from`:
@@ -227,9 +223,9 @@ impl<W: Any, E: Edge<W>, Dir: EdgeDir> AdjMatrix<W, E, Dir> {
     //
     // # Returns
     // The vector of edges from source to destination.
-    ///
-    /// # Complexity
-    /// O(1)
+    //
+    // # Complexity
+    // O(1)
     //
     // # Panics
     // If `src_id` or `dst_id` are are not in range 0..|V|.
@@ -245,9 +241,9 @@ impl<W: Any, E: Edge<W>, Dir: EdgeDir> AdjMatrix<W, E, Dir> {
     //
     // # Returns
     // The vector of edges from source to destination.
-    ///
-    /// # Complexity
-    /// O(1)
+    //
+    // # Complexity
+    // O(1)
     //
     // # Panics
     // If `src_id` or `dst_id` are are not in range 0..|V|.
@@ -259,7 +255,7 @@ impl<W: Any, E: Edge<W>, Dir: EdgeDir> AdjMatrix<W, E, Dir> {
 }
 
 impl<W: Any, E: Edge<W>, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjMatrix<W, E, Dir> {
-    /// Adds a vertex to the graph.
+    /// Adds a vertex to the storage.
     ///
     /// # Returns
     /// Unique id of the newly added vertex.
@@ -363,7 +359,7 @@ impl<W: Any, E: Edge<W>, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjMatrix<W, 
     /// # Arguments
     /// * `src_id`: Id of source vertex.
     /// * `dst_id`: Id of destination vertex.
-    /// * `edge_id`: Id of the to be updated edge.
+    /// * `edge_id`: Id of the old edge.
     /// * `edge`: New edge to replace the old one.
     ///
     /// # Returns
@@ -403,6 +399,9 @@ impl<W: Any, E: Edge<W>, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjMatrix<W, 
     /// * `Ok`: Containing the removed edge.
     /// * `Err`: [`VertexNotFound`](crate::storage::ErrorKind::VertexNotFound) if vertex with either id: `src_id` or `dst_id` does not exist.
     /// * `Err`: [`InvalidEdgeId`](crate::storage::ErrorKind::InvalidEdgeId) if edge with specified id does not exist from source to destination.
+    ///
+    /// # Complexity
+    /// O(|E<sub>src->dst</sub>|)
     fn remove_edge(&mut self, src_id: usize, dst_id: usize, edge_id: usize) -> Result<E> {
         if let Some(index) = self
             .get_mut(src_id, dst_id)?
@@ -420,7 +419,7 @@ impl<W: Any, E: Edge<W>, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjMatrix<W, 
     }
 
     /// # Returns
-    /// Number of vertices in the graph.
+    /// Number of vertices in the storage.
     ///
     /// # Complexity
     /// O(1)
@@ -429,7 +428,7 @@ impl<W: Any, E: Edge<W>, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjMatrix<W, 
     }
 
     /// # Returns
-    /// Number of edges in the graph.
+    /// Number of edges in the storage.
     ///
     /// # Complexity:
     /// O(1)
@@ -438,7 +437,7 @@ impl<W: Any, E: Edge<W>, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjMatrix<W, 
     }
 
     /// # Returns
-    /// Id of vertices that are present in the graph.
+    /// Id of vertices that are present in the storage.
     ///
     /// # Complexity
     /// O(|V|)
@@ -457,7 +456,7 @@ impl<W: Any, E: Edge<W>, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjMatrix<W, 
     /// * `Err`: [`VertexNotFound`](crate::storage::ErrorKind::VertexNotFound) if vertex with id: `src_id` does not exist.
     ///
     /// # Complexity
-    /// O(|E<sup>out</sup>|)
+    /// O(|E<sub>out</sub>|)
     fn edges_from(&self, src_id: usize) -> Result<Vec<(usize, &E)>> {
         if !self.contains_vertex(src_id) {
             Err(Error::new_vnf(src_id))?
@@ -472,7 +471,6 @@ impl<W: Any, E: Edge<W>, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjMatrix<W, 
                 // `dst_id` comes from  `vertices()` so it's always valid. `src_id` is checked to be valid at the start of this function.
                 // So it's reasonable to use `get_unsafe`.
                 self.get_unsafe(src_id, dst_id)
-                    .iter()
                     .into_iter()
                     .map(|edge| (dst_id, edge))
                     .collect::<Vec<(usize, &E)>>()
@@ -531,7 +529,8 @@ impl<W: Any, E: Edge<W>, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjMatrix<W, 
     /// # Complexity
     /// O(|E<sub>src->dst</sub>|)
     fn edge_between(&self, src_id: usize, dst_id: usize, edge_id: usize) -> Result<&E> {
-        self.edges_between(src_id, dst_id)?
+        self.get(src_id, dst_id)?
+            .iter()
             .into_iter()
             .find(|edge| edge.get_id() == edge_id)
             .ok_or(Error::new_iei(src_id, dst_id, edge_id).into())
@@ -579,7 +578,7 @@ impl<W: Any, E: Edge<W>, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjMatrix<W, 
     /// * `Ok`: Containing `true` if there is any edge between specified source and destination, `false` otherwise.
     /// * `Err`: [`VertexNotFound`](crate::storage::ErrorKind::VertexNotFound) if vertex with either id: `src_id` or `dst_id` does not exist.
     ///
-    /// # Panics
+    /// # Complexity
     /// O(1)
     fn has_any_edge(&self, src_id: usize, dst_id: usize) -> Result<bool> {
         Ok(!self.get(src_id, dst_id)?.is_empty())
