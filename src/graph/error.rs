@@ -115,7 +115,15 @@ impl Error {
         }
     }
 
-    // TODO: document it.
+    /// Creates a new [`InvalidEdgeId`](crate::graph::ErrorKind::InvalidEdgeId) kind of error.
+    ///
+    /// # Arguments
+    /// * `src_id`: Id of the source vertex.
+    /// * `dst_id`: Id of the destination vertex.
+    /// * `edge_id`: Id of the edge that was not found from source to destination.
+    ///
+    /// # Returns
+    /// `Error` with `InvalidEdgeId` kind and predefined message.
     pub fn new_iei(src_id: usize, dst_id: usize, edge_id: usize) -> Self {
         Error {
             kind: ErrorKind::InvalidEdgeId,
@@ -125,8 +133,13 @@ impl Error {
             ),
         }
     }
-
-    // TODO: document it.
+    /// Creates a new [`VertexAlreadyExists`](crate::graph::ErrorKind::VertexAlreadyExists) kind of error.
+    ///
+    /// # Arguments
+    /// * `vertex_id`: Id of the vertex that already exists in the storage.
+    ///
+    /// # Returns
+    /// `Error` with `VertexAlreadyExists` kind and predefined message.
     pub fn new_vae(vertex_id: usize) -> Self {
         Error {
             kind: ErrorKind::VertexAlreadyExists,
