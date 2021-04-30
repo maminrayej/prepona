@@ -2,7 +2,7 @@
 pub enum ErrorKind {
     VertexNotFound,
     EdgeNotFound,
-    InvalidEdgeId, // TODO: change the default message to edge_id not found between src and dst.
+    InvalidEdgeId,
     EmptyEdgeList,
 }
 
@@ -51,17 +51,33 @@ impl Error {
         }
     }
 
+    /// Creates an [`InvalidEdgeId`](crate::storage::ErrorKind::InvalidEdgeId) kind of error.
+    ///
+    /// # Arguments
+    /// * `src_id`: Id of the source vertex.
+    /// * `dst_id`: Id of the destination vertex.
+    /// * `edge_id`: Id of the edge that was not found from source to destination.
+    ///
+    /// # Returns
+    /// `Error` with `InvalidEdgeId` kind and predefined msg.
     pub fn new_iei(src_id: usize, dst_id: usize, edge_id: usize) -> Self {
         Error {
             kind: ErrorKind::InvalidEdgeId,
             msg: format!(
-                "Edge with id: {} exists but it's not from vertex: {} to vertex: {}",
+                "There is no edge with id: {} from vertex with id: {} to vertex with id: {}",
                 edge_id, src_id, dst_id
             ),
         }
     }
 
-    // TODO: document this.
+    /// Creates an [`EmptyEdgeList`](crate::storage::ErrorKind::EmptyEdgeList) kind of error.
+    ///
+    /// # Arguments
+    /// * `src_id`: Id of the source vertex.
+    /// * `dst_id`: Id of the destination vertex.
+    ///
+    /// # Returns
+    /// `Error` with `InvalidEdgeId` kind and predefined msg.
     pub fn new_eel(src_id: usize, dst_id: usize) -> Self {
         Error {
             kind: ErrorKind::EmptyEdgeList,
