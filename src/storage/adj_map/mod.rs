@@ -32,6 +32,7 @@ pub type DiFlowMap<W> = AdjMap<W, FlowEdge<W>, DirectedEdge>;
 /// * |V|: Means number of vertices that are stored in the storage.
 /// * |E<sub>src->dst</sub>|: Means number of edges from source to destination.
 /// * |E|: Means number of edges stored in the storage.
+/// * |N|: Means number of neighbors of a vertex.
 ///
 /// ## Space complexity
 /// Space complexity of `AdjMap` depends on wether `Dir` is [`Directed`](crate::graph::DirectedEdge) or [`Undirected`](crate::graph::UndirectedEdge). \
@@ -131,21 +132,48 @@ impl<W: Copy, E: Edge<W> + Copy, Dir: EdgeDir> AdjMap<W, E, Dir> {
         }
     }
 
+    ////////// Checked "Map of Edges" Retrieval Functions //////////
+    // `get_map` and `get_map_mut` are "checked" alternatives to `index` and `index_mut` to retrieve map of edges from source to destination.
+    // It means that if you use `get_map(src_id, dst_id)` and any of the two vertex ids are invalid, It causes the function to return an `Error` instead of panicking.
+    //////////////////////////////////////////////
+
+    // # Arguments
+    // * `vertex_id`: Id of the source vertex.
+    //
+    // # Returns
+    // * `Ok`: Containing hash map mapping each `dst_id` to vector of edges from `vertex_id` to `dst_id`.
+    // * `Err`: [`VertexNotFound`](crate::storage::ErrorKind::VectorNotFound) if `vertex_id` is not a valid vertex id.
     fn get_map(&self, vertex_id: usize) -> Result<&HashMap<usize, Vec<E>>> {
-        if !self.contains_vertex(vertex_id) {
-            Err(Error::new_vnf(vertex_id))?
-        } else {
-            Ok(&self.map[&vertex_id])
-        }
+        self.map
+            .get(&vertex_id)
+            .ok_or(Error::new_vnf(vertex_id).into())
     }
 
+    // # Arguments
+    // * `vertex_id`: Id of the source vertex.
+    //
+    // # Returns
+    // * `Ok`: Containing hash map mapping each `dst_id` to vector of edges from `vertex_id` to `dst_id`.
+    // * `Err`: [`VertexNotFound`](crate::storage::ErrorKind::VectorNotFound) if `vertex_id` is not a valid vertex id.
     fn get_map_mut(&mut self, vertex_id: usize) -> Result<&mut HashMap<usize, Vec<E>>> {
         self.map
             .get_mut(&vertex_id)
             .ok_or(Error::new_vnf(vertex_id).into())
     }
 
-    // TODO: achieve the same effect without using `mut` on `self`.
+    ////////// Checked "Vector of Edges" Retrieval Functions //////////
+    // `get_edges` and `get_edges_mut` are "checked" alternatives to `index` and `index_mut` to retrieve vector of edges from source to destination.
+    // It means that if you use `get_edges(src_id, dst_id)` and any of the two vertex ids are invalid, It causes the function to return an `Error` instead of panicking.
+    //////////////////////////////////////////////
+
+    // # Arguments
+    // * `src_id`: Id of the source vertex.
+    // * `dst_id`: Id of the destination vertex.
+    //
+    // # Returns
+    // * `Ok`: Containing hash map mapping each `dst_id` to vector of edges from `vertex_id` to `dst_id`.
+    // * `Err`: [`VertexNotFound`](crate::storage::ErrorKind::VectorNotFound) if either `src_id` or `dst_id` is not valid.
+    // * `Err`: [`EmptyEdgeList`](crate::storage::ErrorKind::EmptyEdgeList) if there is no edge from source to destination.
     fn get_edges(&self, src_id: usize, dst_id: usize) -> Result<&Vec<E>> {
         if !self.contains_vertex(src_id) {
             Err(Error::new_vnf(src_id))?
@@ -160,6 +188,14 @@ impl<W: Copy, E: Edge<W> + Copy, Dir: EdgeDir> AdjMap<W, E, Dir> {
         }
     }
 
+    // # Arguments
+    // * `src_id`: Id of the source vertex.
+    // * `dst_id`: Id of the destination vertex.
+    //
+    // # Returns
+    // * `Ok`: Containing hash map mapping each `dst_id` to vector of edges from `vertex_id` to `dst_id`.
+    // * `Err`: [`VertexNotFound`](crate::storage::ErrorKind::VectorNotFound) if either `src_id` or `dst_id` is not valid.
+    // * `Err`: [`EmptyEdgeList`](crate::storage::ErrorKind::EmptyEdgeList) if there is no edge from source to destination.
     fn get_edges_mut(&mut self, src_id: usize, dst_id: usize) -> Result<&mut Vec<E>> {
         if !self.contains_vertex(src_id) {
             Err(Error::new_vnf(src_id))?
@@ -176,31 +212,41 @@ impl<W: Copy, E: Edge<W> + Copy, Dir: EdgeDir> AdjMap<W, E, Dir> {
 }
 
 impl<W: Copy, E: Edge<W> + Copy, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjMap<W, E, Dir> {
-    /// Adds a vertex to the graph.
+    /// Adds a vertex to the storage.
     ///
     /// # Returns
     /// Unique id of the newly added vertex.
     ///
     /// # Complexity
     /// O(|1|)
+    ///
+    /// # Panics
+    /// If number of vertices exceeds the maximum value that `usize` can represent.
     fn add_vertex(&mut self) -> usize {
-        if let Some(reusable_id) = self.next_reusable_vertex_id() {
-            self.vertex_count += 1;
-
-            self.map.insert(reusable_id, HashMap::new());
-
+        let vertex_id = if let Some(reusable_id) = self.next_reusable_vertex_id() {
             reusable_id
         } else {
-            let vertex_id = self.vertex_count;
+            self.vertex_count
+        };
 
-            self.map.insert(vertex_id, HashMap::new());
+        self.map.insert(vertex_id, HashMap::new());
 
-            self.vertex_count += 1;
+        self.vertex_count += 1;
 
-            self.vertex_count - 1
-        }
+        vertex_id
     }
 
+    /// Removes the vertex with id: `vertex_id` from storage.
+    ///
+    /// # Arguments
+    /// `vertex_id`: Id of the vertex to be removed.
+    ///
+    /// # Returns
+    /// * `Ok`: If vertex removed successfully.
+    /// * `Err`: [`VertexNotFound`](crate::storage::ErrorKind::VertexNotFound) if vertex with specified id does not exist.
+    ///
+    /// # Complexity
+    /// O(|V|)
     fn remove_vertex(&mut self, vertex_id: usize) -> Result<()> {
         if let Some(_) = self.map.remove(&vertex_id) {
             // `v_id` comes from `vertices()`. So it's always valid.
@@ -219,6 +265,19 @@ impl<W: Copy, E: Edge<W> + Copy, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjMa
         }
     }
 
+    /// Adds `edge` from vertex with id `src_id`: to vertex with id: `dst_id`.
+    ///
+    /// # Arguments
+    /// * `src_id`: Id of the source vertex.
+    /// * `dst_id`: Id of the destination vertex.
+    /// * `edge`: Edge to be added from source to destination.
+    ///
+    /// # Returns
+    /// * `Ok`: Containing unique id of the newly added edge.
+    /// * `Err`: [`VertexNotFound`](crate::storage::ErrorKind::VertexNotFound) if vertex with either id: `src_id` or `dst_id` does not exist.
+    ///
+    /// # Complexity
+    /// O(1)
     fn add_edge(&mut self, src_id: usize, dst_id: usize, mut edge: E) -> Result<usize> {
         if !self.contains_vertex(dst_id) {
             Err(Error::new_vnf(dst_id))?
@@ -239,7 +298,7 @@ impl<W: Copy, E: Edge<W> + Copy, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjMa
             .or_insert(vec![])
             .push(edge);
 
-        if Dir::is_undirected() {
+        if self.is_undirected() {
             // `dst_id` is checked to be valid at the start of this function.
             // So it's reasonable to use `index_mut`.
             self[dst_id].entry(src_id).or_insert(vec![]).push(edge);
@@ -248,6 +307,22 @@ impl<W: Copy, E: Edge<W> + Copy, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjMa
         Ok(edge_id)
     }
 
+    /// Replaces the edge with id: `edge_id` with `edge`.
+    ///
+    /// # Arguments
+    /// * `src_id`: Id of source vertex.
+    /// * `dst_id`: Id of destination vertex.
+    /// * `edge_id`: Id of the old edge.
+    /// * `edge`: New edge to replace the old one.
+    ///
+    /// # Returns
+    /// * `Ok`: If edge updated successfully.
+    /// * `Err`: [`VertexNotFound`](crate::storage::ErrorKind::VertexNotFound) if vertex with either id: `src_id` or `dst_id` does not exist.
+    /// * `Err`: [`InvalidEdgeId`](crate::storage::ErrorKind::InvalidEdgeId) if edge with specified id does not exist from source to destination.
+    /// * `Err`: [`EmptyEdgeList`](crate::storage::ErrorKind::EmptyEdgeList) if there is no edge from source to destination.
+    ///
+    /// # Complexity
+    /// O(|E<sub>src->dst</sub>|)
     fn update_edge(
         &mut self,
         src_id: usize,
@@ -255,15 +330,48 @@ impl<W: Copy, E: Edge<W> + Copy, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjMa
         edge_id: usize,
         mut edge: E,
     ) -> Result<()> {
-        let removed_edge = self.remove_edge(src_id, dst_id, edge_id)?;
+        let edges_vec = self.get_edges_mut(src_id, dst_id)?;
 
-        edge.set_id(removed_edge.get_id());
+        if let Some(index) = edges_vec.iter().position(|e| e.get_id() == edge_id) {
+            edge.set_id(edge_id);
 
-        self.add_edge(src_id, dst_id, edge)?;
+            edges_vec[index] = edge;
 
-        Ok(())
+            if self.is_undirected() {
+                // `dst_id` and `src_id` are both validated at the start of this function.
+                // And we are sure we won't encounter EmptyEdgeList because that is also validated at the start of this function.
+                // So it's reasonable to use `index_mut`.
+                let edges_vec = &mut self[(dst_id, src_id)];
+
+                let index = edges_vec
+                    .iter()
+                    .position(|e| e.get_id() == edge_id)
+                    .unwrap();
+
+                edges_vec[index] = edge;
+            }
+
+            Ok(())
+        } else {
+            Err(Error::new_iei(src_id, dst_id, edge_id))?
+        }
     }
 
+    /// Removes the edge with id: `edge_id`.
+    ///
+    /// # Arguments
+    /// * `src_id`: Id of source vertex.
+    /// * `dst_id`: Id of destination vertex.
+    /// * `edge_id`: Id of edge to be removed.
+    ///
+    /// # Returns
+    /// * `Ok`: Containing the removed edge.
+    /// * `Err`: [`VertexNotFound`](crate::storage::ErrorKind::VertexNotFound) if vertex with either id: `src_id` or `dst_id` does not exist.
+    /// * `Err`: [`InvalidEdgeId`](crate::storage::ErrorKind::InvalidEdgeId) if edge with specified id does not exist from source to destination.
+    /// * `Err`: [`EmptyEdgeList`](crate::storage::ErrorKind::EmptyEdgeList) if there is no edge from source to destination.
+    ///
+    /// # Complexity
+    /// O(|E<sub>src->dst</sub>|)
     fn remove_edge(&mut self, src_id: usize, dst_id: usize, edge_id: usize) -> Result<E> {
         let edges_vec = self.get_edges_mut(src_id, dst_id)?;
 
@@ -272,9 +380,11 @@ impl<W: Copy, E: Edge<W> + Copy, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjMa
 
             self.reusable_edge_ids.insert(edge_id);
 
-            if Dir::is_undirected() {
-                self.get_edges_mut(dst_id, src_id)?
-                    .retain(|e| e.get_id() != edge_id);
+            if self.is_undirected() {
+                // `dst_id` and `src_id` are both validated at the start of this function.
+                // And we are sure we won't encounter EmptyEdgeList because that is also validated at the start of this function.
+                // So it's reasonable to use `index_mut`.
+                self[(dst_id, src_id)].retain(|e| e.get_id() != edge_id);
             }
 
             Ok(edge)
@@ -284,7 +394,7 @@ impl<W: Copy, E: Edge<W> + Copy, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjMa
     }
 
     /// # Returns
-    /// Number of vertices in the graph.
+    /// Number of vertices in the storage.
     ///
     /// # Complexity
     /// O(1)
@@ -293,7 +403,7 @@ impl<W: Copy, E: Edge<W> + Copy, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjMa
     }
 
     /// # Returns
-    /// Number of edges in the graph.
+    /// Number of edges in the storage.
     ///
     /// # Complexity:
     /// O(1)
@@ -302,7 +412,7 @@ impl<W: Copy, E: Edge<W> + Copy, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjMa
     }
 
     /// # Returns
-    /// Id of vertices that are present in the graph.
+    /// Id of vertices that are present in the storage.
     ///
     /// # Complexity
     /// O(|V|)
@@ -310,6 +420,15 @@ impl<W: Copy, E: Edge<W> + Copy, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjMa
         self.map.keys().copied().collect()
     }
 
+    /// # Arguments
+    /// `src_id`: Id of the source vertex.
+    ///
+    /// # Returns
+    /// * `Ok`: Containing all edges from the source vertex in the format of: (`dst_id`, `edge`).
+    /// * `Err`: [`VertexNotFound`](crate::storage::ErrorKind::VertexNotFound) if vertex with id: `src_id` does not exist.
+    ///
+    /// # Complexity
+    /// O(|E<sub>out</sub>|)    
     fn edges_from(&self, src_id: usize) -> Result<Vec<(usize, &E)>> {
         Ok(self
             .get_map(src_id)?
@@ -323,6 +442,15 @@ impl<W: Copy, E: Edge<W> + Copy, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjMa
             .collect())
     }
 
+    /// # Arguments:
+    /// `src_id`: Id of the source vertex.
+    ///
+    /// # Returns
+    /// * `Ok`: Containing id of vertices accessible from source vertex using one edge.
+    /// * `Err`: [`VertexNotFound`](crate::storage::ErrorKind::VertexNotFound) if vertex with id: `src_id` does not exist.
+    ///
+    /// # Complexity
+    /// O(|N|)   
     fn neighbors(&self, src_id: usize) -> Result<Vec<usize>> {
         Ok(self
             .get_map(src_id)?
@@ -337,10 +465,35 @@ impl<W: Copy, E: Edge<W> + Copy, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjMa
             .collect())
     }
 
+    /// # Arguments
+    /// * `src_id`: Id of source vertex.
+    /// * `dst_id`: Id of destination vertex.
+    ///
+    /// # Returns
+    /// * `Ok`: Edges from source vertex to destination vertex.
+    /// * `Err`: [`VertexNotFound`](crate::storage::ErrorKind::VertexNotFound) if vertex with either id: `src_id` or `dst_id` does not exist.
+    /// * `Err`: [`EmptyEdgeList`](crate::storage::ErrorKind::EmptyEdgeList) if there is no edge from source to destination.
+    ///
+    /// # Complexity
+    /// O(|E<sub>src->dst</sub>|)
     fn edges_between(&self, src_id: usize, dst_id: usize) -> Result<Vec<&E>> {
         Ok(self.get_edges(src_id, dst_id)?.into_iter().collect())
     }
 
+    /// # Arguments
+    /// * `src_id`: Id of source vertex.
+    /// * `dst_id`: Id of destination vertex.
+    /// * `edge_id`: Id of the edge to retrieve.
+    ///
+    /// # Returns
+    /// * `Ok`: Containing the edge between specified source and destination with specified id.
+    /// * `Err`: [`VertexNotFound`](crate::storage::ErrorKind::VertexNotFound) if vertex with either id: `src_id` or `dst_id` does not exist.
+    /// * `Err`: [`EdgeNotFound`](crate::storage::ErrorKind::EdgeNotFound) if edge with specified id does not exist.
+    /// * `Err`: [`InvalidEdgeId`](crate::storage::ErrorKind::InvalidEdgeId) if edge with specified id does exist but it's not from source to destination.
+    /// * `Err`: [`EmptyEdgeList`](crate::storage::ErrorKind::EmptyEdgeList) if there is no edge from source to destination.
+    ///
+    /// # Complexity
+    /// O(|E<sub>src->dst</sub>|)
     fn edge_between(&self, src_id: usize, dst_id: usize, edge_id: usize) -> Result<&E> {
         self.edges_between(src_id, dst_id)?
             .into_iter()
@@ -348,14 +501,66 @@ impl<W: Copy, E: Edge<W> + Copy, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjMa
             .ok_or(Error::new_iei(src_id, dst_id, edge_id).into())
     }
 
+    /// Difference between this function and `edges` is that this function treats each edge as a directed edge.
+    /// For example consider storage: a --- b
+    /// If you call `edges` on this storage, you will get: (a, b, edge).
+    /// But if you call `as_directed_edges`, you will get two elements: (a, b, edge) and (b, a, edge).
+    /// It's specifically useful in algorithms that are for directed graphs but can also be applied to undirected graphs if we treat the edges as directed.
+    /// One example is [`BellmanFord`](crate::algo::BellmanFord) algorithm.
+    ///
+    /// # Returns
+    /// All edges(as directed edges) in the storage in the format of: (`src_id`, `dst_id`, `edge`).
+    ///
+    /// # Complexity
+    /// O(|E|)
     fn as_directed_edges(&self) -> Vec<(usize, usize, &E)> {
-        vec![]
+        let mut edges = vec![];
+
+        for src_id in self.map.keys() {
+            // `src_id` is a valid key so using self[*src_id] is reasonable.
+            for (dst_id, src_to_dst_edges) in self[*src_id].iter() {
+                edges.append(
+                    &mut src_to_dst_edges
+                        .into_iter()
+                        .map(|edge| (*src_id, *dst_id, edge))
+                        .collect(),
+                )
+            }
+        }
+
+        edges
     }
 
+    /// # Arguments
+    /// * `src_id`: Id of the source vertex.
+    /// * `dst_id`: Id of the destination vertex.
+    ///
+    /// # Returns
+    /// * `Ok`: Containing `true` if there is any edge between specified source and destination, `false` otherwise.
+    /// * `Err`: [`VertexNotFound`](crate::storage::ErrorKind::VertexNotFound) if vertex with either id: `src_id` or `dst_id` does not exist.
+    ///
+    /// # Complexity
+    /// O(1)
     fn has_any_edge(&self, src_id: usize, dst_id: usize) -> Result<bool> {
-        Ok(!self.get_edges(src_id, dst_id)?.is_empty())
+        Ok(self.get_map(src_id)?.contains_key(&dst_id))
     }
 
+    /// # Note:
+    /// Consider using `edge_between` or `edges_from` functions instead of this one.
+    /// Because default implementation of this function iterates over all edges to find the edge with specified id.
+    /// And it's likely that other storages use the same approach. So:
+    /// * if you have info about source of the edge, consider using `edges_from` function instead.
+    /// * if you have info about both source and destination of the edge, consider using `edge_between` function instead.
+    ///
+    /// # Arguments
+    /// `edge_id`: Id of the edge to be retrieved.
+    ///
+    /// # Returns
+    /// * `Ok`: Containing reference to the edge with specified id.
+    /// * `Err`: [`EdgeNotFound`](crate::storage::ErrorKind::EdgeNotFound) if edge with specified id does not exist.
+    ///
+    /// # Complexity
+    /// O(|E|)
     fn edge(&self, edge_id: usize) -> Result<&E> {
         self.as_directed_edges()
             .into_iter()
@@ -388,12 +593,32 @@ impl<W: Copy, E: Edge<W> + Copy, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjMa
 impl<W: Copy, E: Edge<W> + Copy, Dir: EdgeDir> Index<(usize, usize)> for AdjMap<W, E, Dir> {
     type Output = Vec<E>;
 
+    // # Arguments
+    // * `src_id`: Id of the source vertex.
+    // * `dst_id`: Id of the destination vertex.
+    //
+    // # Returns
+    // Hash map mapping each `dst_id` to vector of edges from `vertex_id` to `dst_id`.
+    //
+    // # Panics
+    // * If `src_id` or `dst_id` are not valid vertex ids.
+    // * If there is no edge from source to destination.
     fn index(&self, (src_id, dst_id): (usize, usize)) -> &Self::Output {
         &self.map[&src_id][&dst_id]
     }
 }
 
 impl<W: Copy, E: Edge<W> + Copy, Dir: EdgeDir> IndexMut<(usize, usize)> for AdjMap<W, E, Dir> {
+    // # Arguments
+    // * `src_id`: Id of the source vertex.
+    // * `dst_id`: Id of the destination vertex.
+    //
+    // # Returns
+    // Hash map mapping each `dst_id` to vector of edges from `vertex_id` to `dst_id`.
+    //
+    // # Panics
+    // * If `src_id` or `dst_id` are not valid vertex ids.
+    // * If there is no edge from source to destination.
     fn index_mut(&mut self, (src_id, dst_id): (usize, usize)) -> &mut Self::Output {
         self.map.get_mut(&src_id).unwrap().get_mut(&dst_id).unwrap()
     }
@@ -402,12 +627,28 @@ impl<W: Copy, E: Edge<W> + Copy, Dir: EdgeDir> IndexMut<(usize, usize)> for AdjM
 impl<W: Copy, E: Edge<W> + Copy, Dir: EdgeDir> Index<usize> for AdjMap<W, E, Dir> {
     type Output = HashMap<usize, Vec<E>>;
 
+    // # Arguments
+    // * `src_id`: Id of the source vertex.
+    //
+    // # Returns
+    // Hash map mapping each `dst_id` to vector of edges from `src_id` to `dst_id`.
+    //
+    // # Panics
+    // If `src_id` is not a valid vertex_id.
     fn index(&self, src_id: usize) -> &Self::Output {
         &self.map[&src_id]
     }
 }
 
 impl<W: Copy, E: Edge<W> + Copy, Dir: EdgeDir> IndexMut<usize> for AdjMap<W, E, Dir> {
+    // # Arguments
+    // * `src_id`: Id of the source vertex.
+    //
+    // # Returns
+    // Hash map mapping each `dst_id` to vector of edges from `src_id` to `dst_id`.
+    //
+    // # Panics
+    // If `src_id` is not a valid vertex_id.
     fn index_mut(&mut self, src_id: usize) -> &mut Self::Output {
         self.map.get_mut(&src_id).unwrap()
     }
@@ -857,9 +1098,8 @@ mod tests {
 
         // Then:
         assert_eq!(map.vertex_count(), 3);
-        println!("size: {:?}", map[a]);
-        assert!(map[a].is_empty());
-        assert!(map[b].is_empty());
+        assert!(map.edges_from(a).unwrap().is_empty());
+        assert!(map.edges_from(b).unwrap().is_empty());
         assert_eq!(map[c].len(), 1);
 
         assert_eq!(map.edges().len(), 1);
@@ -893,9 +1133,9 @@ mod tests {
 
         // Then:
         assert_eq!(map.vertex_count(), 3);
-        assert_eq!(map[a].len(), 1);
-        assert!(map[b].is_empty());
-        assert_eq!(map[c].len(), 1);
+        assert_eq!(map.edges_from(a).unwrap().len(), 1);
+        assert_eq!(map.edges_from(b).unwrap().len(), 0);
+        assert_eq!(map.edges_from(c).unwrap().len(), 1);
 
         assert_eq!(map.edges().len(), 1);
         assert_eq!(map.edges_between(a, c).unwrap()[0].get_weight().unwrap(), 3);
