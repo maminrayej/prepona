@@ -222,4 +222,10 @@ pub trait GraphStorage<W, E: Edge<W>, Dir: EdgeDir> {
     fn is_undirected(&self) -> bool {
         Dir::is_undirected()
     }
+
+    fn filter(
+        &self,
+        vertex_filter: impl Fn(&usize) -> bool,
+        edge_filter: impl Fn(&usize, &usize, &E) -> bool,
+    ) -> Self;
 }

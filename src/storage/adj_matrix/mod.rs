@@ -5,6 +5,7 @@ use std::collections::HashSet;
 use std::marker::PhantomData;
 
 use anyhow::Result;
+use quickcheck::Arbitrary;
 
 use crate::graph::{DefaultEdge, DirectedEdge, Edge, EdgeDir, FlowEdge, UndirectedEdge};
 use crate::storage::{Error, GraphStorage};
@@ -57,7 +58,7 @@ pub struct AdjMatrix<W, E: Edge<W>, Dir: EdgeDir = UndirectedEdge> {
     phantom_dir: PhantomData<Dir>,
 }
 
-impl<W: Any, E: Edge<W>, Dir: EdgeDir> AdjMatrix<W, E, Dir> {
+impl<W: Any + Clone, E: Edge<W> + Clone, Dir: EdgeDir> AdjMatrix<W, E, Dir> {
     /// Initializes an empty adjacency matrix.
     ///
     /// `AdjMatrix` defines multiple types with different combination of values for generic parameters.
@@ -254,7 +255,9 @@ impl<W: Any, E: Edge<W>, Dir: EdgeDir> AdjMatrix<W, E, Dir> {
     }
 }
 
-impl<W: Any, E: Edge<W>, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjMatrix<W, E, Dir> {
+impl<W: Any + Clone, E: Edge<W> + Clone, Dir: EdgeDir> GraphStorage<W, E, Dir>
+    for AdjMatrix<W, E, Dir>
+{
     /// Adds a vertex to the storage.
     ///
     /// # Returns
@@ -632,6 +635,112 @@ impl<W: Any, E: Edge<W>, Dir: EdgeDir> GraphStorage<W, E, Dir> for AdjMatrix<W, 
     /// O(1)
     fn contains_edge(&self, edge_id: usize) -> bool {
         edge_id < self.max_edge_id && !self.reusable_edge_ids.contains(&edge_id)
+    }
+
+    fn filter(
+        &self,
+        vertex_filter: impl Fn(&usize) -> bool,
+        edge_filter: impl Fn(&usize, &usize, &E) -> bool,
+    ) -> Self {
+        let filtered_vertices: Vec<usize> =
+            self.vertices().into_iter().filter(vertex_filter).collect();
+
+        let filtered_edges: Vec<(usize, usize, &E)> = self
+            .edges()
+            .into_iter()
+            .filter(|(src_id, dst_id, edge)| {
+                filtered_vertices.contains(src_id)
+                    && filtered_vertices.contains(dst_id)
+                    && edge_filter(src_id, dst_id, edge)
+            })
+            .collect();
+
+        let mut storage = AdjMatrix::init();
+
+        for _ in &filtered_vertices {
+            storage.add_vertex();
+        }
+
+        for (src_id, dst_id, edge) in &filtered_edges {
+            let src_new_id = filtered_vertices
+                .iter()
+                .position(|vertex_id| vertex_id == src_id)
+                .unwrap();
+            let dst_new_id = filtered_vertices
+                .iter()
+                .position(|vertex_id| vertex_id == dst_id)
+                .unwrap();
+
+            storage
+                .add_edge(src_new_id, dst_new_id, (*edge).clone())
+                .unwrap();
+        }
+
+        storage
+    }
+}
+
+impl<W: Any + Clone, E: Edge<W> + Clone, Dir: EdgeDir> Clone for AdjMatrix<W, E, Dir> {
+    fn clone(&self) -> Self {
+        AdjMatrix {
+            vec: self.vec.clone(),
+
+            reusable_vertex_ids: self.reusable_vertex_ids.clone(),
+
+            max_edge_id: self.max_edge_id,
+            reusable_edge_ids: self.reusable_edge_ids.clone(),
+
+            vertex_count: self.vertex_count,
+
+            phantom_w: PhantomData,
+            phantom_dir: PhantomData,
+        }
+    }
+}
+
+impl<W: Any + Clone, E: Edge<W> + Arbitrary, Dir: EdgeDir + 'static> Arbitrary
+    for AdjMatrix<W, E, Dir>
+{
+    fn arbitrary(g: &mut quickcheck::Gen) -> Self {
+        let vertex_count = usize::arbitrary(g);
+
+        let edge_prob = rand::random::<f64>() * rand::random::<f64>();
+
+        let mut storage = AdjMatrix::init();
+
+        for _ in 0..vertex_count {
+            storage.add_vertex();
+        }
+
+        let vertices = storage.vertices();
+
+        for src_id in &vertices {
+            for dst_id in &vertices {
+                if storage.is_undirected() && src_id > dst_id {
+                    continue;
+                }
+
+                let add_edge_prob = rand::random::<f64>();
+                if add_edge_prob < edge_prob {
+                    storage.add_edge(*src_id, *dst_id, E::arbitrary(g)).unwrap();
+                }
+            }
+        }
+
+        storage
+    }
+
+    fn shrink(&self) -> Box<dyn Iterator<Item = Self>> {
+        let graph = self.clone();
+        Box::new((0..2).filter_map(move |partition_index| {
+            let graph_partition = graph.filter(|v_id| *v_id % 2 == partition_index, |_, _, _| true);
+
+            if graph_partition.vertex_count() < graph.vertex_count() {
+                Some(graph_partition)
+            } else {
+                None
+            }
+        }))
     }
 }
 
