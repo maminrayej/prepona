@@ -1,5 +1,6 @@
 use std::{
     collections::{HashMap, HashSet},
+    fmt::Debug,
     marker::PhantomData,
     ops::{Index, IndexMut},
 };
@@ -299,7 +300,7 @@ impl<W: Clone, E: Edge<W> + Clone, Dir: EdgeDir> GraphStorage<W, E, Dir> for Adj
             .or_insert(vec![])
             .push(edge.clone());
 
-        if self.is_undirected() {
+        if self.is_undirected() && src_id != dst_id {
             // `dst_id` is checked to be valid at the start of this function.
             // So it's reasonable to use `index_mut`.
             self[dst_id].entry(src_id).or_insert(vec![]).push(edge);
@@ -409,7 +410,7 @@ impl<W: Clone, E: Edge<W> + Clone, Dir: EdgeDir> GraphStorage<W, E, Dir> for Adj
     /// # Complexity:
     /// O(1)
     fn edge_count(&self) -> usize {
-        self.max_edge_id - self.reusable_edge_ids.len()
+        self.edges().len()
     }
 
     /// # Returns
@@ -587,7 +588,10 @@ impl<W: Clone, E: Edge<W> + Clone, Dir: EdgeDir> GraphStorage<W, E, Dir> for Adj
     /// * `true`: If storage contains the edge with id: `edge_id`.
     /// * `false`: Otherwise.
     fn contains_edge(&self, edge_id: usize) -> bool {
-        edge_id < self.max_edge_id && !self.reusable_edge_ids.contains(&edge_id)
+        self.edges()
+            .iter()
+            .find(|(_, _, edge)| edge.get_id() == edge_id)
+            .is_some()
     }
 
     fn filter(
@@ -655,7 +659,7 @@ impl<W: Clone + 'static, E: Edge<W> + Arbitrary, Dir: EdgeDir + 'static> Arbitra
     for AdjMap<W, E, Dir>
 {
     fn arbitrary(g: &mut quickcheck::Gen) -> Self {
-        let vertex_count = usize::arbitrary(g);
+        let vertex_count = usize::arbitrary(g).clamp(0, 32);
 
         let edge_prob = rand::random::<f64>() * rand::random::<f64>();
 
@@ -766,6 +770,18 @@ impl<W: Clone, E: Edge<W> + Clone, Dir: EdgeDir> IndexMut<usize> for AdjMap<W, E
     // If `src_id` is not a valid vertex_id.
     fn index_mut(&mut self, src_id: usize) -> &mut Self::Output {
         self.map.get_mut(&src_id).unwrap()
+    }
+}
+
+impl<W: Clone + Debug, E: Edge<W> + Clone + Debug, Dir: EdgeDir> Debug for AdjMap<W, E, Dir> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let edges_str: Vec<String> = self
+            .edges()
+            .into_iter()
+            .map(|(src_id, dst_id, edge)| format!("({}->{}: {:?})", src_id, dst_id, edge))
+            .collect();
+
+        f.write_str(&edges_str.join("\n"))
     }
 }
 

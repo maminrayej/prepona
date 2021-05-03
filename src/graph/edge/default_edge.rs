@@ -1,9 +1,10 @@
 use magnitude::Magnitude;
+use quickcheck::Arbitrary;
 
 use crate::graph::edge::Edge;
 
 /// Represent a default edge with only weight.
-#[derive(Debug, Copy, Clone)]
+#[derive(Copy, Clone)]
 pub struct DefaultEdge<W> {
     id: usize,
     weight: Magnitude<W>,
@@ -40,8 +41,8 @@ impl<W> Edge<W> for DefaultEdge<W> {
     }
 }
 
-use std::any::Any;
 use std::convert::From;
+use std::{any::Any, fmt::Debug};
 impl<W: Any> From<W> for DefaultEdge<W> {
     /// Construct a `DefaultEdge` from `Any` value.
     fn from(weight: W) -> Self {
@@ -52,6 +53,18 @@ impl<W: Any> From<W> for DefaultEdge<W> {
 impl<W: PartialEq> PartialEq for DefaultEdge<W> {
     fn eq(&self, other: &Self) -> bool {
         self.weight == other.weight && self.id == other.id
+    }
+}
+
+impl<W: Arbitrary> Arbitrary for DefaultEdge<W> {
+    fn arbitrary(g: &mut quickcheck::Gen) -> Self {
+        DefaultEdge::init(W::arbitrary(g).into())
+    }
+}
+
+impl<W: Debug> Debug for DefaultEdge<W> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&format!("({},{:?})", self.get_id(), self.get_weight()))
     }
 }
 

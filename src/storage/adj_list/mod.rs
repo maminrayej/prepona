@@ -1,5 +1,5 @@
-use std::collections::HashSet;
 use std::marker::PhantomData;
+use std::{collections::HashSet, fmt::Debug};
 
 use anyhow::Result;
 use quickcheck::Arbitrary;
@@ -296,7 +296,7 @@ impl<W: Clone, E: Edge<W> + Clone, Dir: EdgeDir> GraphStorage<W, E, Dir> for Adj
 
         self.edges_of_mut(src_id)?.push((dst_id, edge.clone()));
 
-        if self.is_undirected() {
+        if self.is_undirected() && src_id != dst_id {
             self.edges_of_mut(dst_id)?.push((src_id, edge));
         }
 
@@ -416,7 +416,7 @@ impl<W: Clone, E: Edge<W> + Clone, Dir: EdgeDir> GraphStorage<W, E, Dir> for Adj
     /// # Complexity:
     /// O(1)
     fn edge_count(&self) -> usize {
-        self.max_edge_id - self.reusable_edge_ids.len()
+        self.edges().len()
     }
 
     /// # Returns
@@ -599,7 +599,10 @@ impl<W: Clone, E: Edge<W> + Clone, Dir: EdgeDir> GraphStorage<W, E, Dir> for Adj
     /// * `true`: If storage contains the edge with id: `edge_id`.
     /// * `false`: Otherwise.
     fn contains_edge(&self, edge_id: usize) -> bool {
-        edge_id < self.max_edge_id && !self.reusable_edge_ids.contains(&edge_id)
+        self.edges()
+            .iter()
+            .find(|(_, _, edge)| edge.get_id() == edge_id)
+            .is_some()
     }
 
     fn filter(
@@ -666,7 +669,7 @@ impl<W: Clone + 'static, E: Edge<W> + Arbitrary, Dir: EdgeDir + 'static> Arbitra
     for AdjList<W, E, Dir>
 {
     fn arbitrary(g: &mut quickcheck::Gen) -> Self {
-        let vertex_count = usize::arbitrary(g);
+        let vertex_count = usize::arbitrary(g).clamp(0, 32);
 
         let edge_prob = rand::random::<f64>() * rand::random::<f64>();
 
@@ -713,6 +716,18 @@ impl<W: Clone + 'static, E: Edge<W> + Arbitrary, Dir: EdgeDir + 'static> Arbitra
                 None
             }
         }))
+    }
+}
+
+impl<W: Clone + Debug, E: Edge<W> + Clone + Debug, Dir: EdgeDir> Debug for AdjList<W, E, Dir> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let edges_str: Vec<String> = self
+            .edges()
+            .into_iter()
+            .map(|(src_id, dst_id, edge)| format!("({}->{}: {:?})", src_id, dst_id, edge))
+            .collect();
+
+        f.write_str(&edges_str.join("\n"))
     }
 }
 

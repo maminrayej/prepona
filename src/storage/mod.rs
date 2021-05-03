@@ -2,6 +2,7 @@ mod adj_list;
 mod adj_map;
 mod adj_matrix;
 mod error;
+mod prop_tests;
 
 pub use adj_list::{AdjList, DiFlowList, DiList, FlowList, List};
 pub use adj_map::{AdjMap, DiFlowMap, DiMap, FlowMap, Map};

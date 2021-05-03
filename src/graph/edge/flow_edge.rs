@@ -1,4 +1,5 @@
 use magnitude::Magnitude;
+use quickcheck::Arbitrary;
 
 use crate::graph::edge::Edge;
 
@@ -132,6 +133,12 @@ impl<W: PartialEq> PartialEq for FlowEdge<W> {
             && self.id == other.id
             && self.flow == other.flow
             && self.capacity == other.capacity
+    }
+}
+
+impl<W: Arbitrary> Arbitrary for FlowEdge<W> {
+    fn arbitrary(g: &mut quickcheck::Gen) -> Self {
+        FlowEdge::init(W::arbitrary(g).into())
     }
 }
 

@@ -1,8 +1,8 @@
 mod utils;
 
-use std::any::Any;
 use std::collections::HashSet;
 use std::marker::PhantomData;
+use std::{any::Any, fmt::Debug};
 
 use anyhow::Result;
 use quickcheck::Arbitrary;
@@ -436,7 +436,7 @@ impl<W: Any + Clone, E: Edge<W> + Clone, Dir: EdgeDir> GraphStorage<W, E, Dir>
     /// # Complexity:
     /// O(1)
     fn edge_count(&self) -> usize {
-        self.max_edge_id - self.reusable_edge_ids.len()
+        self.edges().len()
     }
 
     /// # Returns
@@ -634,7 +634,10 @@ impl<W: Any + Clone, E: Edge<W> + Clone, Dir: EdgeDir> GraphStorage<W, E, Dir>
     /// # Complexity
     /// O(1)
     fn contains_edge(&self, edge_id: usize) -> bool {
-        edge_id < self.max_edge_id && !self.reusable_edge_ids.contains(&edge_id)
+        self.edges()
+            .iter()
+            .find(|(_, _, edge)| edge.get_id() == edge_id)
+            .is_some()
     }
 
     fn filter(
@@ -702,7 +705,7 @@ impl<W: Any + Clone, E: Edge<W> + Arbitrary, Dir: EdgeDir + 'static> Arbitrary
     for AdjMatrix<W, E, Dir>
 {
     fn arbitrary(g: &mut quickcheck::Gen) -> Self {
-        let vertex_count = usize::arbitrary(g);
+        let vertex_count = usize::arbitrary(g).clamp(0, 32);
 
         let edge_prob = rand::random::<f64>() * rand::random::<f64>();
 
@@ -749,6 +752,20 @@ impl<W: Any + Clone, E: Edge<W> + Arbitrary, Dir: EdgeDir + 'static> Arbitrary
                 None
             }
         }))
+    }
+}
+
+impl<W: Any + Clone + Debug, E: Edge<W> + Clone + Debug, Dir: EdgeDir> Debug
+    for AdjMatrix<W, E, Dir>
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let edges_str: Vec<String> = self
+            .edges()
+            .into_iter()
+            .map(|(src_id, dst_id, edge)| format!("({}->{}: {:?})", src_id, dst_id, edge))
+            .collect();
+
+        f.write_str(&edges_str.join("\n"))
     }
 }
 
