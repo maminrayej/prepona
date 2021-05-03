@@ -639,8 +639,8 @@ impl<W: Any + Clone, E: Edge<W> + Clone, Dir: EdgeDir> GraphStorage<W, E, Dir>
 
     fn filter(
         &self,
-        vertex_filter: impl Fn(&usize) -> bool,
-        edge_filter: impl Fn(&usize, &usize, &E) -> bool,
+        vertex_filter: impl FnMut(&usize) -> bool,
+        mut edge_filter: impl FnMut(&usize, &usize, &E) -> bool,
     ) -> Self {
         let filtered_vertices: Vec<usize> =
             self.vertices().into_iter().filter(vertex_filter).collect();
@@ -733,7 +733,15 @@ impl<W: Any + Clone, E: Edge<W> + Arbitrary, Dir: EdgeDir + 'static> Arbitrary
     fn shrink(&self) -> Box<dyn Iterator<Item = Self>> {
         let graph = self.clone();
         Box::new((0..2).filter_map(move |partition_index| {
-            let graph_partition = graph.filter(|v_id| *v_id % 2 == partition_index, |_, _, _| true);
+            let mut vertex_index = -1;
+            let graph_partition = graph.filter(
+                |_| {
+                    vertex_index += 1;
+
+                    vertex_index % 2 == partition_index
+                },
+                |_, _, _| true,
+            );
 
             if graph_partition.vertex_count() < graph.vertex_count() {
                 Some(graph_partition)

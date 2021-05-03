@@ -225,7 +225,7 @@ pub trait GraphStorage<W, E: Edge<W>, Dir: EdgeDir> {
 
     fn filter(
         &self,
-        vertex_filter: impl Fn(&usize) -> bool,
-        edge_filter: impl Fn(&usize, &usize, &E) -> bool,
+        vertex_filter: impl FnMut(&usize) -> bool,
+        edge_filter: impl FnMut(&usize, &usize, &E) -> bool,
     ) -> Self;
 }
