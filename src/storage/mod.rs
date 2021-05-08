@@ -224,6 +224,15 @@ pub trait GraphStorage<W, E: Edge<W>, Dir: EdgeDir> {
         Dir::is_undirected()
     }
 
+    /// Filters vertices using `vertex_filter` and then filters edges.
+    /// Note that edges that are passed to `edge_filter` are the ones that their source and destination vertices are included by `vertex_filter`.
+    ///
+    /// # Arguments
+    /// * `vertex_filter`: Function that receives a vertex id as an argument and returns `true` if vertex should be included in the returned storage.
+    /// * `edge_filter`: Function that receives (source id, destination id, edge) and returns `true` if edge should be included in the returned storage.
+    ///
+    /// # Returns
+    /// Storage containing vertices and edges filtered by `vertex_filter` and `edge_filter`.
     fn filter(
         &self,
         vertex_filter: impl FnMut(&usize) -> bool,

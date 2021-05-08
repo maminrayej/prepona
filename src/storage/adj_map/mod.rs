@@ -594,14 +594,25 @@ impl<W: Clone, E: Edge<W> + Clone, Dir: EdgeDir> GraphStorage<W, E, Dir> for Adj
             .is_some()
     }
 
+    /// Filters vertices using `vertex_filter` and then filters edges.
+    /// Note that edges that are passed to `edge_filter` are the ones that their source and destination vertices are included by `vertex_filter`.
+    ///
+    /// # Arguments
+    /// * `vertex_filter`: Function that receives a vertex id as an argument and returns `true` if vertex should be included in the returned storage.
+    /// * `edge_filter`: Function that receives (source id, destination id, edge) and returns `true` if edge should be included in the returned storage.
+    ///
+    /// # Returns
+    /// Storage containing vertices and edges filtered by `vertex_filter` and `edge_filter`.
     fn filter(
         &self,
         vertex_filter: impl FnMut(&usize) -> bool,
         mut edge_filter: impl FnMut(&usize, &usize, &E) -> bool,
     ) -> Self {
+        // 1. Filter the vertices
         let filtered_vertices: Vec<usize> =
             self.vertices().into_iter().filter(vertex_filter).collect();
 
+        // 2. Filter edges: Only edges that their source and destination vertices are among filtered vertices and also `edge_filter` returns true for them are included.
         let filtered_edges: Vec<(usize, usize, &E)> = self
             .edges()
             .into_iter()
@@ -612,13 +623,17 @@ impl<W: Clone, E: Edge<W> + Clone, Dir: EdgeDir> GraphStorage<W, E, Dir> for Adj
             })
             .collect();
 
+        // 3. Initialize an empty storage.
         let mut storage = AdjMap::init();
 
+        // 4. Add the vertices to the new storage.
         for _ in &filtered_vertices {
             storage.add_vertex();
         }
 
+        // 5. Add filtered edges.
         for (src_id, dst_id, edge) in &filtered_edges {
+            // We use index of each id in the filtered_vertices as its new id in the new storage.
             let src_new_id = filtered_vertices
                 .iter()
                 .position(|vertex_id| vertex_id == src_id)
