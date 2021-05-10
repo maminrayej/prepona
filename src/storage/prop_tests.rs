@@ -136,8 +136,9 @@ mod prop_tests {
                 let before_edge_count = storage.edge_count();
 
                 let edge_id = storage.add_edge(src_id, dst_id, 1.into()).unwrap();
+                storage.add_edge(src_id, src_id, 1.into()).unwrap();
 
-                assert!(storage.edge_count() == before_edge_count + 1);
+                assert!(storage.edge_count() == before_edge_count + 2);
                 assert!(storage.vertex_count() == before_vertex_count);
                 assert!(storage
                     .edges_from(src_id)
@@ -348,6 +349,37 @@ mod prop_tests {
         quickcheck::quickcheck(prop as fn(AdjList<_, _, DirectedEdge>) -> bool);
         quickcheck::quickcheck(prop as fn(AdjList<_, _, UndirectedEdge>) -> bool);
 
+        quickcheck::quickcheck(prop as fn(AdjMap<_, _, DirectedEdge>) -> bool);
+        quickcheck::quickcheck(prop as fn(AdjMap<_, _, UndirectedEdge>) -> bool);
+    }
+
+    #[test]
+    fn as_directed_edges() {
+        fn prop<Dir: EdgeDir, S: GraphStorage<i32, DefaultEdge<i32>, Dir> + Debug>(
+            storage: S,
+        ) -> bool {
+            let edges = storage.edges();
+            let directed_edges = storage.as_directed_edges();
+
+            let must_be_duplicated_edges = edges
+                .iter()
+                .filter(|(src_id, dst_id, _)| src_id != dst_id)
+                .count();
+            let must_not_be_duplicated = edges.len() - must_be_duplicated_edges;
+
+            if storage.is_undirected() {
+                directed_edges.len() == must_not_be_duplicated + 2 * must_be_duplicated_edges
+            } else {
+                directed_edges.len() == edges.len()
+            }
+        }
+
+        quickcheck::quickcheck(prop as fn(AdjMatrix<_, _, DirectedEdge>) -> bool);
+        quickcheck::quickcheck(prop as fn(AdjMatrix<_, _, UndirectedEdge>) -> bool);
+        
+        quickcheck::quickcheck(prop as fn(AdjList<_, _, DirectedEdge>) -> bool);
+        quickcheck::quickcheck(prop as fn(AdjList<_, _, UndirectedEdge>) -> bool);
+        
         quickcheck::quickcheck(prop as fn(AdjMap<_, _, DirectedEdge>) -> bool);
         quickcheck::quickcheck(prop as fn(AdjMap<_, _, UndirectedEdge>) -> bool);
     }
