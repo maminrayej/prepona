@@ -1,12 +1,16 @@
-use std::any::Any;
 use std::marker::PhantomData;
+use std::{any::Any, fmt::Debug};
 
 use anyhow::Result;
 use provide::{Edges, Graph, Neighbors, Vertices};
+use quickcheck::Arbitrary;
 
-use crate::graph::{error::Error, DefaultEdge, Edge, EdgeDir, FlowEdge};
 use crate::provide;
 use crate::storage::{FlowList, FlowMat, GraphStorage, List, Mat};
+use crate::{
+    graph::{error::Error, DefaultEdge, Edge, EdgeDir, FlowEdge},
+    storage::AdjMatrix,
+};
 
 /// A `SimpleGraph` that uses [`Mat`](crate::storage::Mat) as its storage.
 pub type MatGraph<W, Dir> = SimpleGraph<W, DefaultEdge<W>, Dir, Mat<W, Dir>>;
@@ -144,7 +148,7 @@ impl<W, E: Edge<W>, Dir: EdgeDir, S: GraphStorage<W, E, Dir>> Edges<W, E>
 }
 
 /// For documentation about each function checkout [`Graph`](crate::provide::Graph) trait.
-impl<W, E: Edge<W>, Dir: EdgeDir, S: GraphStorage<W, E, Dir>> Graph<W, E, Dir>
+impl<W: Any, E: Edge<W>, Dir: EdgeDir, S: GraphStorage<W, E, Dir>> Graph<W, E, Dir>
     for SimpleGraph<W, E, Dir, S>
 {
     fn add_vertex(&mut self) -> usize {
@@ -184,6 +188,93 @@ impl<W, E: Edge<W>, Dir: EdgeDir, S: GraphStorage<W, E, Dir>> Graph<W, E, Dir>
 
     fn remove_edge(&mut self, src_id: usize, dst_id: usize, edge_id: usize) -> Result<E> {
         self.storage.remove_edge(src_id, dst_id, edge_id)
+    }
+
+    fn filter(
+        &self,
+        vertex_filter: impl FnMut(&usize) -> bool,
+        edge_filter: impl FnMut(&usize, &usize, &E) -> bool,
+    ) -> Self {
+        let storage = self.storage.filter(vertex_filter, edge_filter);
+
+        SimpleGraph::init(storage)
+    }
+}
+
+impl<W: Clone + Any, E: Edge<W> + Clone, Dir: EdgeDir, S: GraphStorage<W, E, Dir> + Clone> Clone
+    for SimpleGraph<W, E, Dir, S>
+{
+    fn clone(&self) -> Self {
+        SimpleGraph::init(self.storage.clone())
+    }
+}
+
+impl<W: Any + Clone, E: Edge<W> + Arbitrary, Dir: EdgeDir + 'static> Arbitrary
+    for SimpleGraph<W, E, Dir, AdjMatrix<W, E, Dir>>
+{
+    fn arbitrary(g: &mut quickcheck::Gen) -> Self {
+        let vertex_count = usize::arbitrary(g).clamp(0, 32);
+
+        let edge_prob = rand::random::<f64>() * rand::random::<f64>();
+
+        let mut graph = SimpleGraph::init(AdjMatrix::init());
+
+        for _ in 0..vertex_count {
+            graph.add_vertex();
+        }
+
+        let vertices = graph.vertices();
+
+        for src_id in &vertices {
+            for dst_id in &vertices {
+                if graph.is_undirected() && src_id > dst_id
+                    || graph.has_any_edge(*src_id, *dst_id).is_ok() // No multiple edges
+                    || src_id == dst_id // No loops
+                {
+                    continue;
+                }
+
+                let add_edge_prob = rand::random::<f64>();
+                if add_edge_prob < edge_prob {
+                    graph.add_edge(*src_id, *dst_id, E::arbitrary(g)).unwrap();
+                }
+            }
+        }
+
+        graph
+    }
+
+    fn shrink(&self) -> Box<dyn Iterator<Item = Self>> {
+        let graph = self.clone();
+        Box::new((0..2).filter_map(move |partition_index| {
+            let mut vertex_index = -1;
+            let graph_partition = graph.filter(
+                |_| {
+                    vertex_index += 1;
+
+                    vertex_index % 2 == partition_index
+                },
+                |_, _, _| true,
+            );
+
+            if graph_partition.vertex_count() < graph.vertex_count() {
+                Some(graph_partition)
+            } else {
+                None
+            }
+        }))
+    }
+}
+
+impl<
+        W: Any + Clone + Debug,
+        E: Edge<W> + Clone + Debug,
+        Dir: EdgeDir,
+        S: GraphStorage<W, E, Dir> + Debug,
+    > Debug for SimpleGraph<W, E, Dir, S>
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.storage.fmt(f)
     }
 }
 

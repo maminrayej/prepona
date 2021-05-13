@@ -7,6 +7,7 @@ mod shortest_path;
 mod topological_sort;
 mod traversal;
 mod vertex_edge_cut;
+mod prop_tests;
 
 pub use cc::{ConnectedComponents, TarjanSCC};
 pub use error::{Error, ErrorKind};

@@ -188,4 +188,18 @@ pub trait Graph<W, E: Edge<W>, Ty: EdgeDir> {
     /// * `Err`:
     /// * `Ok`: Containing removed edge.
     fn remove_edge(&mut self, src_id: usize, dst_id: usize, edge_id: usize) -> Result<E>;
+
+    fn is_directed(&self) -> bool {
+        Ty::is_directed()
+    }
+
+    fn is_undirected(&self) -> bool {
+        Ty::is_undirected()
+    }
+
+    fn filter(
+        &self,
+        vertex_filter: impl FnMut(&usize) -> bool,
+        edge_filter: impl FnMut(&usize, &usize, &E) -> bool,
+    ) -> Self;
 }
