@@ -13,8 +13,3 @@ documentation = "https://docs.rs/prepona"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-num-traits = "0.2.14"
-magnitude = "0.3.2"
-anyhow = "1.0.36"
-quickcheck = "1.0.3"
-rand = "0.8.3"
