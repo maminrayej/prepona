@@ -1,1 +1,1 @@
-mod storage;
+pub mod storage;
