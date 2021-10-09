@@ -6,9 +6,7 @@ use std::hash::Hash;
 use std::iter::FromIterator;
 use std::marker::PhantomData;
 
-pub trait UnorderedSet<T>: PartialEq + Eq {
-    fn from_iterator(iterator: impl IntoIterator<Item = T>) -> Self;
-
+pub trait UnorderedSet<T>: PartialEq + Eq + FromIterator<T> {
     fn contains(&self, item: &T) -> bool;
 
     fn iterator(&self) -> Box<dyn Iterator<Item = &T> + '_>;
@@ -18,10 +16,6 @@ impl<T> UnorderedSet<T> for HashSet<T>
 where
     T: Hash + Eq,
 {
-    fn from_iterator(iterator: impl IntoIterator<Item = T>) -> Self {
-        HashSet::from_iter(iterator)
-    }
-
     fn contains(&self, item: &T) -> bool {
         self.contains(item)
     }
@@ -50,14 +44,14 @@ where
 {
     pub fn init(vertex_token: VT) -> Self {
         Hyperedge {
-            vertex_set: Set::from_iterator(std::iter::once(vertex_token)),
+            vertex_set: Set::from_iter(std::iter::once(vertex_token)),
             phantom_vt: PhantomData,
         }
     }
 
     pub fn init_multiple(vertex_tokens: impl IntoIterator<Item = VT>) -> Self {
         Hyperedge {
-            vertex_set: Set::from_iterator(vertex_tokens),
+            vertex_set: Set::from_iter(vertex_tokens),
             phantom_vt: PhantomData,
         }
     }

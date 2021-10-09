@@ -1,6 +1,6 @@
 use std::fmt::Display;
 use std::hash::Hash;
 
-trait EdgeToken: Hash + Display + PartialEq + Eq {}
+pub trait EdgeToken: Display + Hash + PartialEq + Eq {}
 
-impl EdgeToken for usize {}
+impl<T> EdgeToken for T where T: Hash + PartialEq + Eq + Display {}
