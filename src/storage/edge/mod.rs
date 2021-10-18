@@ -2,5 +2,8 @@ mod descriptors;
 mod direction;
 mod token;
 
-pub use descriptors::{Edge, EdgeDescriptor, HashHyperedge, Hyperedge, UnorderedSet};
+pub use descriptors::{
+    DirHyperedge, DirectedEdge, Edge, EdgeDescriptor, HashHyperedge, Hyperedge, UndirectedEdge,
+};
+pub use direction::{Directed, Direction, Undirected};
 pub use token::EdgeToken;

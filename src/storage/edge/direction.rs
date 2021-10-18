@@ -1,21 +1,15 @@
-pub trait EdgeDirection {
-    fn is_directed() -> bool;
+pub trait Direction<const DIR: bool> {
+    fn is_directed() -> bool {
+        DIR
+    }
 
     fn is_undirected() -> bool {
-        !Self::is_directed()
+        !DIR
     }
 }
 
-pub struct DirectedEdge;
-impl EdgeDirection for DirectedEdge {
-    fn is_directed() -> bool {
-        true
-    }
-}
+pub struct Directed;
+impl Direction<true> for Directed {}
 
-pub struct UndirectedEdge;
-impl EdgeDirection for UndirectedEdge {
-    fn is_directed() -> bool {
-        false
-    }
-}
+pub struct Undirected;
+impl Direction<false> for Undirected {}

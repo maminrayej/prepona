@@ -1,11 +1,12 @@
 use super::{CheckedMutEdgeDescriptor, EdgeDescriptor, MutEdgeDescriptor};
-use crate::storage::edge::direction::UndirectedEdge;
+use crate::storage::edge::Direction;
 use crate::storage::vertex::VertexToken;
 use std::collections::HashSet;
 use std::hash::Hash;
 use std::iter::FromIterator;
 use std::marker::PhantomData;
 
+// TODO: replace item with value
 pub trait UnorderedSet<T>: PartialEq + Eq + FromIterator<T> + Extend<T> {
     fn contains(&self, item: &T) -> bool;
 
@@ -92,7 +93,14 @@ where
 {
 }
 
-impl<VT, Set> EdgeDescriptor<UndirectedEdge, VT> for Hyperedge<VT, Set>
+impl<VT, Set> Direction<false> for Hyperedge<VT, Set>
+where
+    VT: VertexToken,
+    Set: UnorderedSet<VT>,
+{
+}
+
+impl<VT, Set> EdgeDescriptor<VT, false> for Hyperedge<VT, Set>
 where
     VT: VertexToken,
     Set: UnorderedSet<VT>,
@@ -113,6 +121,10 @@ where
         self.vertex_set.contains(vertex_token)
     }
 
+    fn contains(&self, vt: &VT) -> bool {
+        self.vertex_set.contains(vt)
+    }
+
     fn sources_count(&self) -> usize {
         self.vertex_set.len()
     }
@@ -122,22 +134,22 @@ where
     }
 }
 
-impl<VT, Set> MutEdgeDescriptor<UndirectedEdge, VT> for Hyperedge<VT, Set>
+impl<VT, Set> MutEdgeDescriptor<VT, false> for Hyperedge<VT, Set>
 where
     VT: VertexToken,
     Set: UnorderedSet<VT>,
 {
-    fn add_source_destination(&mut self, source_vertex_token: VT, destination_vertex_token: VT) {
+    fn add(&mut self, src_vt: VT, dst_vt: VT) {
         self.vertex_set
-            .extend(std::iter::once(source_vertex_token).chain(Some(destination_vertex_token)));
+            .extend(std::iter::once(src_vt).chain(Some(dst_vt)));
     }
 
-    fn remove_vertex(&mut self, vertex_token: VT) {
-        self.vertex_set.remove(&vertex_token)
+    fn remove(&mut self, vt: VT) {
+        self.vertex_set.remove(&vt)
     }
 }
 
-impl<VT, Set> CheckedMutEdgeDescriptor<UndirectedEdge, VT> for Hyperedge<VT, Set>
+impl<VT, Set> CheckedMutEdgeDescriptor<VT, false> for Hyperedge<VT, Set>
 where
     VT: VertexToken,
     Set: UnorderedSet<VT>,

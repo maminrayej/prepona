@@ -1,35 +1,32 @@
 mod edge;
 mod hyperedge;
+mod hyperedge_dir;
 
-use anyhow::Result;
-pub use edge::Edge;
-pub use hyperedge::{HashHyperedge, Hyperedge, UnorderedSet};
-
-use super::direction::EdgeDirection;
 use crate::storage::{vertex::VertexToken, StorageError};
+use anyhow::Result;
 
-pub trait EdgeDescriptor<Dir: EdgeDirection, VT: VertexToken>: PartialEq + Eq {
+pub use edge::{DirectedEdge, Edge, UndirectedEdge};
+pub use hyperedge::{HashHyperedge, Hyperedge, UnorderedSet};
+pub use hyperedge_dir::DirHyperedge;
+
+use super::Direction;
+
+pub trait EdgeDescriptor<VT: VertexToken, const DIR: bool>:
+    PartialEq + Eq + Direction<DIR>
+{
     fn get_sources(&self) -> Box<dyn Iterator<Item = &VT> + '_>;
     fn get_destinations(&self) -> Box<dyn Iterator<Item = &VT> + '_>;
 
-    fn is_directed() -> bool {
-        Dir::is_directed()
+    fn is_source(&self, vt: &VT) -> bool {
+        self.get_sources().any(|src_vt| src_vt == vt)
     }
 
-    fn is_source(&self, vertex_token: &VT) -> bool {
-        self.get_sources()
-            .find(|source_vertex_token| *source_vertex_token == vertex_token)
-            .is_some()
+    fn is_destination(&self, vt: &VT) -> bool {
+        self.get_destinations().any(|dst_vt| dst_vt == vt)
     }
 
-    fn is_destination(&self, vertex_token: &VT) -> bool {
-        self.get_destinations()
-            .find(|destination_vertex_token| *destination_vertex_token == vertex_token)
-            .is_some()
-    }
-
-    fn contains(&self, vertex_token: &VT) -> bool {
-        self.is_source(vertex_token) || self.is_destination(vertex_token)
+    fn contains(&self, vt: &VT) -> bool {
+        self.is_source(vt) || self.is_destination(vt)
     }
 
     fn sources_count(&self) -> usize {
@@ -41,28 +38,28 @@ pub trait EdgeDescriptor<Dir: EdgeDirection, VT: VertexToken>: PartialEq + Eq {
     }
 }
 
-pub trait MutEdgeDescriptor<Dir: EdgeDirection, VT: VertexToken>: EdgeDescriptor<Dir, VT> {
-    fn add_source_destination(&mut self, source_vertex_token: VT, destination_vertex_token: VT);
+pub trait MutEdgeDescriptor<VT: VertexToken, const DIR: bool>: EdgeDescriptor<VT, DIR> {
+    fn add(&mut self, src_vt: VT, dst_vt: VT);
 
-    fn remove_vertex(&mut self, vertex_token: VT);
+    fn remove(&mut self, vertex_token: VT);
 }
 
-pub trait CheckedMutEdgeDescriptor<Dir: EdgeDirection, VT: VertexToken>:
-    MutEdgeDescriptor<Dir, VT>
+pub trait CheckedMutEdgeDescriptor<VT: VertexToken, const DIR: bool>:
+    MutEdgeDescriptor<VT, DIR>
 {
-    fn add_source_destination_checked(
-        &mut self,
-        source_vertex_token: VT,
-        destination_vertex_token: VT,
-    ) -> Result<()> {
-        Ok(self.add_source_destination(source_vertex_token, destination_vertex_token))
+    fn add_checked(&mut self, src_vt: VT, dst_vt: VT) -> Result<()> {
+        self.add(src_vt, dst_vt);
+
+        Ok(())
     }
 
-    fn remove_vertex_checked(&mut self, vertex_token: VT) -> Result<()> {
-        if !self.contains(&vertex_token) {
-            Err(StorageError::VertexNotFound(vertex_token.to_string()))?
+    fn remove_checked(&mut self, vt: VT) -> Result<()> {
+        if !self.contains(&vt) {
+            return Err(StorageError::VertexNotFound(vt.to_string()).into());
         }
 
-        Ok(self.remove_vertex(vertex_token))
+        self.remove(vt);
+
+        Ok(())
     }
 }

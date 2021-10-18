@@ -1,41 +1,72 @@
 use super::EdgeDescriptor;
-use crate::storage::edge::direction::EdgeDirection;
-use crate::storage::vertex::VertexToken;
-use std::marker::PhantomData;
+use crate::storage::{edge::Direction, vertex::VertexToken};
 
-pub struct Edge<Dir: EdgeDirection, VT: VertexToken> {
-    source_vertex_token: VT,
-    destination_vertex_token: VT,
+pub type DirectedEdge<VT> = Edge<VT, true>;
+pub type UndirectedEdge<VT> = Edge<VT, false>;
 
-    phantom_dir: PhantomData<Dir>,
+pub struct Edge<VT: VertexToken, const DIR: bool> {
+    src_vt: VT,
+    dst_vt: VT,
 }
 
-impl<Dir: EdgeDirection, VT: VertexToken> Edge<Dir, VT> {
-    pub fn init(source_vertex_token: VT, destination_vertex_token: VT) -> Self {
-        Edge {
-            source_vertex_token,
-            destination_vertex_token,
-            phantom_dir: PhantomData,
-        }
+impl<VT: VertexToken, const DIR: bool> Edge<VT, DIR> {
+    pub fn init(src_vt: VT, dst_vt: VT) -> Self {
+        Edge { src_vt, dst_vt }
     }
 }
 
-impl<Dir: EdgeDirection, VT: VertexToken> PartialEq for Edge<Dir, VT> {
+impl<VT: VertexToken, const DIR: bool> PartialEq for Edge<VT, DIR> {
     fn eq(&self, other: &Self) -> bool {
-        self.source_vertex_token == other.source_vertex_token
-            && self.destination_vertex_token == other.destination_vertex_token
-            && self.phantom_dir == other.phantom_dir
+        self.src_vt == other.src_vt && self.dst_vt == other.dst_vt
     }
 }
 
-impl<Dir: EdgeDirection, VT: VertexToken> Eq for Edge<Dir, VT> {}
+impl<VT: VertexToken, const DIR: bool> Eq for Edge<VT, DIR> {}
 
-impl<Dir: EdgeDirection, VT: VertexToken> EdgeDescriptor<Dir, VT> for Edge<Dir, VT> {
+impl<VT: VertexToken, const DIR: bool> Direction<DIR> for Edge<VT, DIR> {}
+
+impl<VT: VertexToken, const DIR: bool> EdgeDescriptor<VT, DIR> for Edge<VT, DIR> {
     fn get_sources(&self) -> Box<dyn Iterator<Item = &VT> + '_> {
-        Box::new(std::iter::once(&self.source_vertex_token))
+        if Self::is_directed() {
+            Box::new(std::iter::once(&self.src_vt))
+        } else {
+            Box::new(std::iter::once(&self.src_vt).chain(Some(&self.dst_vt)))
+        }
     }
 
     fn get_destinations(&self) -> Box<dyn Iterator<Item = &VT> + '_> {
-        Box::new(std::iter::once(&self.destination_vertex_token))
+        if Self::is_directed() {
+            Box::new(std::iter::once(&self.dst_vt))
+        } else {
+            Box::new(std::iter::once(&self.dst_vt).chain(Some(&self.src_vt)))
+        }
+    }
+
+    fn is_source(&self, vt: &VT) -> bool {
+        &self.src_vt == vt || (Self::is_undirected() && &self.dst_vt == vt)
+    }
+
+    fn is_destination(&self, vt: &VT) -> bool {
+        &self.dst_vt == vt || (Self::is_undirected() && &self.src_vt == vt)
+    }
+
+    fn contains(&self, vt: &VT) -> bool {
+        &self.src_vt == vt || &self.dst_vt == vt
+    }
+
+    fn sources_count(&self) -> usize {
+        if Self::is_directed() {
+            1
+        } else {
+            2
+        }
+    }
+
+    fn destinations_count(&self) -> usize {
+        if Self::is_directed() {
+            1
+        } else {
+            2
+        }
     }
 }
