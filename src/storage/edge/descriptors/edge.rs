@@ -1,4 +1,4 @@
-use super::EdgeDescriptor;
+use super::{EdgeDescriptor, FixedSizeMutEdgeDescriptor};
 use crate::storage::{edge::Direction, vertex::VertexToken};
 
 pub type DirectedEdge<VT> = Edge<VT, true>;
@@ -67,6 +67,20 @@ impl<VT: VertexToken, const DIR: bool> EdgeDescriptor<VT, DIR> for Edge<VT, DIR>
             1
         } else {
             2
+        }
+    }
+}
+
+impl<VT: VertexToken, const DIR: bool> FixedSizeMutEdgeDescriptor<VT, DIR> for Edge<VT, DIR> {
+    fn replace_src(&mut self, src_vt: &VT, vt: VT) {
+        if &self.src_vt == src_vt {
+            self.src_vt = vt;
+        }
+    }
+
+    fn replace_dst(&mut self, dst_vt: &VT, vt: VT) {
+        if &self.dst_vt == dst_vt {
+            self.dst_vt = vt;
         }
     }
 }

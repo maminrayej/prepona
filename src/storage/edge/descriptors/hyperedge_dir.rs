@@ -1,4 +1,7 @@
-use super::{CheckedMutEdgeDescriptor, EdgeDescriptor, MutEdgeDescriptor, UnorderedSet};
+use super::{
+    CheckedMutEdgeDescriptor, EdgeDescriptor, FixedSizeMutEdgeDescriptor, MutEdgeDescriptor,
+    UnorderedSet,
+};
 use crate::storage::{edge::Direction, vertex::VertexToken};
 use std::marker::PhantomData;
 
@@ -91,6 +94,20 @@ where
 
     fn destinations_count(&self) -> usize {
         self.destination_set.len()
+    }
+}
+
+impl<VT, Set> FixedSizeMutEdgeDescriptor<VT, true> for DirHyperedge<VT, Set>
+where
+    VT: VertexToken,
+    Set: UnorderedSet<VT>,
+{
+    fn replace_src(&mut self, src_vt: &VT, vt: VT) {
+        self.source_set.replace(src_vt, vt);
+    }
+
+    fn replace_dst(&mut self, dst_vt: &VT, vt: VT) {
+        self.destination_set.replace(dst_vt, vt);
     }
 }
 

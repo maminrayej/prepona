@@ -1,4 +1,6 @@
-use super::{CheckedMutEdgeDescriptor, EdgeDescriptor, MutEdgeDescriptor};
+use super::{
+    CheckedMutEdgeDescriptor, EdgeDescriptor, FixedSizeMutEdgeDescriptor, MutEdgeDescriptor,
+};
 use crate::storage::edge::Direction;
 use crate::storage::vertex::VertexToken;
 use std::collections::HashSet;
@@ -14,6 +16,8 @@ pub trait UnorderedSet<T>: PartialEq + Eq + FromIterator<T> + Extend<T> {
 
     fn remove(&mut self, item: &T);
 
+    fn replace(&mut self, target: &T, item: T);
+
     fn len(&self) -> usize;
 
     fn iterator(&self) -> Box<dyn Iterator<Item = &T> + '_>;
@@ -27,11 +31,16 @@ where
         self.contains(item)
     }
 
-    fn iterator(&self) -> Box<dyn Iterator<Item = &T> + '_> {
-        Box::new(self.iter())
+    fn insert(&mut self, item: T) {
+        self.insert(item);
     }
 
-    fn insert(&mut self, item: T) {
+    fn remove(&mut self, item: &T) {
+        self.remove(item);
+    }
+
+    fn replace(&mut self, target: &T, item: T) {
+        self.remove(target);
         self.insert(item);
     }
 
@@ -39,8 +48,8 @@ where
         self.len()
     }
 
-    fn remove(&mut self, item: &T) {
-        self.remove(item);
+    fn iterator(&self) -> Box<dyn Iterator<Item = &T> + '_> {
+        Box::new(self.iter())
     }
 }
 
@@ -131,6 +140,20 @@ where
 
     fn destinations_count(&self) -> usize {
         self.vertex_set.len()
+    }
+}
+
+impl<VT, Set> FixedSizeMutEdgeDescriptor<VT, false> for Hyperedge<VT, Set>
+where
+    VT: VertexToken,
+    Set: UnorderedSet<VT>,
+{
+    fn replace_src(&mut self, src_vt: &VT, vt: VT) {
+        self.vertex_set.replace(src_vt, vt);
+    }
+
+    fn replace_dst(&mut self, dst_vt: &VT, vt: VT) {
+        self.replace_src(dst_vt, vt);
     }
 }
 

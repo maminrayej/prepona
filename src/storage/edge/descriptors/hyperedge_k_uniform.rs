@@ -5,7 +5,7 @@ use anyhow::Result;
 use std::convert::TryFrom;
 use std::marker::PhantomData;
 
-use super::EdgeDescriptor;
+use super::{EdgeDescriptor, FixedSizeMutEdgeDescriptor};
 
 pub trait KElementCollection<T, const K: usize>: PartialEq + Eq + TryFrom<Vec<T>> {
     fn contains_value(&self, item: &T) -> bool;
@@ -37,6 +37,7 @@ impl<T: PartialEq + Eq, const K: usize> KElementCollection<T, K> for [T; K] {
     }
 }
 
+// TODO: derive PartialEq and Eq for other structures as well
 #[derive(PartialEq, Eq)]
 pub struct KUniformHyperedge<VT, C, const K: usize>
 where
@@ -57,13 +58,20 @@ where
         let items = item.collect::<Vec<VT>>();
         let items_count = items.len();
 
-        if let Ok(collection) = C::try_from(items) {
-            Ok(KUniformHyperedge {
+        if items_count != K {
+            return Err(StorageError::NotKElement(items_count, K).into());
+        }
+
+        match C::try_from(items) {
+            Ok(collection) => Ok(KUniformHyperedge {
                 collection,
                 phantom_vt: PhantomData,
-            })
-        } else {
-            Err(StorageError::NotKElement(items_count, K).into())
+            }),
+
+            _ => Err(StorageError::FailedOperation(
+                "TryFrom failed when trying to create KUniformHyperedge".to_string(),
+            )
+            .into()),
         }
     }
 }
@@ -106,5 +114,19 @@ where
 
     fn destinations_count(&self) -> usize {
         self.sources_count()
+    }
+}
+
+impl<VT, C, const K: usize> FixedSizeMutEdgeDescriptor<VT, false> for KUniformHyperedge<VT, C, K>
+where
+    VT: VertexToken,
+    C: KElementCollection<VT, K>,
+{
+    fn replace_src(&mut self, src_vt: &VT, vt: VT) {
+        self.collection.replace(src_vt, vt);
+    }
+
+    fn replace_dst(&mut self, dst_vt: &VT, vt: VT) {
+        self.replace_src(dst_vt, vt);
     }
 }

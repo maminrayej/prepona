@@ -39,7 +39,25 @@ pub trait EdgeDescriptor<VT: VertexToken, const DIR: bool>:
     }
 }
 
-pub trait MutEdgeDescriptor<VT: VertexToken, const DIR: bool>: EdgeDescriptor<VT, DIR> {
+// TODO: Add checked version
+pub trait FixedSizeMutEdgeDescriptor<VT: VertexToken, const DIR: bool>:
+    EdgeDescriptor<VT, DIR>
+{
+    fn replace_src(&mut self, src_vt: &VT, vt: VT);
+
+    fn replace_dst(&mut self, dst_vt: &VT, vt: VT);
+
+    fn replace_src_dst(&mut self, src_vt: &VT, new_src_vt: VT, dst_vt: &VT, new_dst_vt: VT) {
+        if self.is_source(src_vt) && self.is_destination(dst_vt) {
+            self.replace_src(src_vt, new_src_vt);
+            self.replace_dst(dst_vt, new_dst_vt);
+        }
+    }
+}
+
+pub trait MutEdgeDescriptor<VT: VertexToken, const DIR: bool>:
+    FixedSizeMutEdgeDescriptor<VT, DIR>
+{
     fn add(&mut self, src_vt: VT, dst_vt: VT);
 
     fn remove(&mut self, vertex_token: VT);
