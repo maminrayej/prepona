@@ -1,4 +1,4 @@
-use crate::storage::edge::Direction;
+pub use crate::storage::edge::Direction;
 use crate::storage::vertex::VertexToken;
 use crate::storage::StorageError;
 use anyhow::Result;
@@ -58,20 +58,13 @@ where
         let items = item.collect::<Vec<VT>>();
         let items_count = items.len();
 
-        if items_count != K {
-            return Err(StorageError::NotKElement(items_count, K).into());
-        }
-
         match C::try_from(items) {
             Ok(collection) => Ok(KUniformHyperedge {
                 collection,
                 phantom_vt: PhantomData,
             }),
 
-            _ => Err(StorageError::FailedOperation(
-                "TryFrom failed when trying to create KUniformHyperedge".to_string(),
-            )
-            .into()),
+            _ => Err(StorageError::NotKElement(items_count, K).into()),
         }
     }
 }

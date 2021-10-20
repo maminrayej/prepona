@@ -10,7 +10,4 @@ pub enum StorageError {
 
     #[error("Number of provided elements: {0} is not equal to {1}")]
     NotKElement(usize, usize),
-
-    #[error("Failed operation: {0}")]
-    FailedOperation(String),
 }

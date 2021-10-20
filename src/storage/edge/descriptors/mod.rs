@@ -1,6 +1,7 @@
 mod edge;
 mod hyperedge;
 mod hyperedge_dir;
+mod hyperedge_dir_k_uniform;
 mod hyperedge_k_uniform;
 
 use super::Direction;
@@ -10,6 +11,7 @@ use anyhow::Result;
 pub use edge::{DirectedEdge, Edge, UndirectedEdge};
 pub use hyperedge::{HashHyperedge, Hyperedge, UnorderedSet};
 pub use hyperedge_dir::DirHyperedge;
+pub use hyperedge_dir_k_uniform::KUniformDirHyperedge;
 pub use hyperedge_k_uniform::KUniformHyperedge;
 
 pub trait EdgeDescriptor<VT: VertexToken, const DIR: bool>:
