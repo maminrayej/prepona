@@ -1,8 +1,9 @@
-use super::{
-    CheckedFixedSizeMutEdgeDescriptor, CheckedMutEdgeDescriptor, EdgeDescriptor,
-    FixedSizeMutEdgeDescriptor, MutEdgeDescriptor, UnorderedSet,
+use super::UnorderedSet;
+use crate::storage::edge::{
+    CheckedFixedSizeMutEdgeDescriptor, CheckedMutEdgeDescriptor, Direction, EdgeDescriptor,
+    FixedSizeMutEdgeDescriptor, MutEdgeDescriptor,
 };
-use crate::storage::{edge::Direction, vertex::VertexToken};
+use crate::storage::vertex::VertexToken;
 use std::marker::PhantomData;
 
 #[derive(PartialEq, Eq)]

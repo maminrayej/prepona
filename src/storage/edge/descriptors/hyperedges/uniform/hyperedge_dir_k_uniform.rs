@@ -1,9 +1,11 @@
-use super::hyperedge_k_uniform::KElementCollection;
-use super::{CheckedFixedSizeMutEdgeDescriptor, EdgeDescriptor, FixedSizeMutEdgeDescriptor};
-use crate::storage::edge::Direction;
+use crate::storage::edge::{
+    CheckedFixedSizeMutEdgeDescriptor, Direction, EdgeDescriptor, FixedSizeMutEdgeDescriptor,
+};
 use crate::storage::vertex::VertexToken;
 use crate::storage::StorageError;
 use anyhow::Result;
+
+use super::KElementCollection;
 
 #[derive(PartialEq, Eq)]
 pub struct KUniformDirHyperedge<VT, C, const K: usize>

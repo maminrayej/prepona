@@ -1,40 +1,12 @@
-use super::{CheckedFixedSizeMutEdgeDescriptor, EdgeDescriptor, FixedSizeMutEdgeDescriptor};
-use crate::storage::edge::Direction;
+use crate::storage::edge::{
+    CheckedFixedSizeMutEdgeDescriptor, Direction, EdgeDescriptor, FixedSizeMutEdgeDescriptor,
+};
 use crate::storage::vertex::VertexToken;
 use crate::storage::StorageError;
 use anyhow::Result;
-use std::convert::TryFrom;
 use std::marker::PhantomData;
 
-pub trait KElementCollection<T, const K: usize>: PartialEq + Eq + TryFrom<Vec<T>> {
-    fn contains_value(&self, value: &T) -> bool;
-
-    fn replace(&mut self, value: &T, other: T);
-
-    fn len(&self) -> usize;
-
-    fn iterator(&self) -> Box<dyn Iterator<Item = &T> + '_>;
-}
-
-impl<T: PartialEq + Eq, const K: usize> KElementCollection<T, K> for [T; K] {
-    fn contains_value(&self, value: &T) -> bool {
-        self.contains(value)
-    }
-
-    fn replace(&mut self, value: &T, other: T) {
-        if let Some(index) = self.iter().position(|v| v == value) {
-            self[index] = other;
-        }
-    }
-
-    fn len(&self) -> usize {
-        K
-    }
-
-    fn iterator(&self) -> Box<dyn Iterator<Item = &T> + '_> {
-        Box::new(self.iter())
-    }
-}
+use super::KElementCollection;
 
 #[derive(PartialEq, Eq)]
 pub struct KUniformHyperedge<VT, C, const K: usize>

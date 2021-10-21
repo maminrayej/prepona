@@ -1,57 +1,12 @@
-use super::{
-    CheckedFixedSizeMutEdgeDescriptor, CheckedMutEdgeDescriptor, EdgeDescriptor,
-    FixedSizeMutEdgeDescriptor, MutEdgeDescriptor,
+use super::UnorderedSet;
+use crate::storage::edge::descriptors::FixedSizeMutEdgeDescriptor;
+use crate::storage::edge::{
+    CheckedFixedSizeMutEdgeDescriptor, CheckedMutEdgeDescriptor, Direction, EdgeDescriptor,
+    MutEdgeDescriptor,
 };
-use crate::storage::edge::Direction;
 use crate::storage::vertex::VertexToken;
 use std::collections::HashSet;
-use std::hash::Hash;
-use std::iter::FromIterator;
 use std::marker::PhantomData;
-
-pub trait UnorderedSet<T>: PartialEq + Eq + FromIterator<T> + Extend<T> {
-    fn contains(&self, value: &T) -> bool;
-
-    fn insert(&mut self, value: T);
-
-    fn remove(&mut self, value: &T);
-
-    fn replace(&mut self, target: &T, value: T);
-
-    fn len(&self) -> usize;
-
-    fn iterator(&self) -> Box<dyn Iterator<Item = &T> + '_>;
-}
-
-impl<T> UnorderedSet<T> for HashSet<T>
-where
-    T: Hash + Eq,
-{
-    fn contains(&self, value: &T) -> bool {
-        self.contains(value)
-    }
-
-    fn insert(&mut self, value: T) {
-        self.insert(value);
-    }
-
-    fn remove(&mut self, value: &T) {
-        self.remove(value);
-    }
-
-    fn replace(&mut self, target: &T, value: T) {
-        self.remove(target);
-        self.insert(value);
-    }
-
-    fn len(&self) -> usize {
-        self.len()
-    }
-
-    fn iterator(&self) -> Box<dyn Iterator<Item = &T> + '_> {
-        Box::new(self.iter())
-    }
-}
 
 pub type HashHyperedge<VT> = Hyperedge<VT, HashSet<VT>>;
 
