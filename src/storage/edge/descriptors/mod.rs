@@ -5,7 +5,8 @@ mod hyperedge_dir_k_uniform;
 mod hyperedge_k_uniform;
 
 use super::Direction;
-use crate::storage::{vertex::VertexToken, StorageError};
+use crate::storage::vertex::VertexToken;
+use crate::storage::StorageError;
 use anyhow::Result;
 
 pub use edge::{DirectedEdge, Edge, UndirectedEdge};
@@ -41,18 +42,34 @@ pub trait EdgeDescriptor<VT: VertexToken, const DIR: bool>:
     }
 }
 
-// TODO: Add checked version
 pub trait FixedSizeMutEdgeDescriptor<VT: VertexToken, const DIR: bool>:
     EdgeDescriptor<VT, DIR>
 {
     fn replace_src(&mut self, src_vt: &VT, vt: VT);
 
     fn replace_dst(&mut self, dst_vt: &VT, vt: VT);
+}
 
-    fn replace_src_dst(&mut self, src_vt: &VT, new_src_vt: VT, dst_vt: &VT, new_dst_vt: VT) {
-        if self.is_source(src_vt) && self.is_destination(dst_vt) {
-            self.replace_src(src_vt, new_src_vt);
-            self.replace_dst(dst_vt, new_dst_vt);
+pub trait CheckedFixedSizeMutEdgeDescriptor<VT: VertexToken, const DIR: bool>:
+    FixedSizeMutEdgeDescriptor<VT, DIR>
+{
+    fn replace_src_checked(&mut self, src_vt: &VT, vt: VT) -> Result<()> {
+        if !self.is_source(src_vt) {
+            Err(StorageError::NotSource(src_vt.to_string()).into())
+        } else {
+            self.replace_src(src_vt, vt);
+
+            Ok(())
+        }
+    }
+
+    fn replace_dst_checked(&mut self, dst_vt: &VT, vt: VT) -> Result<()> {
+        if !self.is_destination(dst_vt) {
+            Err(StorageError::NotDestination(dst_vt.to_string()).into())
+        } else {
+            self.replace_dst(dst_vt, vt);
+
+            Ok(())
         }
     }
 }

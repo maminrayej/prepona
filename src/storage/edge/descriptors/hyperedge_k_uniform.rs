@@ -1,16 +1,15 @@
-pub use crate::storage::edge::Direction;
+use super::{CheckedFixedSizeMutEdgeDescriptor, EdgeDescriptor, FixedSizeMutEdgeDescriptor};
+use crate::storage::edge::Direction;
 use crate::storage::vertex::VertexToken;
 use crate::storage::StorageError;
 use anyhow::Result;
 use std::convert::TryFrom;
 use std::marker::PhantomData;
 
-use super::{EdgeDescriptor, FixedSizeMutEdgeDescriptor};
-
 pub trait KElementCollection<T, const K: usize>: PartialEq + Eq + TryFrom<Vec<T>> {
-    fn contains_value(&self, item: &T) -> bool;
+    fn contains_value(&self, value: &T) -> bool;
 
-    fn replace(&mut self, item: &T, other: T);
+    fn replace(&mut self, value: &T, other: T);
 
     fn len(&self) -> usize;
 
@@ -18,12 +17,12 @@ pub trait KElementCollection<T, const K: usize>: PartialEq + Eq + TryFrom<Vec<T>
 }
 
 impl<T: PartialEq + Eq, const K: usize> KElementCollection<T, K> for [T; K] {
-    fn contains_value(&self, item: &T) -> bool {
-        self.contains(item)
+    fn contains_value(&self, value: &T) -> bool {
+        self.contains(value)
     }
 
-    fn replace(&mut self, item: &T, other: T) {
-        if let Some(index) = self.iter().position(|v| v == item) {
+    fn replace(&mut self, value: &T, other: T) {
+        if let Some(index) = self.iter().position(|v| v == value) {
             self[index] = other;
         }
     }
@@ -37,7 +36,6 @@ impl<T: PartialEq + Eq, const K: usize> KElementCollection<T, K> for [T; K] {
     }
 }
 
-// TODO: derive PartialEq and Eq for other structures as well
 #[derive(PartialEq, Eq)]
 pub struct KUniformHyperedge<VT, C, const K: usize>
 where
@@ -54,17 +52,17 @@ where
     VT: VertexToken,
     C: KElementCollection<VT, K>,
 {
-    pub fn try_init(item: impl Iterator<Item = VT>) -> Result<Self> {
-        let items = item.collect::<Vec<VT>>();
-        let items_count = items.len();
+    pub fn try_init(value: impl Iterator<Item = VT>) -> Result<Self> {
+        let values = value.collect::<Vec<VT>>();
+        let values_count = values.len();
 
-        match C::try_from(items) {
+        match C::try_from(values) {
             Ok(collection) => Ok(KUniformHyperedge {
                 collection,
                 phantom_vt: PhantomData,
             }),
 
-            _ => Err(StorageError::NotKElement(items_count, K).into()),
+            _ => Err(StorageError::NotKElement(values_count, K).into()),
         }
     }
 }
@@ -122,4 +120,12 @@ where
     fn replace_dst(&mut self, dst_vt: &VT, vt: VT) {
         self.replace_src(dst_vt, vt);
     }
+}
+
+impl<VT, C, const K: usize> CheckedFixedSizeMutEdgeDescriptor<VT, false>
+    for KUniformHyperedge<VT, C, K>
+where
+    VT: VertexToken,
+    C: KElementCollection<VT, K>,
+{
 }

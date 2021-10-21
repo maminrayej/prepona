@@ -10,4 +10,10 @@ pub enum StorageError {
 
     #[error("Number of provided elements: {0} is not equal to {1}")]
     NotKElement(usize, usize),
+
+    #[error("Vertex with token: {0} is not a source")]
+    NotSource(String),
+
+    #[error("Vertex with token: {0} is not a destination")]
+    NotDestination(String),
 }

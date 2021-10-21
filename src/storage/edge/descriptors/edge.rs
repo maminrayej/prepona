@@ -4,6 +4,7 @@ use crate::storage::{edge::Direction, vertex::VertexToken};
 pub type DirectedEdge<VT> = Edge<VT, true>;
 pub type UndirectedEdge<VT> = Edge<VT, false>;
 
+#[derive(PartialEq, Eq)]
 pub struct Edge<VT: VertexToken, const DIR: bool> {
     src_vt: VT,
     dst_vt: VT,
@@ -14,14 +15,6 @@ impl<VT: VertexToken, const DIR: bool> Edge<VT, DIR> {
         Edge { src_vt, dst_vt }
     }
 }
-
-impl<VT: VertexToken, const DIR: bool> PartialEq for Edge<VT, DIR> {
-    fn eq(&self, other: &Self) -> bool {
-        self.src_vt == other.src_vt && self.dst_vt == other.dst_vt
-    }
-}
-
-impl<VT: VertexToken, const DIR: bool> Eq for Edge<VT, DIR> {}
 
 impl<VT: VertexToken, const DIR: bool> Direction<DIR> for Edge<VT, DIR> {}
 
@@ -72,15 +65,11 @@ impl<VT: VertexToken, const DIR: bool> EdgeDescriptor<VT, DIR> for Edge<VT, DIR>
 }
 
 impl<VT: VertexToken, const DIR: bool> FixedSizeMutEdgeDescriptor<VT, DIR> for Edge<VT, DIR> {
-    fn replace_src(&mut self, src_vt: &VT, vt: VT) {
-        if &self.src_vt == src_vt {
-            self.src_vt = vt;
-        }
+    fn replace_src(&mut self, _: &VT, vt: VT) {
+        self.src_vt = vt
     }
 
-    fn replace_dst(&mut self, dst_vt: &VT, vt: VT) {
-        if &self.dst_vt == dst_vt {
-            self.dst_vt = vt;
-        }
+    fn replace_dst(&mut self, _: &VT, vt: VT) {
+        self.dst_vt = vt
     }
 }

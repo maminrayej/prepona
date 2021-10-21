@@ -1,5 +1,5 @@
 use super::hyperedge_k_uniform::KElementCollection;
-use super::EdgeDescriptor;
+use super::{CheckedFixedSizeMutEdgeDescriptor, EdgeDescriptor, FixedSizeMutEdgeDescriptor};
 use crate::storage::edge::Direction;
 use crate::storage::vertex::VertexToken;
 use crate::storage::StorageError;
@@ -66,4 +66,26 @@ where
     fn destinations_count(&self) -> usize {
         K
     }
+}
+
+impl<VT, C, const K: usize> FixedSizeMutEdgeDescriptor<VT, true> for KUniformDirHyperedge<VT, C, K>
+where
+    VT: VertexToken,
+    C: KElementCollection<VT, K>,
+{
+    fn replace_src(&mut self, _: &VT, vt: VT) {
+        self.tail = vt
+    }
+
+    fn replace_dst(&mut self, dst_vt: &VT, vt: VT) {
+        self.heads.replace(dst_vt, vt)
+    }
+}
+
+impl<VT, C, const K: usize> CheckedFixedSizeMutEdgeDescriptor<VT, true>
+    for KUniformDirHyperedge<VT, C, K>
+where
+    VT: VertexToken,
+    C: KElementCollection<VT, K>,
+{
 }

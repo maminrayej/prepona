@@ -1,10 +1,11 @@
 use super::{
-    CheckedMutEdgeDescriptor, EdgeDescriptor, FixedSizeMutEdgeDescriptor, MutEdgeDescriptor,
-    UnorderedSet,
+    CheckedFixedSizeMutEdgeDescriptor, CheckedMutEdgeDescriptor, EdgeDescriptor,
+    FixedSizeMutEdgeDescriptor, MutEdgeDescriptor, UnorderedSet,
 };
 use crate::storage::{edge::Direction, vertex::VertexToken};
 use std::marker::PhantomData;
 
+#[derive(PartialEq, Eq)]
 pub struct DirHyperedge<VT, Set>
 where
     VT: VertexToken,
@@ -39,25 +40,6 @@ where
             phantom_vt: PhantomData,
         }
     }
-}
-
-impl<VT, Set> PartialEq for DirHyperedge<VT, Set>
-where
-    VT: VertexToken,
-    Set: UnorderedSet<VT>,
-{
-    fn eq(&self, other: &Self) -> bool {
-        self.source_set == other.source_set
-            && self.destination_set == other.destination_set
-            && self.phantom_vt == other.phantom_vt
-    }
-}
-
-impl<VT, Set> Eq for DirHyperedge<VT, Set>
-where
-    VT: VertexToken,
-    Set: UnorderedSet<VT>,
-{
 }
 
 impl<VT, Set> Direction<true> for DirHyperedge<VT, Set>
@@ -109,6 +91,13 @@ where
     fn replace_dst(&mut self, dst_vt: &VT, vt: VT) {
         self.destination_set.replace(dst_vt, vt);
     }
+}
+
+impl<VT, Set> CheckedFixedSizeMutEdgeDescriptor<VT, true> for DirHyperedge<VT, Set>
+where
+    VT: VertexToken,
+    Set: UnorderedSet<VT>,
+{
 }
 
 impl<VT, Set> MutEdgeDescriptor<VT, true> for DirHyperedge<VT, Set>

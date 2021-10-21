@@ -1,5 +1,6 @@
 use super::{
-    CheckedMutEdgeDescriptor, EdgeDescriptor, FixedSizeMutEdgeDescriptor, MutEdgeDescriptor,
+    CheckedFixedSizeMutEdgeDescriptor, CheckedMutEdgeDescriptor, EdgeDescriptor,
+    FixedSizeMutEdgeDescriptor, MutEdgeDescriptor,
 };
 use crate::storage::edge::Direction;
 use crate::storage::vertex::VertexToken;
@@ -8,15 +9,14 @@ use std::hash::Hash;
 use std::iter::FromIterator;
 use std::marker::PhantomData;
 
-// TODO: replace item with value
 pub trait UnorderedSet<T>: PartialEq + Eq + FromIterator<T> + Extend<T> {
-    fn contains(&self, item: &T) -> bool;
+    fn contains(&self, value: &T) -> bool;
 
-    fn insert(&mut self, item: T);
+    fn insert(&mut self, value: T);
 
-    fn remove(&mut self, item: &T);
+    fn remove(&mut self, value: &T);
 
-    fn replace(&mut self, target: &T, item: T);
+    fn replace(&mut self, target: &T, value: T);
 
     fn len(&self) -> usize;
 
@@ -27,21 +27,21 @@ impl<T> UnorderedSet<T> for HashSet<T>
 where
     T: Hash + Eq,
 {
-    fn contains(&self, item: &T) -> bool {
-        self.contains(item)
+    fn contains(&self, value: &T) -> bool {
+        self.contains(value)
     }
 
-    fn insert(&mut self, item: T) {
-        self.insert(item);
+    fn insert(&mut self, value: T) {
+        self.insert(value);
     }
 
-    fn remove(&mut self, item: &T) {
-        self.remove(item);
+    fn remove(&mut self, value: &T) {
+        self.remove(value);
     }
 
-    fn replace(&mut self, target: &T, item: T) {
+    fn replace(&mut self, target: &T, value: T) {
         self.remove(target);
-        self.insert(item);
+        self.insert(value);
     }
 
     fn len(&self) -> usize {
@@ -55,6 +55,7 @@ where
 
 pub type HashHyperedge<VT> = Hyperedge<VT, HashSet<VT>>;
 
+#[derive(PartialEq, Eq)]
 pub struct Hyperedge<VT, Set>
 where
     VT: VertexToken,
@@ -85,23 +86,6 @@ where
     }
 }
 
-impl<VT, Set> PartialEq for Hyperedge<VT, Set>
-where
-    VT: VertexToken,
-    Set: UnorderedSet<VT>,
-{
-    fn eq(&self, other: &Self) -> bool {
-        self.vertex_set == other.vertex_set && self.phantom_vt == other.phantom_vt
-    }
-}
-
-impl<VT, Set> Eq for Hyperedge<VT, Set>
-where
-    VT: VertexToken,
-    Set: UnorderedSet<VT>,
-{
-}
-
 impl<VT, Set> Direction<false> for Hyperedge<VT, Set>
 where
     VT: VertexToken,
@@ -122,12 +106,12 @@ where
         Box::new(self.vertex_set.iterator())
     }
 
-    fn is_source(&self, vertex_token: &VT) -> bool {
-        self.vertex_set.contains(vertex_token)
+    fn is_source(&self, vt: &VT) -> bool {
+        self.vertex_set.contains(vt)
     }
 
-    fn is_destination(&self, vertex_token: &VT) -> bool {
-        self.vertex_set.contains(vertex_token)
+    fn is_destination(&self, vt: &VT) -> bool {
+        self.vertex_set.contains(vt)
     }
 
     fn contains(&self, vt: &VT) -> bool {
@@ -155,6 +139,13 @@ where
     fn replace_dst(&mut self, dst_vt: &VT, vt: VT) {
         self.replace_src(dst_vt, vt);
     }
+}
+
+impl<VT, Set> CheckedFixedSizeMutEdgeDescriptor<VT, false> for Hyperedge<VT, Set>
+where
+    VT: VertexToken,
+    Set: UnorderedSet<VT>,
+{
 }
 
 impl<VT, Set> MutEdgeDescriptor<VT, false> for Hyperedge<VT, Set>
