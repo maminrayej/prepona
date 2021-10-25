@@ -90,11 +90,7 @@ where
     }
 
     fn is_destination(&self, vt: &VT) -> bool {
-        self.vertices
-            .iterator()
-            .skip(1)
-            .find(|dst_vt| *dst_vt == vt)
-            .is_some()
+        self.vertices.iterator().skip(1).any(|dst_vt| dst_vt == vt)
     }
 
     fn sources_count(&self) -> usize {
