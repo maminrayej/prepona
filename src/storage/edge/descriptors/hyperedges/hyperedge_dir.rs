@@ -4,8 +4,22 @@ use crate::storage::edge::{
     FixedSizeMutEdgeDescriptor, MutEdgeDescriptor,
 };
 use crate::storage::vertex::VertexToken;
+use std::collections::HashSet;
 use std::marker::PhantomData;
 
+/// A [`DirHyperedge`] that uses a hashmap as its unordered set.
+pub type HashedDirHyperedge<VT> = DirHyperedge<VT, HashSet<VT>>;
+
+/// A directed edge that can connect multiple sources to multiple destinations.
+///
+/// A `DirHyperedge` is an ordered pair of non-empty subset of vertices.
+/// All vertices in the first subset are sources that connect to all vertices in the second subset via the `DirHyperedge`(for further reading see [here]).
+///
+/// # Generic parameters
+/// * `VT`: The kind of token that represents the sources and destinations of the edge.
+/// * `Set`: The unordered set to be used as backing storage of vertex tokens.
+///
+/// [here]: https://en.wikipedia.org/wiki/Hypergraph
 #[derive(PartialEq, Eq)]
 pub struct DirHyperedge<VT, Set>
 where
@@ -23,6 +37,12 @@ where
     VT: VertexToken,
     Set: UnorderedSet<VT>,
 {
+    /// # Arguments
+    /// * `src_vt`: Token of the source vertex.
+    /// * `dst_vt`: Token of the destination vertex.
+    ///
+    /// # Returns
+    /// Constructed `DirHyperedge` connecting `src_vt` to `dst_vt`.
     pub fn init(src_vt: VT, dst_vt: VT) -> Self {
         DirHyperedge {
             source_set: Set::from_iter(std::iter::once(src_vt)),
@@ -31,6 +51,12 @@ where
         }
     }
 
+    /// # Arguments
+    /// * `srv_vts`: An iterator over tokens of source vertices.
+    /// * `dst_vts`: An iterator over tokens of destination vertices.
+    ///
+    /// # Returns
+    /// Constructed `DirHyperedge` connecting all vertices in `src_vts` to all vertices in `dst_vts`.
     pub fn init_multiple(
         src_vts: impl IntoIterator<Item = VT>,
         dst_vts: impl IntoIterator<Item = VT>,
@@ -109,6 +135,14 @@ where
     fn add(&mut self, src_vt: VT, dst_vt: VT) {
         self.source_set.extend(std::iter::once(src_vt));
         self.destination_set.extend(std::iter::once(dst_vt));
+    }
+
+    fn add_src(&mut self, src_vt: VT) {
+        self.source_set.insert(src_vt);
+    }
+
+    fn add_dst(&mut self, dst_vt: VT) {
+        self.destination_set.insert(dst_vt);
     }
 
     fn remove(&mut self, vt: VT) {

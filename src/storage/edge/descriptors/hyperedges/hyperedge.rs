@@ -8,8 +8,18 @@ use crate::storage::vertex::VertexToken;
 use std::collections::HashSet;
 use std::marker::PhantomData;
 
-pub type HashHyperedge<VT> = Hyperedge<VT, HashSet<VT>>;
+/// A [`Hyperedge`] that uses a hashmap as its unordered set.
+pub type HashedHyperedge<VT> = Hyperedge<VT, HashSet<VT>>;
 
+/// An edge that can connect multiple vertices together.
+///
+/// A `Hyperedge` is a non-empty subset of vertices. All vertices participating in a hyperedge are connected together(for further reading see [here]).
+///
+/// # Generic parameters
+/// * `VT`: The kind of token that represents the sources and destinations of the edge.
+/// * `Set`: The unordered set to be used as backing storage of vertex tokens.
+///
+/// [here]: https://en.wikipedia.org/wiki/Hypergraph
 #[derive(PartialEq, Eq)]
 pub struct Hyperedge<VT, Set>
 where
@@ -26,6 +36,11 @@ where
     VT: VertexToken,
     Set: UnorderedSet<VT>,
 {
+    /// # Arguments
+    /// `vertex_token`: Token of the vertex to be added as the only vertex participating in the hyperedge.
+    ///
+    /// # Returns
+    /// A hyperedge containing `vertex_token` as its only participating vertex.
     pub fn init(vertex_token: VT) -> Self {
         Hyperedge {
             vertex_set: Set::from_iter(std::iter::once(vertex_token)),
@@ -33,6 +48,11 @@ where
         }
     }
 
+    /// # Arguments
+    /// `vertex_tokens`: An iterator over tokens of vertices to be added as participating vertices in the hyperedge.
+    ///
+    /// # Returns
+    /// A hyperedge containing vertex tokens returned by `vertex_tokens`.
     pub fn init_multiple(vertex_tokens: impl IntoIterator<Item = VT>) -> Self {
         Hyperedge {
             vertex_set: Set::from_iter(vertex_tokens),
@@ -111,6 +131,14 @@ where
     fn add(&mut self, src_vt: VT, dst_vt: VT) {
         self.vertex_set
             .extend(std::iter::once(src_vt).chain(Some(dst_vt)));
+    }
+
+    fn add_src(&mut self, src_vt: VT) {
+        self.vertex_set.insert(src_vt);
+    }
+
+    fn add_dst(&mut self, dst_vt: VT) {
+        self.vertex_set.insert(dst_vt)
     }
 
     fn remove(&mut self, vt: VT) {

@@ -10,19 +10,54 @@ pub use hyperedge::*;
 pub use hyperedge_dir::*;
 pub use uniform::*;
 
+/// Describes an unordered set data structure.
+///
+/// # Generic parameters
+/// `T`: Type of value to be stored.
+///
+/// # Required traits
+/// * `PartialEq`, `Eq`: An unordered set must be comparable to another unordered set with the same type.
+/// * `FromIterator`: An unordered set must be capable to be initialized from an iterator of values.
+/// * `Extend`: An unordered set must be extendable given an iterator of values.
 pub trait UnorderedSet<T>: PartialEq + Eq + FromIterator<T> + Extend<T> {
+    /// # Arguments
+    /// `value`: Value to search for in the unordered set.
+    ///
+    /// # Returns
+    /// * `true`: If unordered set contains the `value`.
+    /// * `false`: Otherwise.
     fn contains(&self, value: &T) -> bool;
 
+    /// If `value` already exists in the unordered set, nothing must happen.
+    ///
+    /// # Arguments
+    /// `value`: Value to be inserted into the unordered set.
     fn insert(&mut self, value: T);
 
+    /// If the value does not exist in the unordered set, nothing must happen.
+    ///
+    /// # Arguments
+    /// `value`: Value to be removed from the unordered set.
     fn remove(&mut self, value: &T);
 
+    /// If `target` does not exist in the unordered set, nothing must happen.
+    ///
+    /// # Arguments
+    /// * `target`: Target value to be replaced with `value`.
+    /// * `value`: New value to replace the `target`.
     fn replace(&mut self, target: &T, value: T);
 
+    /// # Returns
+    /// Number of values stored in the unordered set.
     fn len(&self) -> usize;
 
+    /// # Returns
+    /// * `true`: If unordered set does not contain any value.
+    /// * `false`: Otherwise.
     fn is_empty(&self) -> bool;
 
+    /// # Returns
+    /// An iterator over the values stored in the unordered set.
     fn iterator(&self) -> Box<dyn Iterator<Item = &T> + '_>;
 }
 

@@ -8,6 +8,19 @@ use std::marker::PhantomData;
 
 use super::KElementCollection;
 
+/// A [`KUniformHyperedge`] that uses an array of size `K` as its [`KElementCollection`].
+pub type ArrKUniformHyperedge<VT, const K: usize> = KUniformHyperedge<VT, [VT; K], K>;
+
+/// An edge that can connect exactly `K` vertices.
+///
+/// A `KUniformHyperedge` is a non-empty subset of exactly `K` vertices. All vertices participating in a hyperedge are connected together(for further reading see [here]).
+///
+/// # Generic parameters
+/// * `VT`: The kind of token that represents the sources and destinations of the edge.
+/// * `C`: A collection that contains `K` elements at all times.
+/// * `K`: Number of connected vertices.
+///
+/// [here]: https://en.wikipedia.org/wiki/Hypergraph
 #[derive(PartialEq, Eq)]
 pub struct KUniformHyperedge<VT, C, const K: usize>
 where
@@ -24,8 +37,14 @@ where
     VT: VertexToken,
     C: KElementCollection<VT, K>,
 {
-    pub fn try_init(value: impl Iterator<Item = VT>) -> Result<Self> {
-        let values = value.collect::<Vec<VT>>();
+    /// # Arguments
+    /// `values`: An iterator that contains exactly `K` elements.
+    ///
+    /// # Returns
+    /// `Ok`: Containing the constructed `KUniformHyperedge` if `values` contains exactly `K` elements.
+    /// `Err`: Specifically [`StorageError::NotKElement`] error if `values` does not contain exactly `K` elements.
+    pub fn try_init(values: impl Iterator<Item = VT>) -> Result<Self> {
+        let values = values.collect::<Vec<VT>>();
         let values_count = values.len();
 
         match C::try_from(values) {
