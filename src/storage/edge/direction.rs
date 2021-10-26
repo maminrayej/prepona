@@ -1,16 +1,16 @@
-/// Describes wether a struct is directed or not.
+/// Describes wether an entity is directed or not.
 ///
-/// The struct can be an edge, a graph or any other struct that can act as an entity with direction.
+/// The entity can be an edge, a graph or any other struct that can act as an entity with direction.
 pub trait Direction<const DIR: bool> {
     /// # Returns
-    /// * `true`: If the struct has direction.
+    /// * `true`: If the entity has direction.
     /// * `false`: Otherwise.
     fn is_directed() -> bool {
         DIR
     }
 
     /// # Returns
-    /// * `true`: If the struct has no direction.
+    /// * `true`: If the entity has no direction.
     /// * `false`: Otherwise.
     fn is_undirected() -> bool {
         !DIR
