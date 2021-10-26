@@ -6,10 +6,10 @@ use std::hash::Hash;
 /// Since an edge can be any struct(as long as it implements [`EdgeDescriptor`]),
 /// it's necessary to have a representative for that edge that conforms to a number of rules.
 ///
-/// A token must:
-/// - Have a string representation which in enforced by the `Display` trait.
-/// - Be hashable which is enforced by the `Hash` trait.
-/// - Be comparable to another token with the same type which is enforced by `PartialEq` and `Eq` trait.
+/// # Required traits
+/// * `Display`: A token must have a string representation.
+/// * `Hash`: A token must be hashable.
+/// * `PartialEq`, `Eq`: A token must be comparable to another token with the same type.
 ///
 /// [`EdgeDescriptor`]: crate::storage::edge::EdgeDescriptor
 pub trait EdgeToken: Display + Hash + PartialEq + Eq {}

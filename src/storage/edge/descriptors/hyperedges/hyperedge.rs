@@ -13,13 +13,11 @@ pub type HashedHyperedge<VT> = Hyperedge<VT, HashSet<VT>>;
 
 /// An edge that can connect multiple vertices together.
 ///
-/// A `Hyperedge` is a non-empty subset of vertices. All vertices participating in a hyperedge are connected together(for further reading see [here]).
+/// A `Hyperedge` is a non-empty subset of vertices. All vertices participating in a hyperedge are connected together.
 ///
 /// # Generic parameters
-/// * `VT`: The kind of token that represents the sources and destinations of the edge.
-/// * `Set`: The unordered set to be used as backing storage of vertex tokens.
-///
-/// [here]: https://en.wikipedia.org/wiki/Hypergraph
+/// * `VT`: The type of token that represents the sources and destinations of the edge.
+/// * `DIR`: Specifies wether the edge is directed or not.
 #[derive(PartialEq, Eq)]
 pub struct Hyperedge<VT, Set>
 where
@@ -37,25 +35,25 @@ where
     Set: UnorderedSet<VT>,
 {
     /// # Arguments
-    /// `vertex_token`: Token of the vertex to be added as the only vertex participating in the hyperedge.
+    /// `vt`: Token of the vertex to be added as the only vertex participating in the hyperedge.
     ///
     /// # Returns
-    /// A hyperedge containing `vertex_token` as its only participating vertex.
-    pub fn init(vertex_token: VT) -> Self {
+    /// A hyperedge containing `vt` as its only participating vertex.
+    pub fn init(vt: VT) -> Self {
         Hyperedge {
-            vertex_set: Set::from_iter(std::iter::once(vertex_token)),
+            vertex_set: Set::from_iter(std::iter::once(vt)),
             phantom_vt: PhantomData,
         }
     }
 
     /// # Arguments
-    /// `vertex_tokens`: An iterator over tokens of vertices to be added as participating vertices in the hyperedge.
+    /// `vts`: An iterator over tokens of vertices to be added as participating vertices in the hyperedge.
     ///
     /// # Returns
-    /// A hyperedge containing vertex tokens returned by `vertex_tokens`.
-    pub fn init_multiple(vertex_tokens: impl IntoIterator<Item = VT>) -> Self {
+    /// A hyperedge containing vertex tokens returned by `vts`.
+    pub fn init_multiple(vts: impl IntoIterator<Item = VT>) -> Self {
         Hyperedge {
-            vertex_set: Set::from_iter(vertex_tokens),
+            vertex_set: Set::from_iter(vts),
             phantom_vt: PhantomData,
         }
     }
@@ -73,30 +71,44 @@ where
     VT: VertexToken,
     Set: UnorderedSet<VT>,
 {
+    /// # Complexity
+    /// O([`UnorderedSet::iterator`])
     fn get_sources(&self) -> Box<dyn Iterator<Item = &VT> + '_> {
         Box::new(self.vertex_set.iterator())
     }
 
+    /// # Complexity
+    /// O([`UnorderedSet::iterator`])
     fn get_destinations(&self) -> Box<dyn Iterator<Item = &VT> + '_> {
         Box::new(self.vertex_set.iterator())
     }
 
+    /// # Complexity
+    /// O([`UnorderedSet::iterator`])
     fn is_source(&self, vt: &VT) -> bool {
         self.vertex_set.contains(vt)
     }
 
+    /// # Complexity
+    /// O([`UnorderedSet::contains`])
     fn is_destination(&self, vt: &VT) -> bool {
         self.vertex_set.contains(vt)
     }
 
+    /// # Complexity
+    /// O([`UnorderedSet::contains`])
     fn contains(&self, vt: &VT) -> bool {
         self.vertex_set.contains(vt)
     }
 
+    /// # Complexity
+    /// O([`UnorderedSet::len`])
     fn sources_count(&self) -> usize {
         self.vertex_set.len()
     }
 
+    /// # Complexity
+    /// O([`UnorderedSet::len`])
     fn destinations_count(&self) -> usize {
         self.vertex_set.len()
     }
@@ -107,12 +119,16 @@ where
     VT: VertexToken,
     Set: UnorderedSet<VT>,
 {
+    /// # Complexity
+    /// O([`UnorderedSet::replace`])
     fn replace_src(&mut self, src_vt: &VT, vt: VT) {
         self.vertex_set.replace(src_vt, vt);
     }
 
+    /// # Complexity
+    /// O([`UnorderedSet::replace`])
     fn replace_dst(&mut self, dst_vt: &VT, vt: VT) {
-        self.replace_src(dst_vt, vt);
+        self.vertex_set.replace(dst_vt, vt);
     }
 }
 
@@ -128,19 +144,27 @@ where
     VT: VertexToken,
     Set: UnorderedSet<VT>,
 {
+    /// # Complexity
+    /// O([`Extend::extend`] on [`UnorderedSet`])
     fn add(&mut self, src_vt: VT, dst_vt: VT) {
         self.vertex_set
             .extend(std::iter::once(src_vt).chain(Some(dst_vt)));
     }
 
+    /// # Complexity
+    /// O([`UnorderedSet::insert`])
     fn add_src(&mut self, src_vt: VT) {
         self.vertex_set.insert(src_vt);
     }
 
+    /// # Complexity
+    /// O([`UnorderedSet::insert`])
     fn add_dst(&mut self, dst_vt: VT) {
         self.vertex_set.insert(dst_vt)
     }
 
+    /// # Complexity
+    /// O([`UnorderedSet::remove`])
     fn remove(&mut self, vt: VT) {
         self.vertex_set.remove(&vt)
     }

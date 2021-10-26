@@ -1,4 +1,4 @@
-//! The edge module contains structures and traits necessary to describe edges and anything related to them like [`EdgeToken`].
+//! Contains structures and traits necessary to describe edges and anything related to them.
 
 mod descriptors;
 mod direction;

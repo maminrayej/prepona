@@ -13,21 +13,19 @@ pub type ArrKUniformHyperedge<VT, const K: usize> = KUniformHyperedge<VT, [VT; K
 
 /// An edge that can connect exactly `K` vertices.
 ///
-/// A `KUniformHyperedge` is a non-empty subset of exactly `K` vertices. All vertices participating in a hyperedge are connected together(for further reading see [here]).
+/// A `KUniformHyperedge` is a non-empty subset of exactly `K` vertices. All vertices participating in a hyperedge are connected together.
 ///
 /// # Generic parameters
-/// * `VT`: The kind of token that represents the sources and destinations of the edge.
+/// * `VT`: The type of token that represents the sources and destinations of the edge.
 /// * `C`: A collection that contains `K` elements at all times.
 /// * `K`: Number of connected vertices.
-///
-/// [here]: https://en.wikipedia.org/wiki/Hypergraph
 #[derive(PartialEq, Eq)]
 pub struct KUniformHyperedge<VT, C, const K: usize>
 where
     VT: VertexToken,
     C: KElementCollection<VT, K>,
 {
-    collection: C,
+    vertices: C,
 
     phantom_vt: PhantomData<VT>,
 }
@@ -38,22 +36,21 @@ where
     C: KElementCollection<VT, K>,
 {
     /// # Arguments
-    /// `values`: An iterator that contains exactly `K` elements.
+    /// `vertex_tokens`: An iterator that contains exactly `K` elements.
     ///
     /// # Returns
-    /// `Ok`: Containing the constructed `KUniformHyperedge` if `values` contains exactly `K` elements.
-    /// `Err`: Specifically [`StorageError::NotKElement`] error if `values` does not contain exactly `K` elements.
-    pub fn try_init(values: impl Iterator<Item = VT>) -> Result<Self> {
-        let values = values.collect::<Vec<VT>>();
-        let values_count = values.len();
+    /// `Ok`: Containing the constructed `KUniformHyperedge` if `vertex_tokens` contains exactly `K` elements.
+    /// `Err`: Specifically [`StorageError::NotKElement`] error if `vertex_tokens` does not contain exactly `K` elements.
+    pub fn try_init(vertex_tokens: impl Iterator<Item = VT>) -> Result<Self> {
+        let vertex_tokens = vertex_tokens.collect::<Vec<VT>>();
+        let tokens_count = vertex_tokens.len();
 
-        match C::try_from(values) {
-            Ok(collection) => Ok(KUniformHyperedge {
-                collection,
+        match C::try_from(vertex_tokens) {
+            Ok(vertices) => Ok(KUniformHyperedge {
+                vertices,
                 phantom_vt: PhantomData,
             }),
-
-            _ => Err(StorageError::NotKElement(values_count, K).into()),
+            _ => Err(StorageError::NotKElement(tokens_count, K).into()),
         }
     }
 }
@@ -70,32 +67,46 @@ where
     VT: VertexToken,
     C: KElementCollection<VT, K>,
 {
+    /// # Complexity
+    /// O(1)
     fn get_sources(&self) -> Box<dyn Iterator<Item = &VT> + '_> {
-        Box::new(self.collection.iterator())
+        Box::new(self.vertices.iterator())
     }
 
+    /// # Complexity
+    /// O(1)
     fn get_destinations(&self) -> Box<dyn Iterator<Item = &VT> + '_> {
-        self.get_sources()
+        Box::new(self.vertices.iterator())
     }
 
+    /// # Complexity
+    /// O([`KElementCollection::contains_value`])
     fn is_source(&self, vt: &VT) -> bool {
-        self.collection.contains_value(vt)
+        self.vertices.contains_value(vt)
     }
 
+    /// # Complexity
+    /// O([`KElementCollection::contains_value`])
     fn is_destination(&self, vt: &VT) -> bool {
-        self.is_source(vt)
+        self.vertices.contains_value(vt)
     }
 
+    /// # Complexity
+    /// O([`KElementCollection::contains_value`])
     fn contains(&self, vt: &VT) -> bool {
-        self.is_source(vt)
+        self.vertices.contains_value(vt)
     }
 
+    /// # Complexity
+    /// O([`KElementCollection::len`])
     fn sources_count(&self) -> usize {
-        self.collection.len()
+        self.vertices.len()
     }
 
+    /// # Complexity
+    /// O([`KElementCollection::len`])
     fn destinations_count(&self) -> usize {
-        self.sources_count()
+        self.vertices.len()
     }
 }
 
@@ -104,12 +115,16 @@ where
     VT: VertexToken,
     C: KElementCollection<VT, K>,
 {
+    /// # Complexity
+    /// O([`KElementCollection::replace`])
     fn replace_src(&mut self, src_vt: &VT, vt: VT) {
-        self.collection.replace(src_vt, vt);
+        self.vertices.replace(src_vt, vt);
     }
 
+    /// # Complexity
+    /// O([`KElementCollection::replace`])
     fn replace_dst(&mut self, dst_vt: &VT, vt: VT) {
-        self.replace_src(dst_vt, vt);
+        self.vertices.replace(dst_vt, vt);
     }
 }
 

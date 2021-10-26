@@ -10,7 +10,7 @@ pub use hyperedge::*;
 pub use hyperedge_dir::*;
 pub use uniform::*;
 
-/// Describes an unordered set data structure.
+/// Describes an unordered set container.
 ///
 /// # Generic parameters
 /// `T`: Type of value to be stored.
@@ -65,31 +65,46 @@ impl<T> UnorderedSet<T> for HashSet<T>
 where
     T: Hash + Eq,
 {
+    /// # Complexity
+    /// O([`HashSet::contains`])
     fn contains(&self, value: &T) -> bool {
         self.contains(value)
     }
 
+    /// # Complexity
+    /// O([`HashSet::insert`])
     fn insert(&mut self, value: T) {
         self.insert(value);
     }
 
+    /// # Complexity
+    /// O([`HashSet::remove`])
     fn remove(&mut self, value: &T) {
         self.remove(value);
     }
 
+    /// # Complexity
+    /// O([`HashSet::remove`] + [`HashSet::insert`])
     fn replace(&mut self, target: &T, value: T) {
-        self.remove(target);
-        self.insert(value);
+        if self.remove(target) {
+            self.insert(value);
+        }
     }
 
+    /// # Complexity
+    /// O([`HashSet::len`])
     fn len(&self) -> usize {
         self.len()
     }
 
+    /// # Complexity
+    /// O([`HashSet::is_empty`])
     fn is_empty(&self) -> bool {
-        self.len() == 0
+        self.is_empty()
     }
 
+    /// # Complexity
+    /// O([`HashSet::iter`])
     fn iterator(&self) -> Box<dyn Iterator<Item = &T> + '_> {
         Box::new(self.iter())
     }

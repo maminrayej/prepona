@@ -10,16 +10,14 @@ use std::marker::PhantomData;
 /// A [`DirHyperedge`] that uses a hashmap as its unordered set.
 pub type HashedDirHyperedge<VT> = DirHyperedge<VT, HashSet<VT>>;
 
-/// A directed edge that can connect multiple sources to multiple destinations.
+/// A directed hyperedge edge that can connect multiple sources to multiple destinations.
 ///
 /// A `DirHyperedge` is an ordered pair of non-empty subset of vertices.
-/// All vertices in the first subset are sources that connect to all vertices in the second subset via the `DirHyperedge`(for further reading see [here]).
+/// All vertices in the first subset are sources that connect to all vertices in the second subset.
 ///
 /// # Generic parameters
-/// * `VT`: The kind of token that represents the sources and destinations of the edge.
-/// * `Set`: The unordered set to be used as backing storage of vertex tokens.
-///
-/// [here]: https://en.wikipedia.org/wiki/Hypergraph
+/// * `VT`: The type of token that represents the sources and destinations of the edge.
+/// * `DIR`: Specifies wether the edge is directed or not.
 #[derive(PartialEq, Eq)]
 pub struct DirHyperedge<VT, Set>
 where
@@ -81,26 +79,38 @@ where
     VT: VertexToken,
     Set: UnorderedSet<VT>,
 {
+    /// # Complexity
+    /// O([`UnorderedSet::iterator`])
     fn get_sources(&self) -> Box<dyn Iterator<Item = &VT> + '_> {
         Box::new(self.source_set.iterator())
     }
 
+    /// # Complexity
+    /// O([`UnorderedSet::iterator`])
     fn get_destinations(&self) -> Box<dyn Iterator<Item = &VT> + '_> {
         Box::new(self.destination_set.iterator())
     }
 
+    /// # Complexity
+    /// O([`UnorderedSet::contains`])
     fn is_source(&self, vt: &VT) -> bool {
         self.source_set.contains(vt)
     }
 
+    /// # Complexity
+    /// O([`UnorderedSet::contains`])
     fn is_destination(&self, vt: &VT) -> bool {
         self.destination_set.contains(vt)
     }
 
+    /// # Complexity
+    /// O([`UnorderedSet::len`])
     fn sources_count(&self) -> usize {
         self.source_set.len()
     }
 
+    /// # Complexity
+    /// O([`UnorderedSet::len`])
     fn destinations_count(&self) -> usize {
         self.destination_set.len()
     }
@@ -111,10 +121,14 @@ where
     VT: VertexToken,
     Set: UnorderedSet<VT>,
 {
+    /// # Complexity
+    /// O([`UnorderedSet::replace`])
     fn replace_src(&mut self, src_vt: &VT, vt: VT) {
         self.source_set.replace(src_vt, vt);
     }
 
+    /// # Complexity
+    /// O([`UnorderedSet::replace`])
     fn replace_dst(&mut self, dst_vt: &VT, vt: VT) {
         self.destination_set.replace(dst_vt, vt);
     }
@@ -132,6 +146,8 @@ where
     VT: VertexToken,
     Set: UnorderedSet<VT>,
 {
+    /// # Complexity
+    /// O([`Extend::extend`] on [`UnorderedSet`])
     fn add(&mut self, src_vt: VT, dst_vt: VT) {
         self.source_set.extend(std::iter::once(src_vt));
         self.destination_set.extend(std::iter::once(dst_vt));

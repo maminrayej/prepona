@@ -67,7 +67,7 @@ pub trait EdgeDescriptor<VT: VertexToken, const DIR: bool>:
     /// * `false`: Otherwise.
     ///
     /// # Complexity
-    /// O(|[`EdgeDescriptor::get_destinations`] + V<sub>dst</sub>|)
+    /// O([`EdgeDescriptor::get_destinations`] + |V<sub>dst</sub>|)
     fn is_destination(&self, vt: &VT) -> bool {
         self.get_destinations().any(|dst_vt| dst_vt == vt)
     }
@@ -98,7 +98,7 @@ pub trait EdgeDescriptor<VT: VertexToken, const DIR: bool>:
     /// Number of destinations.
     ///
     /// # Complexity
-    /// O(|[`EdgeDescriptor::get_destinations`] + V<sub>dst</sub>|)
+    /// O([`EdgeDescriptor::get_destinations`] + |V<sub>dst</sub>|)
     fn destinations_count(&self) -> usize {
         self.get_destinations().count()
     }

@@ -1,4 +1,4 @@
-use super::{EdgeDescriptor, FixedSizeMutEdgeDescriptor};
+use super::{CheckedFixedSizeMutEdgeDescriptor, EdgeDescriptor, FixedSizeMutEdgeDescriptor};
 use crate::storage::{edge::Direction, vertex::VertexToken};
 
 /// A directed [`Edge`].
@@ -10,7 +10,7 @@ pub type UndirectedEdge<VT> = Edge<VT, false>;
 /// Most common type of edge that connects two vertices.
 ///
 /// # Generic parameters
-/// * `VT`: The kind of token that represents the source and destination of the edge.
+/// * `VT`: The type of token that represents the sources and destinations of the edge.
 /// * `DIR`: Specifies wether the edge is directed or not.
 #[derive(PartialEq, Eq)]
 pub struct Edge<VT: VertexToken, const DIR: bool> {
@@ -33,6 +33,8 @@ impl<VT: VertexToken, const DIR: bool> Edge<VT, DIR> {
 impl<VT: VertexToken, const DIR: bool> Direction<DIR> for Edge<VT, DIR> {}
 
 impl<VT: VertexToken, const DIR: bool> EdgeDescriptor<VT, DIR> for Edge<VT, DIR> {
+    /// # Complexity
+    /// O(1)
     fn get_sources(&self) -> Box<dyn Iterator<Item = &VT> + '_> {
         if Self::is_directed() {
             Box::new(std::iter::once(&self.src_vt))
@@ -41,6 +43,8 @@ impl<VT: VertexToken, const DIR: bool> EdgeDescriptor<VT, DIR> for Edge<VT, DIR>
         }
     }
 
+    /// # Complexity
+    /// O(1)
     fn get_destinations(&self) -> Box<dyn Iterator<Item = &VT> + '_> {
         if Self::is_directed() {
             Box::new(std::iter::once(&self.dst_vt))
@@ -49,18 +53,26 @@ impl<VT: VertexToken, const DIR: bool> EdgeDescriptor<VT, DIR> for Edge<VT, DIR>
         }
     }
 
+    /// # Complexity
+    /// O(1)
     fn is_source(&self, vt: &VT) -> bool {
         &self.src_vt == vt || (Self::is_undirected() && &self.dst_vt == vt)
     }
 
+    /// # Complexity
+    /// O(1)
     fn is_destination(&self, vt: &VT) -> bool {
         &self.dst_vt == vt || (Self::is_undirected() && &self.src_vt == vt)
     }
 
+    /// # Complexity
+    /// O(1)
     fn contains(&self, vt: &VT) -> bool {
         &self.src_vt == vt || &self.dst_vt == vt
     }
 
+    /// # Complexity
+    /// O(1)
     fn sources_count(&self) -> usize {
         if Self::is_directed() {
             1
@@ -69,6 +81,8 @@ impl<VT: VertexToken, const DIR: bool> EdgeDescriptor<VT, DIR> for Edge<VT, DIR>
         }
     }
 
+    /// # Complexity
+    /// O(1)
     fn destinations_count(&self) -> usize {
         if Self::is_directed() {
             1
@@ -79,13 +93,22 @@ impl<VT: VertexToken, const DIR: bool> EdgeDescriptor<VT, DIR> for Edge<VT, DIR>
 }
 
 impl<VT: VertexToken, const DIR: bool> FixedSizeMutEdgeDescriptor<VT, DIR> for Edge<VT, DIR> {
+    /// # Complexity
+    /// O(1)
     fn replace_src(&mut self, _: &VT, vt: VT) {
         self.src_vt = vt
     }
 
+    /// # Complexity
+    /// O(1)
     fn replace_dst(&mut self, _: &VT, vt: VT) {
         self.dst_vt = vt
     }
+}
+
+impl<VT: VertexToken, const DIR: bool> CheckedFixedSizeMutEdgeDescriptor<VT, DIR>
+    for Edge<VT, DIR>
+{
 }
 
 #[cfg(test)]
