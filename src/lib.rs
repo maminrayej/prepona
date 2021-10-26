@@ -30,4 +30,5 @@
 //! If you can satisfy the preconditions implicitly and want maximum performance, use the basic implementation.\
 //! If you are working with unknown inputs and you're not sure about their validity, use the checked version of the method.
 
+pub mod doc;
 pub mod storage;
