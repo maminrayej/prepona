@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::fmt::{Debug, Display};
 use std::hash::Hash;
 
 /// Describes a token that can act as a representative for an edge.
@@ -12,6 +12,6 @@ use std::hash::Hash;
 /// * `PartialEq`, `Eq`: A token must be comparable to another token with the same type.
 ///
 /// [`EdgeDescriptor`]: crate::storage::edge::EdgeDescriptor
-pub trait EdgeToken: Display + Hash + PartialEq + Eq {}
+pub trait EdgeToken: Debug + Display + Hash + PartialEq + Eq {}
 
-impl<T> EdgeToken for T where T: Hash + PartialEq + Eq + Display {}
+impl<T> EdgeToken for T where T: Debug + Display + Hash + PartialEq + Eq {}
