@@ -50,8 +50,13 @@ pub trait EdgeDescriptor<VT: VertexToken, const DIR: bool>:
     /// * `vt`: Token of the vertex to be checked if it's a source or not.
     ///
     /// # Returns
-    /// * `true`: If `vt` is the token of one of the sources.
-    /// * `false`: Otherwise.
+    /// If edge is:
+    /// * Directed:
+    ///     * `true`: If `vt` is the token of one of the source vertices.
+    ///     * `false`: Otherwise.
+    /// * Undirected:
+    ///     * `true`: If `vt` is the token of a source or destination vertex.
+    ///     * `false`: Otherwise.
     ///
     /// # Complexity
     /// O([`EdgeDescriptor::get_sources`] + |V<sub>src</sub>|)
@@ -63,8 +68,13 @@ pub trait EdgeDescriptor<VT: VertexToken, const DIR: bool>:
     /// * `vt`: Token of the vertex to be checked if it's a destination or not.
     ///
     /// # Returns
-    /// * `true`: If `vt` is the token of one of the destinations.
-    /// * `false`: Otherwise.
+    /// If edge is:
+    /// * Directed:
+    ///     * `true`: If `vt` is the token of one of the destination vertices.
+    ///     * `false`: Otherwise.
+    /// * Undirected:
+    ///     * `true`: If `vt` is the token of a source or destination vertex.
+    ///     * `false`: Otherwise.
     ///
     /// # Complexity
     /// O([`EdgeDescriptor::get_destinations`] + |V<sub>dst</sub>|)
@@ -76,7 +86,7 @@ pub trait EdgeDescriptor<VT: VertexToken, const DIR: bool>:
     /// * `vt`: Token of the vertex to be checked if it's a source or a destination.
     ///
     /// # Returns
-    /// * `true`: If one of the sources or destinations has token equal to `vt`.
+    /// * `true`: If one of the sources or destinations has a token equal to `vt`.
     /// * `false`: Otherwise.
     ///
     /// # Complexity
@@ -86,7 +96,9 @@ pub trait EdgeDescriptor<VT: VertexToken, const DIR: bool>:
     }
 
     /// # Returns
-    /// Number of sources.
+    /// If edge is:
+    /// * Directed: Number of source vertices.
+    /// * Undirected: Number of total vertices.
     ///
     /// # Complexity
     /// O([`EdgeDescriptor::get_sources`] + |V<sub>src</sub>|)
@@ -95,7 +107,9 @@ pub trait EdgeDescriptor<VT: VertexToken, const DIR: bool>:
     }
 
     /// # Returns
-    /// Number of destinations.
+    /// If edge is:
+    /// * Directed: Number of destination vertices.
+    /// * Undirected: Number of total vertices.
     ///
     /// # Complexity
     /// O([`EdgeDescriptor::get_destinations`] + |V<sub>dst</sub>|)
@@ -120,31 +134,35 @@ pub trait FixedSizeMutEdgeDescriptor<VT: VertexToken, const DIR: bool>:
     EdgeDescriptor<VT, DIR>
 {
     /// # Arguments
-    /// * `src_vt`: Token of the source vertex that is going to be replaced.
-    /// * `vt`: Token of the vertex to replace `src_vt`.
+    /// * `target_vt`: Token of the target vertex that is going to be replaced.
+    /// * `vt`: Token of the vertex to replace `target_vt`.
     ///
     /// # Preconditions
-    /// `src_vt` must be the token of one of the source vertices in this edge.
+    /// If edge is:
+    /// * Directed: `target_vt` must be the token of a source vertex.
+    /// * Undirected: `target_vt` can be the token of a source or a destination vertex.
     ///
     /// # Postconditions
-    /// `src_vt` will be replaced by `vt`.
-    fn replace_src(&mut self, src_vt: &VT, vt: VT);
+    /// `target_vt` is replaced with `vt`.
+    fn replace_src(&mut self, target_vt: &VT, vt: VT);
 
     /// # Arguments
-    /// * `dst_vt`: Token of the destination vertex that is going to be replaced.
-    /// * `vt`: Token of the vertex to replaced `dst_vt`.
+    /// * `target_vt`: Token of the target vertex that is going to be replaced.
+    /// * `vt`: Token of the vertex to replaced `target_vt`.
     ///
     /// # Preconditions
-    /// `dst_vt` must be the token of one of the destination vertices in this edge.
+    /// If edge is:
+    /// * Directed: `target_vt` must be the token of a destination vertex.
+    /// * Undirected: `target_vt` can be the token of a source or a destination vertex.
     ///
     /// # Postconditions
-    /// `dst_vt` is replaced with `vt`.
-    fn replace_dst(&mut self, dst_vt: &VT, vt: VT);
+    /// `target_vt` is replaced with `vt`.
+    fn replace_dst(&mut self, target_vt: &VT, vt: VT);
 }
 
 /// Checked version of [`FixedSizeMutEdgeDescriptor`] trait.
 ///
-/// Note that `CheckedFixedSizeMutEdgeDescriptor` provides default implementation and info about [complexity] for all of its methods.
+/// Note that `CheckedFixedSizeMutEdgeDescriptor` provides default implementation and info about complexity for all of its methods.
 /// These default implementations take into account all preconditions listed for [`FixedSizeMutEdgeDescriptor`] methods.
 /// But if you want to override these basic implementations, make sure to:
 /// 1. Take into account all the preconditions of the methods in [`FixedSizeMutEdgeDescriptor`] before calling them.
@@ -156,28 +174,26 @@ pub trait FixedSizeMutEdgeDescriptor<VT: VertexToken, const DIR: bool>:
 ///
 /// # Required traits
 /// * [`FixedSizeMutEdgeDescriptor`]: Checked version of each method internally calls the unchecked version if the preconditions are met.
-///
-/// [complexity]: https://en.wikipedia.org/wiki/Time_complexity
 pub trait CheckedFixedSizeMutEdgeDescriptor<VT: VertexToken, const DIR: bool>:
     FixedSizeMutEdgeDescriptor<VT, DIR>
 {
     /// # Arguments
-    /// * `src_vt`: Token of the source vertex that is going to be replaced.
-    /// * `vt`: Token of the vertex to replace `src_vt`.
+    /// * `target_vt`: Token of the target vertex that is going to be replaced.
+    /// * `vt`: Token of the vertex to replace `target_vt`.
     ///
     /// # Returns
     /// * `Ok`: If preconditions are met.
-    /// * `Err`: Specifically a [`StorageError::NotSource`] error if `src_vt` is not the token of a source vertex in the edge.
+    /// * `Err`: Specifically a [`StorageError::InvalidVertexToken`] error if `target_vt` does not satisfy the specified precondition.
     ///
     /// # Complexity
-    /// O([`EdgeDescriptor::is_source`] + [`FixedSizeMutEdgeDescriptor::replace_src`]).
-    fn replace_src_checked(&mut self, src_vt: &VT, vt: VT) -> Result<()> {
-        if !self.is_source(src_vt) {
-            Err(StorageError::NotSource(src_vt.to_string()).into())
-        } else {
-            self.replace_src(src_vt, vt);
+    /// O([`EdgeDescriptor::is_source`] + [`EdgeDescriptor::is_destination`] + [`FixedSizeMutEdgeDescriptor::replace_src`]).
+    fn replace_src_checked(&mut self, target_vt: &VT, vt: VT) -> Result<()> {
+        if self.is_source(target_vt) || (Self::is_undirected() && self.is_destination(target_vt)) {
+            self.replace_src(target_vt, vt);
 
             Ok(())
+        } else {
+            Err(StorageError::InvalidVertexToken(target_vt.to_string()).into())
         }
     }
 
@@ -187,17 +203,17 @@ pub trait CheckedFixedSizeMutEdgeDescriptor<VT: VertexToken, const DIR: bool>:
     ///
     /// # Returns
     /// * `Ok`: If preconditions are met.
-    /// * `Err`: Specifically a [`StorageError::NotDestination`] error if `dst_vt` is not the token of a destination vertex in the edge.
+    /// * `Err`: Specifically a [`StorageError::InvalidVertexToken`] error if `target_vt` does not satisfy the specified precondition.
     ///
     /// # Complexity
-    /// O([`EdgeDescriptor::is_destination`] + [`FixedSizeMutEdgeDescriptor::replace_dst`]).
-    fn replace_dst_checked(&mut self, dst_vt: &VT, vt: VT) -> Result<()> {
-        if !self.is_destination(dst_vt) {
-            Err(StorageError::NotDestination(dst_vt.to_string()).into())
-        } else {
-            self.replace_dst(dst_vt, vt);
+    /// O([`EdgeDescriptor::is_destination`] + [`EdgeDescriptor::is_source`] + [`FixedSizeMutEdgeDescriptor::replace_dst`]).
+    fn replace_dst_checked(&mut self, target_vt: &VT, vt: VT) -> Result<()> {
+        if self.is_destination(target_vt) || (Self::is_undirected() && self.is_source(target_vt)) {
+            self.replace_dst(target_vt, vt);
 
             Ok(())
+        } else {
+            Err(StorageError::InvalidVertexToken(target_vt.to_string()).into())
         }
     }
 }
@@ -222,32 +238,35 @@ pub trait MutEdgeDescriptor<VT: VertexToken, const DIR: bool>:
     /// * `dst_vt`: Token of the vertex to be added as a destination to this edge.
     ///
     /// # Preconditions
-    /// The pair (`src_vt`, `dst_vt`) must not already exist in the edge.
-    /// In other words, a source vertex with token: `src_vt` must not already be connected to a destination vertex with token: `dst_vt` using this edge.
+    /// The pair (`src_vt`, `dst_vt`) must not already be connected through this edge.
     ///
     /// # Postconditions
     /// Edge will contain the connection between `src_vt` and `dst_vt`.
     fn add(&mut self, src_vt: VT, dst_vt: VT);
 
     /// # Arguments
-    /// `src_vt`: Token of the vertex to be added as a source to this edge.
+    /// `vt`: Token of the vertex to be added as a source to this edge.
     ///
     /// # Preconditions
-    /// `src_vt` must not already exist as a source of this edge.
+    /// If edge is:
+    /// * Directed: `vt` must not already exist as a source of this edge.
+    /// * Undirected: Edge must not contain `vt`.
     ///
     /// # Postconditions
-    /// Edge will contain `src_vt` as one of its sources.
-    fn add_src(&mut self, src_vt: VT);
+    /// Edge will contain `vt` as one of its sources.
+    fn add_src(&mut self, vt: VT);
 
     /// # Arguments
-    /// `dst_vt`: Token of the vertex to be added as a destination to this edge.
+    /// `vt`: Token of the vertex to be added as a destination to this edge.
     ///
     /// # Preconditions
-    /// `dst_vt` must not already exist as a destination of this edge.
+    /// If edge is:
+    /// * Directed: `vt` must not already exist as a destination of this edge.
+    /// * Undirected: Edge must not contain `vt`.
     ///
     /// # Postconditions
-    /// Edge will contain `dst_vt` as one its destinations.
-    fn add_dst(&mut self, dst_vt: VT);
+    /// Edge will contain `vt` as one its destinations.
+    fn add_dst(&mut self, vt: VT);
 
     /// # Arguments
     /// `vt`: Token to be removed from this edge.
@@ -301,40 +320,40 @@ pub trait CheckedMutEdgeDescriptor<VT: VertexToken, const DIR: bool>:
     }
 
     /// # Arguments
-    /// `src_vt`: Token of the vertex to be added as a source to this edge.
+    /// `vt`: Token of the vertex to be added as a source to this edge.
     ///
     /// # Returns
     /// * `Ok`: If preconditions are met.
-    /// * `Err`: Specifically [`StorageError::VertexAlreadyExists`] error if `src_vt` already exists as the token of a source vertex.
+    /// * `Err`: Specifically [`StorageError::VertexAlreadyExists`] error if `vt` already exists.
     ///
     /// # Complexity
     /// O([`EdgeDescriptor::is_source`] + [`MutEdgeDescriptor::add_src`])
-    fn add_src_checked(&mut self, src_vt: VT) -> Result<()> {
-        if self.is_source(&src_vt) {
-            Err(StorageError::VertexAlreadyExists(src_vt.to_string()).into())
-        } else {
-            self.add_src(src_vt);
+    fn add_src_checked(&mut self, vt: VT) -> Result<()> {
+        if !self.is_source(&vt) {
+            self.add_src(vt);
 
             Ok(())
+        } else {
+            Err(StorageError::VertexAlreadyExists(vt.to_string()).into())
         }
     }
 
     /// # Arguments
-    /// `dst_vt`: Token of the vertex to be added as a source to this edge.
+    /// `vt`: Token of the vertex to be added as a source to this edge.
     ///
     /// # Returns
     /// * `Ok`: If preconditions are met.
-    /// * `Err`: Specifically [`StorageError::VertexAlreadyExists`] error if `dst_vt` already exists as the token of a destination vertex.
+    /// * `Err`: Specifically [`StorageError::VertexAlreadyExists`] error if `vt` already exists as the token of a destination vertex.
     ///
     /// # Complexity
     /// O([`EdgeDescriptor::is_destination`] + [`MutEdgeDescriptor::add_dst`])
-    fn add_dst_checked(&mut self, dst_vt: VT) -> Result<()> {
-        if self.is_destination(&dst_vt) {
-            Err(StorageError::VertexAlreadyExists(dst_vt.to_string()).into())
-        } else {
-            self.add_dst(dst_vt);
+    fn add_dst_checked(&mut self, vt: VT) -> Result<()> {
+        if !self.is_destination(&vt) {
+            self.add_dst(vt);
 
             Ok(())
+        } else {
+            Err(StorageError::VertexAlreadyExists(vt.to_string()).into())
         }
     }
 

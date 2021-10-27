@@ -3,6 +3,13 @@ use thiserror::Error;
 /// Different kinds of errors that can happen during operations carried out in the storage module.
 #[derive(Error, Debug)]
 pub enum StorageError {
+    /// A vertex is provided that do not match the requirements of some precondition.
+    /// 
+    /// # Arguments
+    /// - 0: String representation of the invalid vertex token.
+    #[error("Provided vertex token is not valid: {0}")]
+    InvalidVertexToken(String),
+
     /// A vertex was supposed to exist during the operation. But, it was not found.
     ///
     /// # Arguments
