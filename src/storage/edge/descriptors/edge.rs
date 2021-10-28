@@ -245,5 +245,40 @@ mod tests {
         assert_directed_edge_description(&edge, &2, &3);
     }
 
-    // TODO: Implement tests to check `Edge` actually conforms to the definitions and default implementation of CheckedFixedSizeMutEdgeDescriptor behave correctly for it.
+    #[test]
+    fn undirected_edge_checked_fixed_size_descriptor_replace_src() {
+        let mut edge = UndirectedEdge::init(0, 1);
+
+        assert!(edge.replace_src_checked(&2, 3).is_err());
+
+        assert!(edge.replace_src_checked(&0, 2).is_ok());
+        assert!(edge.replace_src_checked(&1, 3).is_ok());
+
+        assert_undirected_edge_description(&edge, &2, &3);
+    }
+
+    #[test]
+    fn undirected_edge_checked_fixed_size_descriptor_replace_dst() {
+        let mut edge = UndirectedEdge::init(0, 1);
+
+        assert!(edge.replace_dst_checked(&2, 3).is_err());
+
+        assert!(edge.replace_dst_checked(&0, 2).is_ok());
+        assert!(edge.replace_dst_checked(&1, 3).is_ok());
+
+        assert_undirected_edge_description(&edge, &2, &3);
+    }
+
+    #[test]
+    fn directed_edge_checked_fixed_size_descriptor_replace_src_dst() {
+        let mut edge = DirectedEdge::init(0, 1);
+
+        assert!(edge.replace_src_checked(&1, 3).is_err());
+        assert!(edge.replace_dst_checked(&0, 2).is_err());
+
+        assert!(edge.replace_src_checked(&0, 2).is_ok());
+        assert!(edge.replace_dst_checked(&1, 3).is_ok());
+
+        assert_directed_edge_description(&edge, &2, &3);
+    }
 }
