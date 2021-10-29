@@ -35,23 +35,11 @@ where
     Set: UnorderedSet<VT>,
 {
     /// # Arguments
-    /// `vt`: Token of the vertex to be added as the only vertex participating in the hyperedge.
-    ///
-    /// # Returns
-    /// A hyperedge containing `vt` as its only participating vertex.
-    pub fn init(vt: VT) -> Self {
-        Hyperedge {
-            vertex_set: Set::from_iter(std::iter::once(vt)),
-            phantom_vt: PhantomData,
-        }
-    }
-
-    /// # Arguments
     /// `vts`: An iterator over tokens of vertices to be added as participating vertices in the hyperedge.
     ///
     /// # Returns
     /// A hyperedge containing vertex tokens returned by `vts`.
-    pub fn init_multiple(vts: impl IntoIterator<Item = VT>) -> Self {
+    pub fn init(vts: impl IntoIterator<Item = VT>) -> Self {
         Hyperedge {
             vertex_set: Set::from_iter(vts),
             phantom_vt: PhantomData,
@@ -165,8 +153,8 @@ where
 
     /// # Complexity
     /// O([`UnorderedSet::remove`])
-    fn remove(&mut self, vt: VT) {
-        self.vertex_set.remove(&vt)
+    fn remove(&mut self, vt: &VT) {
+        self.vertex_set.remove(vt)
     }
 }
 
@@ -175,4 +163,208 @@ where
     VT: VertexToken,
     Set: UnorderedSet<VT>,
 {
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn assert_undirected_edge_description<VT: VertexToken, S: UnorderedSet<VT>>(
+        edge: &Hyperedge<VT, S>,
+        src_vts_iter: impl IntoIterator<Item = VT>,
+        dst_vts_iter: impl IntoIterator<Item = VT>,
+    ) {
+        let src_vts: Vec<VT> = src_vts_iter.into_iter().collect();
+        let dst_vts: Vec<VT> = dst_vts_iter.into_iter().collect();
+
+        // It must return both 0 and 1 as sources.
+        assert_eq!(
+            HashSet::<_>::from_iter(src_vts.iter().chain(dst_vts.iter())),
+            HashSet::<_>::from_iter(edge.get_sources())
+        );
+
+        // It must return both 0 and 1 as destinations.
+        assert_eq!(
+            HashSet::<_>::from_iter(src_vts.iter().chain(dst_vts.iter())),
+            HashSet::<_>::from_iter(edge.get_destinations()),
+        );
+
+        // 0 is both a source and a destination.
+        for src_vt in src_vts.iter() {
+            assert!(edge.is_source(src_vt));
+            assert!(edge.is_destination(src_vt));
+            assert!(edge.contains(src_vt));
+        }
+
+        for dst_vt in dst_vts.iter() {
+            assert!(edge.is_source(dst_vt));
+            assert!(edge.is_destination(dst_vt));
+            assert!(edge.contains(dst_vt));
+        }
+
+        // It must contain 2 sources and 2 destinations.
+        assert_eq!(edge.sources_count(), src_vts.len());
+        assert_eq!(edge.destinations_count(), dst_vts.len());
+    }
+
+    #[test]
+    fn edge_descriptor() {
+        assert_undirected_edge_description(&HashedHyperedge::init([0, 1, 2]), [0, 1, 2], [0, 1, 2]);
+    }
+
+    #[test]
+    fn fixed_size_descriptor_replace_src() {
+        let mut hyperedge = HashedHyperedge::init([0, 1, 2]);
+
+        for (target_vt, vt) in [0, 1, 2].iter().zip([3, 4, 5]) {
+            hyperedge.replace_src(target_vt, vt);
+        }
+
+        assert_undirected_edge_description(&hyperedge, [3, 4, 5], [3, 4, 5]);
+    }
+
+    #[test]
+    fn fixed_size_descriptor_replace_dst() {
+        let mut hyperedge = HashedHyperedge::init([0, 1, 2]);
+
+        for (target_vt, vt) in [0, 1, 2].iter().zip([3, 4, 5]) {
+            hyperedge.replace_dst(target_vt, vt);
+        }
+
+        assert_undirected_edge_description(&hyperedge, [3, 4, 5], [3, 4, 5]);
+    }
+
+    #[test]
+    fn checked_fixed_size_descriptor_replace_src() {
+        let mut hyperedge = HashedHyperedge::init([0, 1, 2]);
+
+        for (target_vt, vt) in [3, 4, 5].iter().zip([6, 7, 8]) {
+            assert!(hyperedge.replace_src_checked(target_vt, vt).is_err());
+        }
+
+        for (target_vt, vt) in [0, 1, 2].iter().zip([3, 4, 5]) {
+            assert!(hyperedge.replace_src_checked(target_vt, vt).is_ok());
+        }
+
+        assert_undirected_edge_description(&hyperedge, [3, 4, 5], [3, 4, 5]);
+    }
+
+    #[test]
+    fn checked_fixed_size_descriptor_replace_dst() {
+        let mut hyperedge = HashedHyperedge::init([0, 1, 2]);
+
+        for (target_vt, vt) in [3, 4, 5].iter().zip([6, 7, 8]) {
+            assert!(hyperedge.replace_dst_checked(target_vt, vt).is_err());
+        }
+
+        for (target_vt, vt) in [0, 1, 2].iter().zip([3, 4, 5]) {
+            assert!(hyperedge.replace_dst_checked(target_vt, vt).is_ok());
+        }
+
+        assert_undirected_edge_description(&hyperedge, [3, 4, 5], [3, 4, 5]);
+    }
+
+    #[test]
+    fn mut_descriptor_add_src() {
+        let mut hyperedge = HashedHyperedge::init([0, 1, 2]);
+
+        for vt in [3, 4, 5].into_iter() {
+            hyperedge.add_src(vt);
+        }
+
+        assert_undirected_edge_description(&hyperedge, [0, 1, 2, 3, 4, 5], [0, 1, 2, 3, 4, 5]);
+    }
+
+    #[test]
+    fn mut_descriptor_add_dst() {
+        let mut hyperedge = HashedHyperedge::init([0, 1, 2]);
+
+        for vt in [3, 4, 5].into_iter() {
+            hyperedge.add_dst(vt);
+        }
+
+        assert_undirected_edge_description(&hyperedge, [0, 1, 2, 3, 4, 5], [0, 1, 2, 3, 4, 5]);
+    }
+
+    #[test]
+    fn mut_descriptor_add() {
+        let mut hyperedge = HashedHyperedge::init([0, 1, 2]);
+
+        for (src_vt, dst_vt) in [0, 1, 2].into_iter().zip([3, 4, 5].into_iter()) {
+            hyperedge.add(src_vt, dst_vt);
+        }
+
+        assert_undirected_edge_description(&hyperedge, [0, 1, 2, 3, 4, 5], [0, 1, 2, 3, 4, 5]);
+    }
+
+    #[test]
+    fn mut_descriptor_remove() {
+        let mut hyperedge = HashedHyperedge::init([0, 1, 2]);
+
+        for vt in [0, 1, 2].iter() {
+            hyperedge.remove(vt);
+        }
+
+        assert_undirected_edge_description(&hyperedge, [], []);
+    }
+
+    #[test]
+    fn checked_mut_descriptor_add_src() {
+        let mut hyperedge = HashedHyperedge::init([0, 1, 2]);
+
+        for vt in [0, 1, 2].into_iter() {
+            assert!(hyperedge.add_src_checked(vt).is_err());
+        }
+
+        for vt in [3, 4, 5].into_iter() {
+            assert!(hyperedge.add_src_checked(vt).is_ok());
+        }
+
+        assert_undirected_edge_description(&hyperedge, [0, 1, 2, 3, 4, 5], [0, 1, 2, 3, 4, 5]);
+    }
+
+    #[test]
+    fn checked_mut_descriptor_add_dst() {
+        let mut hyperedge = HashedHyperedge::init([0, 1, 2]);
+
+        for vt in [0, 1, 2].into_iter() {
+            assert!(hyperedge.add_dst_checked(vt).is_err());
+        }
+
+        for vt in [3, 4, 5].into_iter() {
+            assert!(hyperedge.add_dst_checked(vt).is_ok());
+        }
+
+        assert_undirected_edge_description(&hyperedge, [0, 1, 2, 3, 4, 5], [0, 1, 2, 3, 4, 5]);
+    }
+
+    #[test]
+    fn checked_mut_descriptor_add() {
+        let mut hyperedge = HashedHyperedge::init([0, 1, 2]);
+
+        for (src_vt, dst_vt) in [0, 1, 2].into_iter().zip([2, 1, 0].into_iter()) {
+            assert!(hyperedge.add_checked(src_vt, dst_vt).is_err());
+        }
+
+        for (src_vt, dst_vt) in [0, 1, 2].into_iter().zip([3, 4, 5].into_iter()) {
+            assert!(hyperedge.add_checked(src_vt, dst_vt).is_ok());
+        }
+
+        assert_undirected_edge_description(&hyperedge, [0, 1, 2, 3, 4, 5], [0, 1, 2, 3, 4, 5]);
+    }
+
+    #[test]
+    fn checked_mut_descriptor_remove() {
+        let mut hyperedge = HashedHyperedge::init([0, 1, 2]);
+
+        for vt in [3, 4, 5].iter() {
+            assert!(hyperedge.remove_checked(vt).is_err());
+        }
+
+        for vt in [0, 1, 2].iter() {
+            assert!(hyperedge.remove_checked(vt).is_ok());
+        }
+
+        assert_undirected_edge_description(&hyperedge, [], []);
+    }
 }

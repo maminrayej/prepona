@@ -4,7 +4,7 @@ use thiserror::Error;
 #[derive(Error, Debug)]
 pub enum StorageError {
     /// A vertex is provided that do not match the requirements of some precondition.
-    /// 
+    ///
     /// # Arguments
     /// - 0: String representation of the invalid vertex token.
     #[error("Provided vertex token is not valid: {0}")]

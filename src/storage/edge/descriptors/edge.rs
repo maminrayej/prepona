@@ -216,7 +216,7 @@ mod tests {
     }
 
     #[test]
-    fn undirected_edge_fixed_size_descriptor_replace_src() {
+    fn undirected_fixed_size_descriptor_replace_src() {
         let mut edge = UndirectedEdge::init(0, 1);
 
         edge.replace_src(&0, 2);
@@ -226,7 +226,7 @@ mod tests {
     }
 
     #[test]
-    fn undirected_edge_fixed_size_descriptor_replace_dst() {
+    fn undirected_fixed_size_descriptor_replace_dst() {
         let mut edge = UndirectedEdge::init(0, 1);
 
         edge.replace_dst(&0, 2);
@@ -236,7 +236,7 @@ mod tests {
     }
 
     #[test]
-    fn directed_edge_fixed_size_descriptor_replace_src_dst() {
+    fn directed_fixed_size_descriptor_replace_src_dst() {
         let mut edge = DirectedEdge::init(0, 1);
 
         edge.replace_src(&0, 2);
@@ -246,7 +246,7 @@ mod tests {
     }
 
     #[test]
-    fn undirected_edge_checked_fixed_size_descriptor_replace_src() {
+    fn undirected_checked_fixed_size_descriptor_replace_src() {
         let mut edge = UndirectedEdge::init(0, 1);
 
         assert!(edge.replace_src_checked(&2, 3).is_err());
@@ -258,7 +258,7 @@ mod tests {
     }
 
     #[test]
-    fn undirected_edge_checked_fixed_size_descriptor_replace_dst() {
+    fn undirected_checked_fixed_size_descriptor_replace_dst() {
         let mut edge = UndirectedEdge::init(0, 1);
 
         assert!(edge.replace_dst_checked(&2, 3).is_err());
@@ -270,7 +270,7 @@ mod tests {
     }
 
     #[test]
-    fn directed_edge_checked_fixed_size_descriptor_replace_src_dst() {
+    fn directed_checked_fixed_size_descriptor_replace_src_dst() {
         let mut edge = DirectedEdge::init(0, 1);
 
         assert!(edge.replace_src_checked(&1, 3).is_err());

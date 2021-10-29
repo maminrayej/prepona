@@ -276,7 +276,7 @@ pub trait MutEdgeDescriptor<VT: VertexToken, const DIR: bool>:
     ///
     /// # Postconditions
     /// `vt` along with all its related data is removed from edge.
-    fn remove(&mut self, vt: VT);
+    fn remove(&mut self, vt: &VT);
 }
 
 /// Checked version of [`MutEdgeDescriptor`] trait.
@@ -366,7 +366,7 @@ pub trait CheckedMutEdgeDescriptor<VT: VertexToken, const DIR: bool>:
     ///
     /// # Complexity
     /// O([`EdgeDescriptor::contains`] + [`MutEdgeDescriptor::remove`])
-    fn remove_checked(&mut self, vt: VT) -> Result<()> {
+    fn remove_checked(&mut self, vt: &VT) -> Result<()> {
         if !self.contains(&vt) {
             return Err(StorageError::VertexNotFound(vt.to_string()).into());
         }

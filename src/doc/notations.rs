@@ -3,11 +3,11 @@
 //! * `func_name`: Time complexity of calling the function *func_name*.
 //!     * For example consider this code snippet:
 //!     ```rust
-//!         fn A() { 
-//!             // -- snip 
+//!         fn A() {
+//!             // -- snip
 //!         }
 //!         
-//!         fn B() { 
+//!         fn B() {
 //!             A()
 //!         }
 //!     ```
@@ -15,7 +15,7 @@
 //!     Whenever possible, instead of just putting the name of the function, we put a link to function in the documentation.
 //!     Another example would be this code snippet:
 //!     ```rust
-//!         fn A() { 
+//!         fn A() {
 //!             // -- snip
 //!         }
 //!
@@ -23,9 +23,9 @@
 //!             // -- snip
 //!         }
 //!
-//!         fn B() { 
-//!             A(); 
-//!             C(); 
+//!         fn B() {
+//!             A();
+//!             C();
 //!         }
 //!     ```
 //!     In this scenario we use O(`A` + `C`) to describe the time complexity of `B`.
@@ -34,12 +34,12 @@
 //!     ```rust
 //!         struct A;
 //!         
-//!         fn C(a: &A) { 
+//!         fn C(a: &A) {
 //!             // -- snip
 //!         }
 //!         
-//!         fn B() { 
-//!             C(&A); 
+//!         fn B() {
+//!             C(&A);
 //!         }
 //!     ```
 //!     To describe time complexity of `B` we use the notation: O(`C` on `A`).
@@ -48,8 +48,8 @@
 //!     ```rust
 //!         trait UIndex: std::ops::Index<usize> {}
 //!
-//!         fn B<T: UIndex>(value: T) { 
-//!             let v = &value[0]; 
+//!         fn B<T: UIndex>(value: T) {
+//!             let v = &value[0];
 //!         }
 //!     ```
 //!     Function `B` can be called with any type that implements `UIndex` as its argument.
