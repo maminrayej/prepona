@@ -12,7 +12,7 @@ pub type UndirectedEdge<VT> = Edge<VT, false>;
 /// # Generic parameters
 /// * `VT`: The type of token that represents the sources and destinations of the edge.
 /// * `DIR`: Specifies wether the edge is directed or not.
-#[derive(PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Edge<VT, const DIR: bool>
 where
     VT: VertexToken,
@@ -132,10 +132,30 @@ impl<VT, const DIR: bool> CheckedFixedSizeMutEdgeDescriptor<VT, DIR> for Edge<VT
 }
 
 #[cfg(test)]
-mod tests {
+mod test {
+    use super::*;
+    use quickcheck::Arbitrary;
+    use quickcheck_macros::quickcheck;
+    use rand::Rng;
     use std::collections::HashSet;
 
-    use super::*;
+    impl<VT: VertexToken + Clone, const DIR: bool> Clone for Edge<VT, DIR> {
+        fn clone(&self) -> Self {
+            Self {
+                src_vt: self.src_vt.clone(),
+                dst_vt: self.dst_vt.clone(),
+            }
+        }
+    }
+
+    impl<VT: VertexToken + Arbitrary, const DIR: bool> Arbitrary for Edge<VT, DIR> {
+        fn arbitrary(g: &mut quickcheck::Gen) -> Self {
+            let src_vt = VT::arbitrary(g);
+            let dst_vt = VT::arbitrary(g);
+
+            Edge { src_vt, dst_vt }
+        }
+    }
 
     fn assert_undirected_edge_description<VT: VertexToken>(
         edge: &UndirectedEdge<VT>,
@@ -190,10 +210,8 @@ mod tests {
 
         // 0 is only a source.
         assert!(edge.is_source(src_vt));
-        assert!(!edge.is_destination(src_vt));
 
         // 1 is only a destination.
-        assert!(!edge.is_source(dst_vt));
         assert!(edge.is_destination(dst_vt));
 
         // It must contain both 0 and 1.
@@ -205,80 +223,130 @@ mod tests {
         assert_eq!(edge.destinations_count(), 1);
     }
 
-    #[test]
-    fn undirected_edge_descriptor() {
-        assert_undirected_edge_description(&UndirectedEdge::init(0, 1), &0, &1);
+    #[quickcheck]
+    fn prop_undirected_edge_descriptor(edge: UndirectedEdge<usize>) {
+        assert_undirected_edge_description(&edge, &edge.src_vt, &edge.dst_vt);
     }
 
-    #[test]
-    fn directed_edge_descriptor() {
-        assert_directed_edge_description(&DirectedEdge::init(0, 1), &0, &1);
+    #[quickcheck]
+    fn prop_directed_edge_descriptor(edge: DirectedEdge<usize>) {
+        assert_directed_edge_description(&edge, &edge.src_vt, &edge.dst_vt)
     }
 
-    #[test]
-    fn undirected_fixed_size_descriptor_replace_src() {
-        let mut edge = UndirectedEdge::init(0, 1);
+    #[quickcheck]
+    fn prop_undirected_fixed_size_descriptor_replace_src(
+        mut edge: UndirectedEdge<usize>,
+        new_src_vt: usize,
+        new_dst_vt: usize,
+    ) {
+        let vts: Vec<usize> = edge.get_sources().copied().collect();
+        let src_vt = vts[0];
+        let dst_vt = vts[1];
 
-        edge.replace_src(&0, 2);
-        edge.replace_src(&1, 3);
+        edge.replace_src(&src_vt, new_src_vt);
+        edge.replace_src(&dst_vt, new_dst_vt);
 
-        assert_undirected_edge_description(&edge, &2, &3);
+        assert_undirected_edge_description(&edge, &new_src_vt, &new_dst_vt);
     }
 
-    #[test]
-    fn undirected_fixed_size_descriptor_replace_dst() {
-        let mut edge = UndirectedEdge::init(0, 1);
+    #[quickcheck]
+    fn prop_undirected_fixed_size_descriptor_replace_dst(
+        mut edge: UndirectedEdge<usize>,
+        new_src_vt: usize,
+        new_dst_vt: usize,
+    ) {
+        let vts: Vec<usize> = edge.get_sources().copied().collect();
+        let src_vt = vts[0];
+        let dst_vt = vts[1];
 
-        edge.replace_dst(&0, 2);
-        edge.replace_dst(&1, 3);
+        edge.replace_dst(&src_vt, new_src_vt);
+        edge.replace_dst(&dst_vt, new_dst_vt);
 
-        assert_undirected_edge_description(&edge, &2, &3);
+        assert_undirected_edge_description(&edge, &new_src_vt, &new_dst_vt);
     }
 
-    #[test]
-    fn directed_fixed_size_descriptor_replace_src_dst() {
-        let mut edge = DirectedEdge::init(0, 1);
+    #[quickcheck]
+    fn prop_directed_fixed_size_descriptor_replace_src_dst(
+        mut edge: DirectedEdge<usize>,
+        new_src_vt: usize,
+        new_dst_vt: usize,
+    ) {
+        let src_vt = edge.get_sources().next().copied().unwrap();
+        let dst_vt = edge.get_destinations().next().copied().unwrap();
 
-        edge.replace_src(&0, 2);
-        edge.replace_dst(&1, 3);
+        edge.replace_src(&src_vt, new_src_vt);
+        edge.replace_dst(&dst_vt, new_dst_vt);
 
-        assert_directed_edge_description(&edge, &2, &3);
+        assert_directed_edge_description(&edge, &new_src_vt, &new_dst_vt);
     }
 
-    #[test]
-    fn undirected_checked_fixed_size_descriptor_replace_src() {
-        let mut edge = UndirectedEdge::init(0, 1);
+    #[quickcheck]
+    fn prop_undirected_checked_fixed_size_descriptor_replace_src(
+        mut edge: UndirectedEdge<usize>,
+        new_src_vt: usize,
+        new_dst_vt: usize,
+    ) {
+        let vts: Vec<usize> = edge.get_sources().copied().collect();
+        let src_vt = vts[0];
+        let dst_vt = vts[1];
 
-        assert!(edge.replace_src_checked(&2, 3).is_err());
+        let invalid_vt = get_non_duplicate(HashSet::from_iter([src_vt, dst_vt]));
 
-        assert!(edge.replace_src_checked(&0, 2).is_ok());
-        assert!(edge.replace_src_checked(&1, 3).is_ok());
+        assert!(edge.replace_src_checked(&invalid_vt, new_src_vt).is_err());
 
-        assert_undirected_edge_description(&edge, &2, &3);
+        assert!(edge.replace_src_checked(&src_vt, new_src_vt).is_ok());
+        assert!(edge.replace_src_checked(&dst_vt, new_dst_vt).is_ok());
+
+        assert_undirected_edge_description(&edge, &new_src_vt, &new_dst_vt);
     }
 
-    #[test]
-    fn undirected_checked_fixed_size_descriptor_replace_dst() {
-        let mut edge = UndirectedEdge::init(0, 1);
+    #[quickcheck]
+    fn prop_undirected_checked_fixed_size_descriptor_replace_dst(
+        mut edge: UndirectedEdge<usize>,
+        new_src_vt: usize,
+        new_dst_vt: usize,
+    ) {
+        let vts: Vec<usize> = edge.get_sources().copied().collect();
+        let src_vt = vts[0];
+        let dst_vt = vts[1];
 
-        assert!(edge.replace_dst_checked(&2, 3).is_err());
+        let invalid_vt = get_non_duplicate(HashSet::from_iter([src_vt, dst_vt]));
 
-        assert!(edge.replace_dst_checked(&0, 2).is_ok());
-        assert!(edge.replace_dst_checked(&1, 3).is_ok());
+        assert!(edge.replace_dst_checked(&invalid_vt, new_dst_vt).is_err());
 
-        assert_undirected_edge_description(&edge, &2, &3);
+        assert!(edge.replace_dst_checked(&src_vt, new_src_vt).is_ok());
+        assert!(edge.replace_dst_checked(&dst_vt, new_dst_vt).is_ok());
+
+        assert_undirected_edge_description(&edge, &new_src_vt, &new_dst_vt);
     }
 
-    #[test]
-    fn directed_checked_fixed_size_descriptor_replace_src_dst() {
-        let mut edge = DirectedEdge::init(0, 1);
+    #[quickcheck]
+    fn prop_directed_checked_fixed_size_descriptor_replace_src_dst(
+        mut edge: DirectedEdge<usize>,
+        new_src_vt: usize,
+        new_dst_vt: usize,
+    ) {
+        let src_vt = edge.get_sources().next().copied().unwrap();
+        let dst_vt = edge.get_destinations().next().copied().unwrap();
 
-        assert!(edge.replace_src_checked(&1, 3).is_err());
-        assert!(edge.replace_dst_checked(&0, 2).is_err());
+        assert!(edge.replace_src_checked(&dst_vt, new_src_vt).is_err());
+        assert!(edge.replace_dst_checked(&src_vt, new_dst_vt).is_err());
 
-        assert!(edge.replace_src_checked(&0, 2).is_ok());
-        assert!(edge.replace_dst_checked(&1, 3).is_ok());
+        assert!(edge.replace_src_checked(&src_vt, new_src_vt).is_ok());
+        assert!(edge.replace_dst_checked(&dst_vt, new_dst_vt).is_ok());
 
-        assert_directed_edge_description(&edge, &2, &3);
+        assert_directed_edge_description(&edge, &new_src_vt, &new_dst_vt);
+    }
+
+    fn get_non_duplicate(set: HashSet<usize>) -> usize {
+        let mut rng = rand::thread_rng();
+
+        let mut value: usize = rng.gen();
+
+        while set.contains(&value) {
+            value = rng.gen();
+        }
+
+        value
     }
 }

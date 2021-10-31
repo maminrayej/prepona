@@ -15,3 +15,8 @@ documentation = "https://docs.rs/prepona"
 [dependencies]
 anyhow = "1.0.44"
 thiserror = "1.0.30"
+
+[dev-dependencies]
+quickcheck = "1.0.3"
+quickcheck_macros = "1.0.0"
+rand = "0.8.4"
