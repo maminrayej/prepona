@@ -162,31 +162,25 @@ mod test {
         src_vt: &VT,
         dst_vt: &VT,
     ) {
-        // It must return both 0 and 1 as sources.
         assert_eq!(
             HashSet::<_>::from_iter([src_vt, dst_vt].into_iter()),
             HashSet::<_>::from_iter(edge.get_sources())
         );
 
-        // It must return both 0 and 1 as destinations.
         assert_eq!(
             HashSet::<_>::from_iter([src_vt, dst_vt].into_iter()),
             HashSet::<_>::from_iter(edge.get_destinations()),
         );
 
-        // 0 is both a source and a destination.
         assert!(edge.is_source(src_vt));
         assert!(edge.is_destination(src_vt));
 
-        // 1 is both a source and destination.
         assert!(edge.is_source(dst_vt));
         assert!(edge.is_destination(dst_vt));
 
-        // It must contain both 0 and 1
         assert!(edge.contains(src_vt));
         assert!(edge.contains(dst_vt));
 
-        // It must contain 2 sources and 2 destinations.
         assert_eq!(edge.sources_count(), 2);
         assert_eq!(edge.destinations_count(), 2);
     }
@@ -196,29 +190,23 @@ mod test {
         src_vt: &VT,
         dst_vt: &VT,
     ) {
-        // It must return only 0 as its source.
         assert_eq!(
             HashSet::<_>::from_iter([src_vt].into_iter()),
             HashSet::<_>::from_iter(edge.get_sources())
         );
 
-        // It must return only 1 as its destination.
         assert_eq!(
             HashSet::<_>::from_iter([dst_vt].into_iter()),
             HashSet::<_>::from_iter(edge.get_destinations()),
         );
 
-        // 0 is only a source.
         assert!(edge.is_source(src_vt));
 
-        // 1 is only a destination.
         assert!(edge.is_destination(dst_vt));
 
-        // It must contain both 0 and 1.
         assert!(edge.contains(src_vt));
         assert!(edge.contains(dst_vt));
 
-        // It contain only one source and one destination.
         assert_eq!(edge.sources_count(), 1);
         assert_eq!(edge.destinations_count(), 1);
     }
@@ -234,14 +222,14 @@ mod test {
     }
 
     #[quickcheck]
-    fn prop_undirected_fixed_size_descriptor_replace_src(
-        mut edge: UndirectedEdge<usize>,
-        new_src_vt: usize,
-        new_dst_vt: usize,
-    ) {
+    fn prop_undirected_fixed_size_descriptor_replace_src(mut edge: UndirectedEdge<usize>) {
         let vts: Vec<usize> = edge.get_sources().copied().collect();
         let src_vt = vts[0];
         let dst_vt = vts[1];
+
+        let new_vts = get_non_duplicate([src_vt, dst_vt], 2);
+        let new_src_vt = new_vts[0];
+        let new_dst_vt = new_vts[1];
 
         edge.replace_src(&src_vt, new_src_vt);
         edge.replace_src(&dst_vt, new_dst_vt);
@@ -250,14 +238,14 @@ mod test {
     }
 
     #[quickcheck]
-    fn prop_undirected_fixed_size_descriptor_replace_dst(
-        mut edge: UndirectedEdge<usize>,
-        new_src_vt: usize,
-        new_dst_vt: usize,
-    ) {
+    fn prop_undirected_fixed_size_descriptor_replace_dst(mut edge: UndirectedEdge<usize>) {
         let vts: Vec<usize> = edge.get_sources().copied().collect();
         let src_vt = vts[0];
         let dst_vt = vts[1];
+
+        let new_vts = get_non_duplicate([src_vt, dst_vt], 2);
+        let new_src_vt = new_vts[0];
+        let new_dst_vt = new_vts[1];
 
         edge.replace_dst(&src_vt, new_src_vt);
         edge.replace_dst(&dst_vt, new_dst_vt);
@@ -266,13 +254,13 @@ mod test {
     }
 
     #[quickcheck]
-    fn prop_directed_fixed_size_descriptor_replace_src_dst(
-        mut edge: DirectedEdge<usize>,
-        new_src_vt: usize,
-        new_dst_vt: usize,
-    ) {
+    fn prop_directed_fixed_size_descriptor_replace_src_dst(mut edge: DirectedEdge<usize>) {
         let src_vt = edge.get_sources().next().copied().unwrap();
         let dst_vt = edge.get_destinations().next().copied().unwrap();
+
+        let new_vts = get_non_duplicate([src_vt, dst_vt], 2);
+        let new_src_vt = new_vts[0];
+        let new_dst_vt = new_vts[1];
 
         edge.replace_src(&src_vt, new_src_vt);
         edge.replace_dst(&dst_vt, new_dst_vt);
@@ -281,18 +269,18 @@ mod test {
     }
 
     #[quickcheck]
-    fn prop_undirected_checked_fixed_size_descriptor_replace_src(
-        mut edge: UndirectedEdge<usize>,
-        new_src_vt: usize,
-        new_dst_vt: usize,
-    ) {
+    fn prop_undirected_checked_fixed_size_descriptor_replace_src(mut edge: UndirectedEdge<usize>) {
         let vts: Vec<usize> = edge.get_sources().copied().collect();
         let src_vt = vts[0];
         let dst_vt = vts[1];
 
-        let invalid_vt = get_non_duplicate(HashSet::from_iter([src_vt, dst_vt]));
+        let invalid_vt = get_non_duplicate([src_vt, dst_vt], 1)[0];
 
-        assert!(edge.replace_src_checked(&invalid_vt, new_src_vt).is_err());
+        assert!(edge.replace_src_checked(&invalid_vt, invalid_vt).is_err());
+
+        let new_vts = get_non_duplicate([src_vt, dst_vt], 2);
+        let new_src_vt = new_vts[0];
+        let new_dst_vt = new_vts[1];
 
         assert!(edge.replace_src_checked(&src_vt, new_src_vt).is_ok());
         assert!(edge.replace_src_checked(&dst_vt, new_dst_vt).is_ok());
@@ -301,18 +289,18 @@ mod test {
     }
 
     #[quickcheck]
-    fn prop_undirected_checked_fixed_size_descriptor_replace_dst(
-        mut edge: UndirectedEdge<usize>,
-        new_src_vt: usize,
-        new_dst_vt: usize,
-    ) {
+    fn prop_undirected_checked_fixed_size_descriptor_replace_dst(mut edge: UndirectedEdge<usize>) {
         let vts: Vec<usize> = edge.get_sources().copied().collect();
         let src_vt = vts[0];
         let dst_vt = vts[1];
 
-        let invalid_vt = get_non_duplicate(HashSet::from_iter([src_vt, dst_vt]));
+        let invalid_vt = get_non_duplicate([src_vt, dst_vt], 1)[0];
 
-        assert!(edge.replace_dst_checked(&invalid_vt, new_dst_vt).is_err());
+        assert!(edge.replace_dst_checked(&invalid_vt, invalid_vt).is_err());
+
+        let new_vts = get_non_duplicate([src_vt, dst_vt], 2);
+        let new_src_vt = new_vts[0];
+        let new_dst_vt = new_vts[1];
 
         assert!(edge.replace_dst_checked(&src_vt, new_src_vt).is_ok());
         assert!(edge.replace_dst_checked(&dst_vt, new_dst_vt).is_ok());
@@ -321,16 +309,21 @@ mod test {
     }
 
     #[quickcheck]
-    fn prop_directed_checked_fixed_size_descriptor_replace_src_dst(
-        mut edge: DirectedEdge<usize>,
-        new_src_vt: usize,
-        new_dst_vt: usize,
-    ) {
+    fn prop_directed_checked_fixed_size_descriptor_replace_src_dst(mut edge: DirectedEdge<usize>) {
         let src_vt = edge.get_sources().next().copied().unwrap();
         let dst_vt = edge.get_destinations().next().copied().unwrap();
 
-        assert!(edge.replace_src_checked(&dst_vt, new_src_vt).is_err());
-        assert!(edge.replace_dst_checked(&src_vt, new_dst_vt).is_err());
+        let new_vts = get_non_duplicate([src_vt, dst_vt], 2);
+        let new_src_vt = new_vts[0];
+        let new_dst_vt = new_vts[1];
+
+        if !edge.is_source(&dst_vt) {
+            assert!(edge.replace_src_checked(&dst_vt, new_src_vt).is_err());
+        }
+
+        if !edge.is_destination(&src_vt) {
+            assert!(edge.replace_dst_checked(&src_vt, new_dst_vt).is_err());
+        }
 
         assert!(edge.replace_src_checked(&src_vt, new_src_vt).is_ok());
         assert!(edge.replace_dst_checked(&dst_vt, new_dst_vt).is_ok());
@@ -338,15 +331,22 @@ mod test {
         assert_directed_edge_description(&edge, &new_src_vt, &new_dst_vt);
     }
 
-    fn get_non_duplicate(set: HashSet<usize>) -> usize {
+    fn get_non_duplicate(set_iter: impl IntoIterator<Item = usize>, count: usize) -> Vec<usize> {
+        let mut set = HashSet::<_>::from_iter(set_iter);
+
         let mut rng = rand::thread_rng();
 
-        let mut value: usize = rng.gen();
+        let mut values = vec![0; count];
 
-        while set.contains(&value) {
-            value = rng.gen();
+        for index in 0..count {
+            let mut value: usize = rng.gen();
+            while set.contains(&value) {
+                value = rng.gen();
+            }
+            values[index] = value;
+            set.insert(value);
         }
 
-        value
+        values
     }
 }
