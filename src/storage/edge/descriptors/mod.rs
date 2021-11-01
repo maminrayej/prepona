@@ -139,8 +139,8 @@ pub trait FixedSizeMutEdgeDescriptor<VT: VertexToken, const DIR: bool>:
     ///
     /// # Preconditions
     /// If edge is:
-    /// * Directed: `target_vt` must be the token of a source vertex.
-    /// * Undirected: `target_vt` can be the token of a source or a destination vertex.
+    /// * Directed: `target_vt` must be the token of a source vertex. `vt` must not exist as a source.
+    /// * Undirected: `target_vt` can be the token of a source or a destination vertex. `vt` must not exist as a source.
     ///
     /// # Postconditions
     /// `target_vt` is replaced with `vt`.
@@ -152,8 +152,8 @@ pub trait FixedSizeMutEdgeDescriptor<VT: VertexToken, const DIR: bool>:
     ///
     /// # Preconditions
     /// If edge is:
-    /// * Directed: `target_vt` must be the token of a destination vertex.
-    /// * Undirected: `target_vt` can be the token of a source or a destination vertex.
+    /// * Directed: `target_vt` must be the token of a destination vertex. `vt` must not exist as destination.
+    /// * Undirected: `target_vt` can be the token of a source or a destination vertex. `vt` must not exist as destination.
     ///
     /// # Postconditions
     /// `target_vt` is replaced with `vt`.
@@ -188,12 +188,14 @@ pub trait CheckedFixedSizeMutEdgeDescriptor<VT: VertexToken, const DIR: bool>:
     /// # Complexity
     /// O([`EdgeDescriptor::is_source`] + [`EdgeDescriptor::is_destination`] + [`FixedSizeMutEdgeDescriptor::replace_src`]).
     fn replace_src_checked(&mut self, target_vt: &VT, vt: VT) -> Result<()> {
-        if self.is_source(target_vt) || (Self::is_undirected() && self.is_destination(target_vt)) {
+        if !self.is_source(target_vt) {
+            Err(StorageError::InvalidVertexToken(target_vt.to_string()).into())
+        } else if self.is_source(&vt) {
+            Err(StorageError::InvalidVertexToken(vt.to_string()).into())
+        } else {
             self.replace_src(target_vt, vt);
 
             Ok(())
-        } else {
-            Err(StorageError::InvalidVertexToken(target_vt.to_string()).into())
         }
     }
 
@@ -367,7 +369,7 @@ pub trait CheckedMutEdgeDescriptor<VT: VertexToken, const DIR: bool>:
     /// # Complexity
     /// O([`EdgeDescriptor::contains`] + [`MutEdgeDescriptor::remove`])
     fn remove_checked(&mut self, vt: &VT) -> Result<()> {
-        if !self.contains(&vt) {
+        if !self.contains(vt) {
             return Err(StorageError::VertexNotFound(vt.to_string()).into());
         }
 
