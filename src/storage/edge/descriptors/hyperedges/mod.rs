@@ -3,6 +3,7 @@ mod hyperedge_dir;
 mod uniform;
 
 use std::collections::HashSet;
+use std::fmt::Debug;
 use std::hash::Hash;
 use std::iter::FromIterator;
 
@@ -19,7 +20,7 @@ pub use uniform::*;
 /// * `PartialEq`, `Eq`: An unordered set must be comparable to another unordered set with the same type.
 /// * `FromIterator`: An unordered set must be capable to be initialized from an iterator of values.
 /// * `Extend`: An unordered set must be extendable given an iterator of values.
-pub trait UnorderedSet<T>: PartialEq + Eq + FromIterator<T> + Extend<T> {
+pub trait UnorderedSet<T>: Debug + PartialEq + Eq + FromIterator<T> + Extend<T> {
     /// # Arguments
     /// `value`: Value to search for in the unordered set.
     ///
@@ -63,7 +64,7 @@ pub trait UnorderedSet<T>: PartialEq + Eq + FromIterator<T> + Extend<T> {
 
 impl<T> UnorderedSet<T> for HashSet<T>
 where
-    T: Hash + Eq,
+    T: Hash + Eq + Debug,
 {
     /// # Complexity
     /// O([`HashSet::contains`])
