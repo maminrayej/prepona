@@ -169,10 +169,8 @@ where
 mod test {
     use quickcheck::Arbitrary;
     use quickcheck_macros::quickcheck;
-    use rand::{
-        prelude::{IteratorRandom, SliceRandom},
-        Rng,
-    };
+    use rand::prelude::{IteratorRandom, SliceRandom};
+    use rand::Rng;
 
     use super::*;
 
@@ -252,7 +250,6 @@ mod test {
         let src_vts: Vec<usize> = edge.get_sources().copied().collect();
 
         if !src_vts.is_empty() {
-            // Choose one source vertex randomly.
             let src_vt = src_vts
                 .iter()
                 .choose(&mut rand::thread_rng())
@@ -263,14 +260,12 @@ mod test {
 
             edge.replace_src(&src_vt, new_src_vt);
 
-            // Vertices now contain: (Old vertices) - (Replaced vertex) + (New vertex).
             let new_src_vts = src_vts
                 .iter()
                 .copied()
                 .filter(|vt| *vt != src_vt)
                 .chain(std::iter::once(new_src_vt));
 
-            // Edge is undirected so source vertices and destination vertices are the same.
             assert_undirected_edge_description(&edge, new_src_vts.clone(), new_src_vts);
         }
     }
@@ -280,7 +275,6 @@ mod test {
         let dst_vts: Vec<usize> = edge.get_destinations().copied().collect();
 
         if !dst_vts.is_empty() {
-            // Choose one destination vertex randomly.
             let dst_vt = dst_vts
                 .iter()
                 .choose(&mut rand::thread_rng())
@@ -291,14 +285,12 @@ mod test {
 
             edge.replace_dst(&dst_vt, new_dst_vt);
 
-            // Vertices now contain: (Old vertices) - (Replaced vertex) + (New vertex).
             let new_dst_vts = dst_vts
                 .iter()
                 .copied()
                 .filter(|vt| *vt != dst_vt)
                 .chain(std::iter::once(new_dst_vt));
 
-            // Edge is undirected so source vertices and destination vertices are the same.
             assert_undirected_edge_description(&edge, new_dst_vts.clone(), new_dst_vts);
         }
     }
@@ -308,7 +300,6 @@ mod test {
         let src_vts: Vec<usize> = edge.get_sources().copied().collect();
 
         if !src_vts.is_empty() {
-            // Choose one source vertex randomly.
             let src_vt = src_vts
                 .iter()
                 .choose(&mut rand::thread_rng())
@@ -323,14 +314,12 @@ mod test {
 
             assert!(edge.replace_src_checked(&src_vt, new_src_vt).is_ok());
 
-            // Vertices now contain: (Old vertices) - (Replaced vertex) + (New vertex).
             let new_src_vts = src_vts
                 .iter()
                 .copied()
                 .filter(|vt| *vt != src_vt)
                 .chain(std::iter::once(new_src_vt));
 
-            // Edge is undirected so source vertices and destination vertices are the same.
             assert_undirected_edge_description(&edge, new_src_vts.clone(), new_src_vts);
         }
     }
@@ -355,14 +344,12 @@ mod test {
 
             assert!(edge.replace_dst_checked(&dst_vt, new_dst_vt).is_ok());
 
-            // Vertices now contain: (Old vertices) - (Replaced vertex) + (New vertex).
             let new_dst_vts = dst_vts
                 .iter()
                 .copied()
                 .filter(|vt| *vt != dst_vt)
                 .chain(std::iter::once(new_dst_vt));
 
-            // Edge is undirected so source vertices and destination vertices are the same.
             assert_undirected_edge_description(&edge, new_dst_vts.clone(), new_dst_vts);
         }
     }
@@ -375,10 +362,8 @@ mod test {
 
         edge.add_src(new_src_vt);
 
-        // Vertices now contain: (Old vertices) + (New vertex).
         let new_src_vts = src_vts.iter().copied().chain(std::iter::once(new_src_vt));
 
-        // Edge is undirected so source vertices and destination vertices are the same.
         assert_undirected_edge_description(&edge, new_src_vts.clone(), new_src_vts);
     }
 
@@ -390,10 +375,8 @@ mod test {
 
         edge.add_dst(new_dst_vt);
 
-        // Vertices now contain: (Old vertices) + (New vertex).
         let new_dst_vts = dst_vts.iter().copied().chain(std::iter::once(new_dst_vt));
 
-        // Edge is undirected so source vertices and destination vertices are the same.
         assert_undirected_edge_description(&edge, edge.get_sources().copied(), new_dst_vts);
     }
 
@@ -407,10 +390,8 @@ mod test {
 
         edge.add(new_src_vt, new_dst_vt);
 
-        // Vertices now contain: (Old vertices) + (New vertices).
         let new_src_vts = src_vts.iter().copied().chain([new_src_vt, new_dst_vt]);
 
-        // Edge is undirected so source vertices and destination vertices are the same.
         assert_undirected_edge_description(&edge, new_src_vts.clone(), new_src_vts);
     }
 
@@ -419,15 +400,12 @@ mod test {
         let src_vts: Vec<usize> = edge.get_sources().copied().collect();
 
         if !src_vts.is_empty() {
-            // `src_vts` is not empty so `choose` won't return `None`.
             let src_vt = src_vts.choose(&mut rand::thread_rng()).unwrap();
 
             edge.remove(src_vt);
 
-            // Vertices now contain: (Old vertices) - (Removed vertex).
             let new_src_vts = src_vts.iter().copied().filter(|vt| vt != src_vt);
 
-            // Edge is undirected so source vertices and destination vertices are the same.
             assert_undirected_edge_description(&edge, new_src_vts.clone(), new_src_vts);
         }
     }
@@ -444,10 +422,8 @@ mod test {
             assert!(edge.add_src_checked(src_vt).is_err());
             assert!(edge.add_src_checked(new_src_vt).is_ok());
 
-            // Vertices now contain: (Old vertices) + (New vertex).
             let new_src_vts = src_vts.iter().copied().chain(std::iter::once(new_src_vt));
 
-            // Edge is undirected so source vertices and destination vertices are the same.
             assert_undirected_edge_description(&edge, new_src_vts.clone(), new_src_vts);
         }
     }
@@ -464,10 +440,8 @@ mod test {
             assert!(edge.add_dst_checked(dst_vt).is_err());
             assert!(edge.add_dst_checked(new_dst_vt).is_ok());
 
-            // Vertices now contain: (Old vertices) + (New vertex).
             let new_dst_vts = dst_vts.iter().copied().chain(std::iter::once(new_dst_vt));
 
-            // Edge is undirected so source vertices and destination vertices are the same.
             assert_undirected_edge_description(&edge, new_dst_vts.clone(), new_dst_vts);
         }
     }
@@ -487,10 +461,8 @@ mod test {
             assert!(edge.add_checked(src_vt, dst_vt).is_err());
             assert!(edge.add_checked(new_src_vt, new_dst_vt).is_ok());
 
-            // Vertices now contain: (Old vertices) + (New vertices).
             let new_src_vts = src_vts.iter().copied().chain([new_src_vt, new_dst_vt]);
 
-            // Edge is undirected so source vertices and destination vertices are the same.
             assert_undirected_edge_description(&edge, new_src_vts.clone(), new_src_vts);
         }
     }
@@ -500,7 +472,6 @@ mod test {
         let src_vts: Vec<usize> = edge.get_sources().copied().collect();
 
         if !src_vts.is_empty() {
-            // `src_vts` is not empty so `choose` won't return `None`.
             let src_vt = src_vts.choose(&mut rand::thread_rng()).unwrap();
 
             let invalid_vt = get_non_duplicate(src_vts.iter().copied(), 1)[0];
@@ -508,7 +479,6 @@ mod test {
             assert!(edge.remove_checked(&invalid_vt).is_err());
             assert!(edge.remove_checked(src_vt).is_ok());
 
-            // Vertices now contain: (Old vertices) - (Removed vertices).
             let new_src_vts = src_vts.iter().copied().filter(|vt| vt != src_vt);
 
             assert_undirected_edge_description(&edge, new_src_vts.clone(), new_src_vts);
