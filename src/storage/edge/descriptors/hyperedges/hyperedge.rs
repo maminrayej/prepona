@@ -167,12 +167,11 @@ where
 
 #[cfg(test)]
 mod test {
+    use super::*;
     use quickcheck::Arbitrary;
     use quickcheck_macros::quickcheck;
     use rand::prelude::{IteratorRandom, SliceRandom};
     use rand::Rng;
-
-    use super::*;
 
     impl<VT, Set> Clone for Hyperedge<VT, Set>
     where
