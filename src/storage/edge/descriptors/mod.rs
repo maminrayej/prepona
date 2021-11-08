@@ -34,6 +34,8 @@ pub use hyperedges::*;
 pub trait EdgeDescriptor<VT: VertexToken, const DIR: bool>:
     PartialEq + Eq + Direction<DIR>
 {
+    // TODO: Add post condition that tokens can't repeat themselves.
+
     /// # Returns
     /// If edge is:
     /// * Directed: An iterator over tokens of source vertices.
@@ -376,5 +378,414 @@ pub trait CheckedMutEdgeDescriptor<VT: VertexToken, const DIR: bool>:
         self.remove(vt);
 
         Ok(())
+    }
+}
+
+#[cfg(test)]
+pub mod test_utils {
+    use super::*;
+    use crate::test_utils::get_non_duplicate;
+    use rand::distributions::Standard;
+    use rand::prelude::{Distribution, IteratorRandom};
+    use std::collections::HashSet;
+
+    pub fn assert_edge_description<VT, ED, const DIR: bool>(
+        edge: &ED,
+        src_vts_iter: impl IntoIterator<Item = VT>,
+        dst_vts_iter: impl IntoIterator<Item = VT>,
+    ) where
+        VT: VertexToken,
+        ED: EdgeDescriptor<VT, DIR>,
+    {
+        let src_vts: Vec<VT> = src_vts_iter.into_iter().collect();
+        let dst_vts: Vec<VT> = dst_vts_iter.into_iter().collect();
+
+        let src_vts_set = if DIR {
+            HashSet::<_>::from_iter(src_vts.iter())
+        } else {
+            HashSet::<_>::from_iter(src_vts.iter().chain(dst_vts.iter()))
+        };
+
+        let dst_vts_set = if DIR {
+            HashSet::<_>::from_iter(dst_vts.iter())
+        } else {
+            HashSet::<_>::from_iter(dst_vts.iter().chain(src_vts.iter()))
+        };
+
+        assert_eq!(src_vts_set, HashSet::<_>::from_iter(edge.get_sources()));
+        assert_eq!(
+            dst_vts_set,
+            HashSet::<_>::from_iter(edge.get_destinations()),
+        );
+
+        for src_vt in src_vts.iter() {
+            assert!(edge.is_source(src_vt));
+            if !DIR {
+                assert!(edge.is_destination(src_vt));
+            }
+            assert!(edge.contains(src_vt));
+        }
+
+        for dst_vt in dst_vts.iter() {
+            assert!(edge.is_destination(dst_vt));
+            if !DIR {
+                assert!(edge.is_source(dst_vt));
+            }
+            assert!(edge.contains(dst_vt));
+        }
+
+        assert_eq!(edge.sources_count(), src_vts_set.len());
+        assert_eq!(edge.destinations_count(), dst_vts_set.len());
+    }
+
+    pub fn prop_edge_description<VT, ED, const DIR: bool>(edge: ED)
+    where
+        VT: VertexToken + Clone,
+        ED: EdgeDescriptor<VT, DIR>,
+    {
+        assert_edge_description(
+            &edge,
+            edge.get_sources().cloned(),
+            edge.get_destinations().cloned(),
+        );
+    }
+
+    pub fn prop_fixed_size_descriptor_replace_src<VT, FED, const DIR: bool>(mut edge: FED)
+    where
+        VT: VertexToken + Clone,
+        FED: FixedSizeMutEdgeDescriptor<VT, DIR>,
+        Standard: Distribution<VT>,
+    {
+        let src_vts: Vec<VT> = edge.get_sources().cloned().collect();
+
+        if !src_vts.is_empty() {
+            let src_vt = src_vts
+                .iter()
+                .choose(&mut rand::thread_rng())
+                .cloned()
+                .unwrap();
+
+            let new_src_vt = get_non_duplicate(src_vts.iter().cloned(), 1)[0].clone();
+
+            edge.replace_src(&src_vt, new_src_vt.clone());
+
+            let new_src_vts = src_vts
+                .iter()
+                .cloned()
+                .filter(|vt| *vt != src_vt)
+                .chain(std::iter::once(new_src_vt));
+
+            test_utils::assert_edge_description(
+                &edge,
+                new_src_vts,
+                edge.get_destinations().cloned(),
+            );
+        }
+    }
+
+    pub fn prop_fixed_size_descriptor_replace_dst<VT, FED, const DIR: bool>(mut edge: FED)
+    where
+        VT: VertexToken + Clone,
+        FED: FixedSizeMutEdgeDescriptor<VT, DIR>,
+        Standard: Distribution<VT>,
+    {
+        let dst_vts: Vec<VT> = edge.get_destinations().cloned().collect();
+
+        if !dst_vts.is_empty() {
+            let dst_vt = dst_vts
+                .iter()
+                .choose(&mut rand::thread_rng())
+                .cloned()
+                .unwrap();
+
+            let new_dst_vt = get_non_duplicate(dst_vts.iter().cloned(), 1)[0].clone();
+
+            edge.replace_dst(&dst_vt, new_dst_vt.clone());
+
+            let new_dst_vts = dst_vts
+                .iter()
+                .cloned()
+                .filter(|vt| *vt != dst_vt)
+                .chain(std::iter::once(new_dst_vt));
+
+            test_utils::assert_edge_description(&edge, edge.get_sources().cloned(), new_dst_vts);
+        }
+    }
+
+    pub fn prop_checked_fixed_size_descriptor_replace_src<VT, FED, const DIR: bool>(mut edge: FED)
+    where
+        VT: VertexToken + Clone,
+        FED: CheckedFixedSizeMutEdgeDescriptor<VT, DIR>,
+        Standard: Distribution<VT>,
+    {
+        let src_vts: Vec<VT> = edge.get_sources().cloned().collect();
+
+        if !src_vts.is_empty() {
+            let src_vt = src_vts
+                .iter()
+                .choose(&mut rand::thread_rng())
+                .cloned()
+                .unwrap();
+
+            let new_vts = get_non_duplicate(src_vts.iter().cloned(), 2);
+            let invalid_vt = new_vts[0].clone();
+            let new_src_vt = new_vts[1].clone();
+
+            assert!(edge
+                .replace_src_checked(&invalid_vt, new_src_vt.clone())
+                .is_err());
+
+            assert!(edge
+                .replace_src_checked(&src_vt, new_src_vt.clone())
+                .is_ok());
+
+            let new_src_vts = src_vts
+                .iter()
+                .cloned()
+                .filter(|vt| *vt != src_vt)
+                .chain(std::iter::once(new_src_vt));
+
+            test_utils::assert_edge_description(
+                &edge,
+                new_src_vts,
+                edge.get_destinations().cloned(),
+            );
+        }
+    }
+
+    pub fn prop_checked_fixed_size_descriptor_replace_dst<VT, FED, const DIR: bool>(mut edge: FED)
+    where
+        VT: VertexToken + Clone,
+        FED: CheckedFixedSizeMutEdgeDescriptor<VT, DIR>,
+        Standard: Distribution<VT>,
+    {
+        let dst_vts: Vec<VT> = edge.get_destinations().cloned().collect();
+
+        if !dst_vts.is_empty() {
+            // Choose one destination vertex randomly.
+            let dst_vt = dst_vts
+                .iter()
+                .choose(&mut rand::thread_rng())
+                .cloned()
+                .unwrap();
+
+            let new_vts = get_non_duplicate(dst_vts.iter().cloned(), 2);
+            let invalid_vt = new_vts[0].clone();
+            let new_dst_vt = new_vts[1].clone();
+
+            assert!(edge
+                .replace_dst_checked(&invalid_vt, new_dst_vt.clone())
+                .is_err());
+
+            assert!(edge
+                .replace_dst_checked(&dst_vt, new_dst_vt.clone())
+                .is_ok());
+
+            let new_dst_vts = dst_vts
+                .iter()
+                .cloned()
+                .filter(|vt| *vt != dst_vt)
+                .chain(std::iter::once(new_dst_vt));
+
+            test_utils::assert_edge_description(&edge, edge.get_sources().cloned(), new_dst_vts);
+        }
+    }
+
+    pub fn prop_mut_descriptor_add_src<VT, MED, const DIR: bool>(mut edge: MED)
+    where
+        VT: VertexToken + Clone,
+        MED: MutEdgeDescriptor<VT, DIR>,
+        Standard: Distribution<VT>,
+    {
+        let src_vts: Vec<VT> = edge.get_sources().cloned().collect();
+
+        let new_src_vt = get_non_duplicate(src_vts.iter().cloned(), 1)[0].clone();
+
+        edge.add_src(new_src_vt.clone());
+
+        let new_src_vts = src_vts.iter().cloned().chain(std::iter::once(new_src_vt));
+
+        test_utils::assert_edge_description(&edge, new_src_vts, edge.get_destinations().cloned());
+    }
+
+    pub fn prop_mut_descriptor_add_dst<VT, MED, const DIR: bool>(mut edge: MED)
+    where
+        VT: VertexToken + Clone,
+        MED: MutEdgeDescriptor<VT, DIR>,
+        Standard: Distribution<VT>,
+    {
+        let dst_vts: Vec<VT> = edge.get_destinations().cloned().collect();
+
+        let new_dst_vt = get_non_duplicate(dst_vts.iter().cloned(), 1)[0].clone();
+
+        edge.add_dst(new_dst_vt.clone());
+
+        let new_dst_vts = dst_vts.iter().cloned().chain(std::iter::once(new_dst_vt));
+
+        test_utils::assert_edge_description(&edge, edge.get_sources().cloned(), new_dst_vts);
+    }
+
+    pub fn prop_mut_descriptor_add<VT, MED, const DIR: bool>(mut edge: MED)
+    where
+        VT: VertexToken + Clone,
+        MED: MutEdgeDescriptor<VT, DIR>,
+        Standard: Distribution<VT>,
+    {
+        let src_vts: Vec<VT> = edge.get_sources().cloned().collect();
+        let dst_vts: Vec<VT> = edge.get_destinations().cloned().collect();
+
+        let new_vts = get_non_duplicate(src_vts.iter().cloned(), 2);
+        let new_src_vt = new_vts[0].clone();
+        let new_dst_vt = new_vts[1].clone();
+
+        edge.add(new_src_vt.clone(), new_dst_vt.clone());
+
+        let new_src_vts = src_vts.iter().cloned().chain([new_src_vt]);
+        let new_dst_vts = dst_vts.iter().cloned().chain([new_dst_vt]);
+
+        test_utils::assert_edge_description(&edge, new_src_vts, new_dst_vts);
+    }
+
+    pub fn prop_mut_descriptor_remove<VT, MED, const DIR: bool>(mut edge: MED)
+    where
+        VT: VertexToken + Clone,
+        MED: MutEdgeDescriptor<VT, DIR>,
+        Standard: Distribution<VT>,
+    {
+        let src_vts: Vec<VT> = edge.get_sources().cloned().collect();
+
+        if !src_vts.is_empty() {
+            let src_vt = src_vts.iter().choose(&mut rand::thread_rng()).unwrap();
+
+            edge.remove(src_vt);
+
+            let new_src_vts = src_vts.iter().cloned().filter(|vt| vt != src_vt);
+
+            test_utils::assert_edge_description(
+                &edge,
+                new_src_vts,
+                edge.get_destinations().cloned(),
+            );
+        }
+    }
+
+    pub fn prop_checked_mut_descriptor_add_src<VT, MED, const DIR: bool>(mut edge: MED)
+    where
+        VT: VertexToken + Clone,
+        MED: CheckedMutEdgeDescriptor<VT, DIR>,
+        Standard: Distribution<VT>,
+    {
+        let src_vts: Vec<VT> = edge.get_sources().cloned().collect();
+
+        if !src_vts.is_empty() {
+            let src_vt = src_vts
+                .iter()
+                .choose(&mut rand::thread_rng())
+                .cloned()
+                .unwrap();
+
+            let new_src_vt = get_non_duplicate(src_vts.iter().cloned(), 1)[0].clone();
+
+            assert!(edge.add_src_checked(src_vt).is_err());
+            assert!(edge.add_src_checked(new_src_vt.clone()).is_ok());
+
+            let new_src_vts = src_vts.iter().cloned().chain(std::iter::once(new_src_vt));
+
+            test_utils::assert_edge_description(
+                &edge,
+                new_src_vts,
+                edge.get_destinations().cloned(),
+            );
+        }
+    }
+
+    pub fn prop_checked_mut_descriptor_add_dst<VT, MED, const DIR: bool>(mut edge: MED)
+    where
+        VT: VertexToken + Clone,
+        MED: CheckedMutEdgeDescriptor<VT, DIR>,
+        Standard: Distribution<VT>,
+    {
+        let dst_vts: Vec<VT> = edge.get_destinations().cloned().collect();
+
+        if !dst_vts.is_empty() {
+            let dst_vt = dst_vts
+                .iter()
+                .choose(&mut rand::thread_rng())
+                .cloned()
+                .unwrap();
+
+            let new_dst_vt = get_non_duplicate(dst_vts.iter().cloned(), 1)[0].clone();
+
+            assert!(edge.add_dst_checked(dst_vt).is_err());
+            assert!(edge.add_dst_checked(new_dst_vt.clone()).is_ok());
+
+            let new_dst_vts = dst_vts.iter().cloned().chain(std::iter::once(new_dst_vt));
+
+            test_utils::assert_edge_description(&edge, edge.get_sources().cloned(), new_dst_vts);
+        }
+    }
+
+    pub fn prop_checked_mut_descriptor_add<VT, MED, const DIR: bool>(mut edge: MED)
+    where
+        VT: VertexToken + Clone,
+        MED: CheckedMutEdgeDescriptor<VT, DIR>,
+        Standard: Distribution<VT>,
+    {
+        let src_vts: Vec<VT> = edge.get_sources().cloned().collect();
+        let dst_vts: Vec<VT> = edge.get_destinations().cloned().collect();
+
+        if !src_vts.is_empty() && !dst_vts.is_empty() {
+            let src_vt = src_vts
+                .iter()
+                .choose(&mut rand::thread_rng())
+                .cloned()
+                .unwrap();
+
+            let dst_vt = dst_vts
+                .iter()
+                .choose(&mut rand::thread_rng())
+                .cloned()
+                .unwrap();
+
+            let new_vts = get_non_duplicate(src_vts.iter().cloned(), 2);
+            let new_src_vt = new_vts[0].clone();
+            let new_dst_vt = new_vts[1].clone();
+
+            assert!(edge.add_checked(src_vt, dst_vt).is_err());
+            assert!(edge
+                .add_checked(new_src_vt.clone(), new_dst_vt.clone())
+                .is_ok());
+
+            let new_src_vts = src_vts.iter().cloned().chain([new_src_vt]);
+            let new_dst_vts = dst_vts.iter().cloned().chain([new_dst_vt]);
+
+            test_utils::assert_edge_description(&edge, new_src_vts, new_dst_vts);
+        }
+    }
+
+    pub fn prop_checked_mut_descriptor_remove<VT, MED, const DIR: bool>(mut edge: MED)
+    where
+        VT: VertexToken + Clone,
+        MED: CheckedMutEdgeDescriptor<VT, DIR>,
+        Standard: Distribution<VT>,
+    {
+        let src_vts: Vec<VT> = edge.get_sources().cloned().collect();
+
+        if !src_vts.is_empty() {
+            let src_vt = src_vts.iter().choose(&mut rand::thread_rng()).unwrap();
+
+            let invalid_vt = get_non_duplicate(src_vts.iter().cloned(), 1)[0].clone();
+
+            assert!(edge.remove_checked(&invalid_vt).is_err());
+            assert!(edge.remove_checked(src_vt).is_ok());
+
+            let new_src_vts = src_vts.iter().cloned().filter(|vt| vt != src_vt);
+
+            test_utils::assert_edge_description(
+                &edge,
+                new_src_vts,
+                edge.get_destinations().cloned(),
+            );
+        }
     }
 }

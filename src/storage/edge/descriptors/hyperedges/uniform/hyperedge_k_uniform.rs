@@ -139,11 +139,10 @@ where
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::storage::edge::test_utils;
+    use crate::test_utils::get_non_duplicate;
     use quickcheck::Arbitrary;
     use quickcheck_macros::quickcheck;
-    use rand::prelude::IteratorRandom;
-    use rand::Rng;
-    use std::collections::HashSet;
 
     impl<VT, C, const K: usize> Clone for KUniformHyperedge<VT, C, K>
     where
@@ -180,174 +179,28 @@ mod test {
         }
     }
 
-    fn assert_undirected_edge_description<VT: VertexToken, const K: usize>(
-        edge: &ArrKUniformHyperedge<VT, K>,
-        src_vts_iter: impl IntoIterator<Item = VT>,
-        dst_vts_iter: impl IntoIterator<Item = VT>,
-    ) {
-        let src_vts: Vec<VT> = src_vts_iter.into_iter().collect();
-        let dst_vts: Vec<VT> = dst_vts_iter.into_iter().collect();
-
-        assert_eq!(
-            HashSet::<_>::from_iter(src_vts.iter().chain(dst_vts.iter())),
-            HashSet::<_>::from_iter(edge.get_sources())
-        );
-
-        assert_eq!(
-            HashSet::<_>::from_iter(src_vts.iter().chain(dst_vts.iter())),
-            HashSet::<_>::from_iter(edge.get_destinations()),
-        );
-
-        for src_vt in src_vts.iter() {
-            assert!(edge.is_source(src_vt));
-            assert!(edge.is_destination(src_vt));
-            assert!(edge.contains(src_vt));
-        }
-
-        for dst_vt in dst_vts.iter() {
-            assert!(edge.is_source(dst_vt));
-            assert!(edge.is_destination(dst_vt));
-            assert!(edge.contains(dst_vt));
-        }
-
-        assert_eq!(edge.sources_count(), src_vts.len());
-        assert_eq!(edge.destinations_count(), dst_vts.len());
+    #[quickcheck]
+    fn prop_edge_description(edge: ArrKUniformHyperedge<usize, 8>) {
+        test_utils::prop_edge_description(edge);
     }
 
     #[quickcheck]
-    fn prop_edge_descriptor(edge: ArrKUniformHyperedge<usize, 8>) {
-        assert_undirected_edge_description(
-            &edge,
-            edge.get_sources().copied(),
-            edge.get_destinations().copied(),
-        );
+    fn prop_fixed_size_descriptor_replace_src(edge: ArrKUniformHyperedge<usize, 8>) {
+        test_utils::prop_fixed_size_descriptor_replace_src(edge);
     }
 
     #[quickcheck]
-    fn prop_fixed_size_descriptor_replace_src(mut edge: ArrKUniformHyperedge<usize, 8>) {
-        let src_vts: Vec<usize> = edge.get_sources().copied().collect();
-
-        if !src_vts.is_empty() {
-            let src_vt = src_vts
-                .iter()
-                .choose(&mut rand::thread_rng())
-                .copied()
-                .unwrap();
-
-            let new_src_vt = get_non_duplicate(src_vts.iter().copied(), 1)[0];
-
-            edge.replace_src(&src_vt, new_src_vt);
-
-            let new_src_vts = src_vts
-                .iter()
-                .copied()
-                .filter(|vt| *vt != src_vt)
-                .chain(std::iter::once(new_src_vt));
-
-            assert_undirected_edge_description(&edge, new_src_vts.clone(), new_src_vts);
-        }
+    fn prop_fixed_size_descriptor_replace_dst(edge: ArrKUniformHyperedge<usize, 8>) {
+        test_utils::prop_fixed_size_descriptor_replace_dst(edge);
     }
 
     #[quickcheck]
-    fn prop_fixed_size_descriptor_replace_dst(mut edge: ArrKUniformHyperedge<usize, 8>) {
-        let dst_vts: Vec<usize> = edge.get_destinations().copied().collect();
-
-        if !dst_vts.is_empty() {
-            let dst_vt = dst_vts
-                .iter()
-                .choose(&mut rand::thread_rng())
-                .copied()
-                .unwrap();
-
-            let new_dst_vt = get_non_duplicate(dst_vts.iter().copied(), 1)[0];
-
-            edge.replace_dst(&dst_vt, new_dst_vt);
-
-            let new_dst_vts = dst_vts
-                .iter()
-                .copied()
-                .filter(|vt| *vt != dst_vt)
-                .chain(std::iter::once(new_dst_vt));
-
-            assert_undirected_edge_description(&edge, new_dst_vts.clone(), new_dst_vts);
-        }
+    fn prop_checked_fixed_size_descriptor_replace_src(edge: ArrKUniformHyperedge<usize, 8>) {
+        test_utils::prop_checked_fixed_size_descriptor_replace_src(edge);
     }
 
     #[quickcheck]
-    fn prop_checked_fixed_size_descriptor_replace_src(mut edge: ArrKUniformHyperedge<usize, 8>) {
-        let src_vts: Vec<usize> = edge.get_sources().copied().collect();
-
-        if !src_vts.is_empty() {
-            let src_vt = src_vts
-                .iter()
-                .choose(&mut rand::thread_rng())
-                .copied()
-                .unwrap();
-
-            let new_vts = get_non_duplicate(src_vts.iter().copied(), 2);
-            let invalid_vt = new_vts[0];
-            let new_src_vt = new_vts[1];
-
-            assert!(edge.replace_src_checked(&invalid_vt, new_src_vt).is_err());
-
-            assert!(edge.replace_src_checked(&src_vt, new_src_vt).is_ok());
-
-            let new_src_vts = src_vts
-                .iter()
-                .copied()
-                .filter(|vt| *vt != src_vt)
-                .chain(std::iter::once(new_src_vt));
-
-            assert_undirected_edge_description(&edge, new_src_vts.clone(), new_src_vts);
-        }
-    }
-
-    #[quickcheck]
-    fn prop_checked_fixed_size_descriptor_replace_dst(mut edge: ArrKUniformHyperedge<usize, 8>) {
-        let dst_vts: Vec<usize> = edge.get_destinations().copied().collect();
-
-        if !dst_vts.is_empty() {
-            // Choose one destination vertex randomly.
-            let dst_vt = dst_vts
-                .iter()
-                .choose(&mut rand::thread_rng())
-                .copied()
-                .unwrap();
-
-            let new_vts = get_non_duplicate(dst_vts.iter().copied(), 2);
-            let invalid_vt = new_vts[0];
-            let new_dst_vt = new_vts[1];
-
-            assert!(edge.replace_dst_checked(&invalid_vt, new_dst_vt).is_err());
-
-            assert!(edge.replace_dst_checked(&dst_vt, new_dst_vt).is_ok());
-
-            let new_dst_vts = dst_vts
-                .iter()
-                .copied()
-                .filter(|vt| *vt != dst_vt)
-                .chain(std::iter::once(new_dst_vt));
-
-            assert_undirected_edge_description(&edge, new_dst_vts.clone(), new_dst_vts);
-        }
-    }
-
-    fn get_non_duplicate(set_iter: impl IntoIterator<Item = usize>, count: usize) -> Vec<usize> {
-        let mut set = HashSet::<_>::from_iter(set_iter);
-
-        let mut rng = rand::thread_rng();
-
-        let mut values = vec![0; count];
-
-        for index in 0..count {
-            let mut value: usize = rng.gen();
-            while set.contains(&value) {
-                value = rng.gen();
-            }
-            values[index] = value;
-            set.insert(value);
-        }
-
-        values
+    fn prop_checked_fixed_size_descriptor_replace_dst(edge: ArrKUniformHyperedge<usize, 8>) {
+        test_utils::prop_checked_fixed_size_descriptor_replace_dst(edge);
     }
 }

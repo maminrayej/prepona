@@ -32,3 +32,6 @@
 
 pub mod doc;
 pub mod storage;
+
+#[cfg(test)]
+pub mod test_utils;
