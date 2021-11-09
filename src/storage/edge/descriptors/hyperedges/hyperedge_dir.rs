@@ -167,11 +167,9 @@ where
 }
 
 #[cfg(test)]
-mod test {
+pub mod test {
     use super::*;
-    use crate::storage::edge::test_utils;
     use quickcheck::Arbitrary;
-    use quickcheck_macros::quickcheck;
 
     impl<VT, Set> Clone for DirHyperedge<VT, Set>
     where
@@ -203,6 +201,13 @@ mod test {
             }
         }
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::storage::edge::test_utils;
+    use quickcheck_macros::quickcheck;
 
     #[quickcheck]
     fn prop_edge_description(edge: HashedDirHyperedge<usize>) {

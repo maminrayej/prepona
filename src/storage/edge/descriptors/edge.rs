@@ -124,11 +124,9 @@ impl<VT, const DIR: bool> CheckedFixedSizeMutEdgeDescriptor<VT, DIR> for Edge<VT
 }
 
 #[cfg(test)]
-mod test {
+pub mod test {
     use super::*;
-    use crate::storage::edge::test_utils;
     use quickcheck::Arbitrary;
-    use quickcheck_macros::quickcheck;
 
     impl<VT: VertexToken + Clone, const DIR: bool> Clone for Edge<VT, DIR> {
         fn clone(&self) -> Self {
@@ -147,21 +145,18 @@ mod test {
             Edge { src_vt, dst_vt }
         }
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::storage::edge::test_utils;
+    use quickcheck_macros::quickcheck;
 
     #[quickcheck]
     fn prop_edge_description(edge: UndirectedEdge<usize>, dir_edge: DirectedEdge<usize>) {
         test_utils::prop_edge_description(edge);
         test_utils::prop_edge_description(dir_edge);
-    }
-
-    #[quickcheck]
-    fn prop_undirected_edge_descriptor(edge: UndirectedEdge<usize>) {
-        test_utils::assert_edge_description(&edge, [edge.src_vt], [edge.dst_vt]);
-    }
-
-    #[quickcheck]
-    fn prop_directed_edge_descriptor(edge: DirectedEdge<usize>) {
-        test_utils::assert_edge_description(&edge, [edge.src_vt], [edge.dst_vt])
     }
 
     #[quickcheck]
@@ -181,6 +176,26 @@ mod test {
 
     #[quickcheck]
     fn prop_undirected_checked_fixed_size_descriptor_replace_dst(edge: UndirectedEdge<usize>) {
+        test_utils::prop_checked_fixed_size_descriptor_replace_dst(edge);
+    }
+
+    #[quickcheck]
+    fn prop_directed_fixed_size_descriptor_replace_src(edge: DirectedEdge<usize>) {
+        test_utils::prop_fixed_size_descriptor_replace_src(edge);
+    }
+
+    #[quickcheck]
+    fn prop_directed_fixed_size_descriptor_replace_dst(edge: DirectedEdge<usize>) {
+        test_utils::prop_fixed_size_descriptor_replace_dst(edge);
+    }
+
+    #[quickcheck]
+    fn prop_directed_checked_fixed_size_descriptor_replace_src(edge: DirectedEdge<usize>) {
+        test_utils::prop_checked_fixed_size_descriptor_replace_src(edge);
+    }
+
+    #[quickcheck]
+    fn prop_directed_checked_fixed_size_descriptor_replace_dst(edge: DirectedEdge<usize>) {
         test_utils::prop_checked_fixed_size_descriptor_replace_dst(edge);
     }
 }

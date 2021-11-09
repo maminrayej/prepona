@@ -141,12 +141,10 @@ where
 }
 
 #[cfg(test)]
-mod tests {
+mod test {
     use super::*;
-    use crate::storage::edge::test_utils;
     use crate::test_utils::get_non_duplicate;
     use quickcheck::Arbitrary;
-    use quickcheck_macros::quickcheck;
 
     impl<C, const K: usize> Clone for KUniformDirHyperedge<usize, C, K>
     where
@@ -181,6 +179,13 @@ mod tests {
             }
         }
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::storage::edge::test_utils;
+    use quickcheck_macros::quickcheck;
 
     #[quickcheck]
     fn prop_edge_description(edge: ArrKUniformDirHyperedge<usize, 8>) {
