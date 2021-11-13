@@ -83,13 +83,21 @@ where
     /// # Complexity
     /// O(1)
     fn sources_count(&self) -> usize {
-        self.get_sources().count()
+        1 + if Self::is_undirected() && self.src_vt != self.dst_vt {
+            1
+        } else {
+            0
+        }
     }
 
     /// # Complexity
     /// O(1)
     fn destinations_count(&self) -> usize {
-        self.get_destinations().count()
+        1 + if Self::is_undirected() && self.src_vt != self.dst_vt {
+            1
+        } else {
+            0
+        }
     }
 }
 

@@ -20,3 +20,9 @@ thiserror = "1.0.30"
 quickcheck = "1.0.3"
 quickcheck_macros = "1.0.0"
 rand = "0.8.4"
+criterion = "0.3.5"
+
+# Benchmarks
+[[bench]]
+name = "edge_descriptor_edge"
+harness = false
