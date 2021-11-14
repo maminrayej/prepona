@@ -31,3 +31,7 @@ harness = false
 [[bench]]
 name = "edge_descriptor_hyperedge"
 harness = false
+
+[[bench]]
+name = "edge_descriptor_hyperedge_dir"
+harness = false
