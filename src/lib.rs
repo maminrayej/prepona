@@ -1,3 +1,5 @@
+#![feature(generic_associated_types)]
+
 // #![warn(missing_docs)]
 // #![warn(rustdoc::missing_doc_code_examples)]
 // #![deny(rustdoc::broken_intra_doc_links)]
@@ -32,6 +34,8 @@
 
 pub mod doc;
 pub mod storage;
+pub mod provide;
+pub mod common;
 
 #[cfg(test)]
 pub mod test_utils;

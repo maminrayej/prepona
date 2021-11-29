@@ -38,5 +38,8 @@
 pub mod edge;
 mod errors;
 pub mod vertex;
+mod storages;
+pub mod token;
 
 pub use errors::StorageError;
+pub use storages::*;
