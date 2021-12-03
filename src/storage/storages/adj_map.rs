@@ -1,5 +1,8 @@
 use crate::common::DynIter;
-use crate::provide::{Edges, MutEdges, MutVertices, Vertices};
+use crate::provide::{
+    CheckedEdges, CheckedMutEdges, CheckedMutVertices, CheckedVertices, Edges, MutEdges,
+    MutVertices, Vertices,
+};
 use crate::storage::edge::{Edge, EdgeDescriptor};
 use crate::storage::token::UsizeTokenProvider;
 use crate::storage::vertex::VertexDescriptor;
@@ -102,11 +105,22 @@ where
     }
 }
 
+impl<V, E, const DIR: bool> CheckedVertices for AdjMap<V, E, DIR>
+where
+    V: VertexDescriptor,
+    E: EdgeDescriptor,
+{
+}
+
 impl<V, E, const DIR: bool> MutVertices for AdjMap<V, E, DIR>
 where
     V: VertexDescriptor,
     E: EdgeDescriptor,
 {
+    fn has_free_token(&mut self) -> bool {
+        self.vt_provider.has_next()
+    }
+
     fn vertex_mut(&mut self, vt: usize) -> &mut Self::V {
         self.vt_to_v.get_mut(&vt).unwrap()
     }
@@ -145,6 +159,13 @@ where
 
         self.vt_to_v.remove(&vt).unwrap()
     }
+}
+
+impl<V, E, const DIR: bool> CheckedMutVertices for AdjMap<V, E, DIR>
+where
+    V: VertexDescriptor,
+    E: EdgeDescriptor,
+{
 }
 
 impl<V, E, const DIR: bool> Edges for AdjMap<V, E, DIR>
@@ -205,11 +226,22 @@ where
     }
 }
 
+impl<V, E, const DIR: bool> CheckedEdges for AdjMap<V, E, DIR>
+where
+    V: VertexDescriptor,
+    E: EdgeDescriptor,
+{
+}
+
 impl<V, E, const DIR: bool> MutEdges for AdjMap<V, E, DIR>
 where
     V: VertexDescriptor,
     E: EdgeDescriptor,
 {
+    fn has_free_et(&mut self) -> bool {
+        self.et_provider.has_next()
+    }
+
     fn edge_mut(&mut self, et: usize) -> (usize, usize, &mut E) {
         self.et_to_e.get_mut(&et).unwrap().view_mut()
     }
@@ -271,6 +303,13 @@ where
 
         self.et_to_e.remove(&et).unwrap().into_inner()
     }
+}
+
+impl<V, E, const DIR: bool> CheckedMutEdges for AdjMap<V, E, DIR>
+where
+    V: VertexDescriptor,
+    E: EdgeDescriptor,
+{
 }
 
 #[cfg(test)]
@@ -384,6 +423,69 @@ mod tests {
     }
 
     #[quickcheck]
+    fn prop_vertex_checked(
+        storage: AdjMap<usize, usize, false>,
+        dir_storage: AdjMap<usize, usize, true>,
+    ) {
+        storage_test_suit::prop_vertex_checked(storage);
+        storage_test_suit::prop_vertex_checked(dir_storage);
+    }
+
+    #[quickcheck]
+    fn prop_vertex_count_checked(
+        storage: AdjMap<usize, usize, false>,
+        dir_storage: AdjMap<usize, usize, true>,
+    ) {
+        storage_test_suit::prop_vertex_count_checked(storage);
+        storage_test_suit::prop_vertex_count_checked(dir_storage);
+    }
+
+    #[quickcheck]
+    fn prop_vertex_tokens_checked(
+        storage: AdjMap<usize, usize, false>,
+        dir_storage: AdjMap<usize, usize, true>,
+    ) {
+        storage_test_suit::prop_vertex_tokens_checked(storage);
+        storage_test_suit::prop_vertex_tokens_checked(dir_storage);
+    }
+
+    #[quickcheck]
+    fn prop_vertices_checked(
+        storage: AdjMap<usize, usize, false>,
+        dir_storage: AdjMap<usize, usize, true>,
+    ) {
+        storage_test_suit::prop_vertices_checked(storage);
+        storage_test_suit::prop_vertices_checked(dir_storage);
+    }
+
+    #[quickcheck]
+    fn prop_neighbors_checked(
+        storage: AdjMap<usize, usize, false>,
+        dir_storage: AdjMap<usize, usize, true>,
+    ) {
+        storage_test_suit::prop_neighbors_checked(storage);
+        storage_test_suit::prop_neighbors_checked(dir_storage);
+    }
+
+    #[quickcheck]
+    fn prop_successors_checked(
+        storage: AdjMap<usize, usize, false>,
+        dir_storage: AdjMap<usize, usize, true>,
+    ) {
+        storage_test_suit::prop_successors_checked(storage);
+        storage_test_suit::prop_successors_checked(dir_storage);
+    }
+
+    #[quickcheck]
+    fn prop_predecessors_checked(
+        storage: AdjMap<usize, usize, false>,
+        dir_storage: AdjMap<usize, usize, true>,
+    ) {
+        storage_test_suit::prop_predecessors_checked(storage);
+        storage_test_suit::prop_predecessors_checked(dir_storage);
+    }
+
+    #[quickcheck]
     fn prop_add_vertex(
         storage: AdjMap<usize, usize, false>,
         dir_storage: AdjMap<usize, usize, true>,
@@ -411,6 +513,78 @@ mod tests {
     }
 
     #[quickcheck]
+    fn prop_remove_vertex_checked(
+        storage: AdjMap<usize, usize, false>,
+        dir_storage: AdjMap<usize, usize, true>,
+    ) {
+        storage_test_suit::prop_remove_vertex_checked(storage);
+        storage_test_suit::prop_remove_vertex_checked(dir_storage);
+    }
+
+    #[quickcheck]
+    fn prop_vertex_mut_checked(
+        storage: AdjMap<usize, usize, false>,
+        dir_storage: AdjMap<usize, usize, true>,
+    ) {
+        storage_test_suit::prop_vertex_mut_checked(storage);
+        storage_test_suit::prop_vertex_mut_checked(dir_storage);
+    }
+
+    #[quickcheck]
+    fn prop_edge_checked(
+        storage: AdjMap<usize, usize, false>,
+        dir_storage: AdjMap<usize, usize, true>,
+    ) {
+        storage_test_suit::prop_edge_checked(storage);
+        storage_test_suit::prop_edge_checked(dir_storage);
+    }
+
+    #[quickcheck]
+    fn prop_edge_count_checked(
+        storage: AdjMap<usize, usize, false>,
+        dir_storage: AdjMap<usize, usize, true>,
+    ) {
+        storage_test_suit::prop_edge_count_checked(storage);
+        storage_test_suit::prop_edge_count_checked(dir_storage);
+    }
+
+    #[quickcheck]
+    fn prop_edge_tokens_checked(
+        storage: AdjMap<usize, usize, false>,
+        dir_storage: AdjMap<usize, usize, true>,
+    ) {
+        storage_test_suit::prop_edge_tokens_checked(storage);
+        storage_test_suit::prop_edge_tokens_checked(dir_storage);
+    }
+
+    #[quickcheck]
+    fn prop_edges_checked(
+        storage: AdjMap<usize, usize, false>,
+        dir_storage: AdjMap<usize, usize, true>,
+    ) {
+        storage_test_suit::prop_edges_checked(storage);
+        storage_test_suit::prop_edges_checked(dir_storage);
+    }
+
+    #[quickcheck]
+    fn prop_ingoing_edges_checked(
+        storage: AdjMap<usize, usize, false>,
+        dir_storage: AdjMap<usize, usize, true>,
+    ) {
+        storage_test_suit::prop_ingoing_edges_checked(storage);
+        storage_test_suit::prop_ingoing_edges_checked(dir_storage);
+    }
+
+    #[quickcheck]
+    fn prop_outgoing_edges_checked(
+        storage: AdjMap<usize, usize, false>,
+        dir_storage: AdjMap<usize, usize, true>,
+    ) {
+        storage_test_suit::prop_outgoing_edges_checked(storage);
+        storage_test_suit::prop_outgoing_edges_checked(dir_storage);
+    }
+
+    #[quickcheck]
     fn prop_add_edge(
         storage: AdjMap<usize, usize, false>,
         dir_storage: AdjMap<usize, usize, true>,
@@ -435,5 +609,23 @@ mod tests {
     ) {
         storage_test_suit::prop_update_edge(storage);
         storage_test_suit::prop_update_edge(dir_storage);
+    }
+
+    #[quickcheck]
+    fn prop_remove_edge_checked(
+        storage: AdjMap<usize, usize, false>,
+        dir_storage: AdjMap<usize, usize, true>,
+    ) {
+        storage_test_suit::prop_remove_edge_checked(storage);
+        storage_test_suit::prop_remove_edge_checked(dir_storage);
+    }
+
+    #[quickcheck]
+    fn prop_edge_mut_checked(
+        storage: AdjMap<usize, usize, false>,
+        dir_storage: AdjMap<usize, usize, true>,
+    ) {
+        storage_test_suit::prop_edge_mut_checked(storage);
+        storage_test_suit::prop_edge_mut_checked(dir_storage);
     }
 }

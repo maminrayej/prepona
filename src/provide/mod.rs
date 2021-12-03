@@ -9,8 +9,14 @@ pub use view::*;
 pub trait Storage: Vertices + Edges {}
 impl<T: Vertices + Edges> Storage for T {}
 
+pub trait CheckedStorage: Storage + CheckedVertices + CheckedEdges {}
+impl<T: Storage + CheckedVertices + CheckedEdges> CheckedStorage for T {}
+
 pub trait MutStorage: Storage + MutVertices + MutEdges {}
 impl<T: Storage + MutVertices + MutEdges> MutStorage for T {}
+
+pub trait CheckedMutStorage: CheckedStorage + CheckedMutVertices + CheckedMutEdges {}
+impl<T: CheckedStorage + CheckedMutVertices + CheckedMutEdges> CheckedMutStorage for T {}
 
 #[cfg(test)]
 pub(crate) mod storage_test_suit {
@@ -21,7 +27,9 @@ pub(crate) mod storage_test_suit {
     use std::fmt::Debug;
     use std::hash::Hash;
 
-    use super::{MutStorage, Storage};
+    use crate::test_utils::get_non_duplicate;
+
+    use super::{CheckedMutStorage, CheckedStorage, MutStorage, Storage};
 
     fn validate_storage<S>(storage: S)
     where
@@ -98,6 +106,93 @@ pub(crate) mod storage_test_suit {
         validate_storage(storage)
     }
 
+    pub fn prop_vertex_checked<S>(storage: S)
+    where
+        S: CheckedStorage,
+        S::V: Debug + Hash + Clone,
+        S::E: Debug + Hash + Clone,
+    {
+        if storage.vertex_count() > 0 {
+            let non_existent_vt = get_non_duplicate(storage.vertex_tokens(), 1)[0];
+            let valid_vt = storage.vertex_tokens().choose(&mut thread_rng()).unwrap();
+
+            assert!(storage.vertex_checked(non_existent_vt).is_err());
+            assert!(storage.vertex_checked(valid_vt).is_ok());
+        }
+    }
+
+    pub fn prop_vertex_count_checked<S>(storage: S)
+    where
+        S: CheckedStorage,
+        S::V: Debug + Hash + Clone,
+        S::E: Debug + Hash + Clone,
+    {
+        assert!(storage.vertex_count_checked().is_ok())
+    }
+
+    pub fn prop_vertex_tokens_checked<S>(storage: S)
+    where
+        S: CheckedStorage,
+        S::V: Debug + Hash + Clone,
+        S::E: Debug + Hash + Clone,
+    {
+        assert!(storage.vertex_tokens_checked().is_ok())
+    }
+
+    pub fn prop_vertices_checked<S>(storage: S)
+    where
+        S: CheckedStorage,
+        S::V: Debug + Hash + Clone,
+        S::E: Debug + Hash + Clone,
+    {
+        assert!(storage.vertices_checked().is_ok())
+    }
+
+    pub fn prop_neighbors_checked<S>(storage: S)
+    where
+        S: CheckedStorage,
+        S::V: Debug + Hash + Clone,
+        S::E: Debug + Hash + Clone,
+    {
+        if storage.vertex_count() > 0 {
+            let non_existent_vt = get_non_duplicate(storage.vertex_tokens(), 1)[0];
+            let vt = storage.vertex_tokens().choose(&mut thread_rng()).unwrap();
+
+            assert!(storage.neighbors_checked(non_existent_vt).is_err());
+            assert!(storage.neighbors_checked(vt).is_ok())
+        }
+    }
+
+    pub fn prop_successors_checked<S>(storage: S)
+    where
+        S: CheckedStorage,
+        S::V: Debug + Hash + Clone,
+        S::E: Debug + Hash + Clone,
+    {
+        if storage.vertex_count() > 0 {
+            let non_existent_vt = get_non_duplicate(storage.vertex_tokens(), 1)[0];
+            let vt = storage.vertex_tokens().choose(&mut thread_rng()).unwrap();
+
+            assert!(storage.successors_checked(non_existent_vt).is_err());
+            assert!(storage.successors_checked(vt).is_ok())
+        }
+    }
+
+    pub fn prop_predecessors_checked<S>(storage: S)
+    where
+        S: CheckedStorage,
+        S::V: Debug + Hash + Clone,
+        S::E: Debug + Hash + Clone,
+    {
+        if storage.vertex_count() > 0 {
+            let non_existent_vt = get_non_duplicate(storage.vertex_tokens(), 1)[0];
+            let vt = storage.vertex_tokens().choose(&mut thread_rng()).unwrap();
+
+            assert!(storage.predecessors_checked(non_existent_vt).is_err());
+            assert!(storage.predecessors_checked(vt).is_ok())
+        }
+    }
+
     pub fn prop_add_vertex<S>(mut storage: S)
     where
         S: MutStorage,
@@ -158,6 +253,108 @@ pub(crate) mod storage_test_suit {
             assert_eq!(storage.vertex(vt).clone(), new_vertex_copy);
             assert!(storage.has_vt(vt));
             validate_storage(storage);
+        }
+    }
+
+    pub fn prop_remove_vertex_checked<S>(mut storage: S)
+    where
+        S: CheckedMutStorage,
+        S::V: Debug + Hash + Clone,
+        S::E: Debug + Hash + Clone,
+    {
+        if storage.vertex_count() > 0 {
+            let non_existent_vt = get_non_duplicate(storage.vertex_tokens(), 1)[0];
+            let vt = storage.vertex_tokens().choose(&mut thread_rng()).unwrap();
+
+            assert!(storage.remove_vertex_checked(non_existent_vt).is_err());
+            assert!(storage.remove_vertex_checked(vt).is_ok());
+        }
+    }
+
+    pub fn prop_vertex_mut_checked<S>(mut storage: S)
+    where
+        S: CheckedMutStorage,
+        S::V: Debug + Hash + Clone,
+        S::E: Debug + Hash + Clone,
+    {
+        if storage.vertex_count() > 0 {
+            let non_existent_vt = get_non_duplicate(storage.vertex_tokens(), 1)[0];
+            let vt = storage.vertex_tokens().choose(&mut thread_rng()).unwrap();
+
+            assert!(storage.vertex_mut_checked(non_existent_vt).is_err());
+            assert!(storage.vertex_mut_checked(vt).is_ok());
+        }
+    }
+
+    pub fn prop_edge_checked<S>(storage: S)
+    where
+        S: CheckedStorage,
+        S::V: Debug + Hash + Clone,
+        S::E: Debug + Hash + Clone,
+    {
+        if storage.edge_count() > 0 {
+            let non_existent_et = get_non_duplicate(storage.edge_tokens(), 1)[0];
+            let et = storage.edge_tokens().choose(&mut thread_rng()).unwrap();
+
+            assert!(storage.edge_checked(non_existent_et).is_err());
+            assert!(storage.edge_checked(et).is_ok());
+        }
+    }
+
+    pub fn prop_edge_count_checked<S>(storage: S)
+    where
+        S: CheckedStorage,
+        S::V: Debug + Hash + Clone,
+        S::E: Debug + Hash + Clone,
+    {
+        assert!(storage.edge_count_checked().is_ok())
+    }
+
+    pub fn prop_edge_tokens_checked<S>(storage: S)
+    where
+        S: CheckedStorage,
+        S::V: Debug + Hash + Clone,
+        S::E: Debug + Hash + Clone,
+    {
+        assert!(storage.edge_tokens_checked().is_ok())
+    }
+
+    pub fn prop_edges_checked<S>(storage: S)
+    where
+        S: CheckedStorage,
+        S::V: Debug + Hash + Clone,
+        S::E: Debug + Hash + Clone,
+    {
+        assert!(storage.edges_checked().is_ok())
+    }
+
+    pub fn prop_ingoing_edges_checked<S>(storage: S)
+    where
+        S: CheckedStorage,
+        S::V: Debug + Hash + Clone,
+        S::E: Debug + Hash + Clone,
+    {
+        if storage.vertex_count() > 0 {
+            let non_existent_vt = get_non_duplicate(storage.vertex_tokens(), 1)[0];
+            let vt = storage.vertex_tokens().choose(&mut thread_rng()).unwrap();
+
+            assert!(storage.ingoing_edges_checked(non_existent_vt).is_err());
+            assert!(storage.ingoing_edges_checked(vt).is_ok());
+        }
+    }
+
+    pub fn prop_outgoing_edges_checked<S>(storage: S)
+    where
+        S: CheckedStorage,
+        S::V: Debug + Hash + Clone,
+        S::E: Debug + Hash + Clone,
+    {
+        if storage.vertex_count() > 0 {
+            let non_existent_vt = get_non_duplicate(storage.vertex_tokens(), 1)[0];
+            let vt = storage.vertex_tokens().choose(&mut thread_rng()).unwrap();
+
+            assert!(storage.outgoing_edges_checked(non_existent_vt).is_err());
+            assert!(storage.outgoing_edges_checked(vt).is_ok());
         }
     }
 
@@ -261,6 +458,50 @@ pub(crate) mod storage_test_suit {
             assert_eq!(*storage.edge(et).2, new_edge_copy);
             assert!(storage.has_et(et));
             validate_storage(storage);
+        }
+    }
+
+    pub fn prop_remove_edge_checked<S>(mut storage: S)
+    where
+        S: CheckedMutStorage,
+        S::V: Debug + Hash + Clone,
+        S::E: Debug + Hash + Clone,
+        Standard: Distribution<S::V>,
+        Standard: Distribution<S::E>,
+    {
+        if storage.edge_count() > 0 {
+            let non_existent_src_vt = get_non_duplicate(storage.vertex_tokens(), 1)[0];
+            let non_existent_dst_vt = get_non_duplicate(storage.vertex_tokens(), 1)[0];
+            let non_existent_et = get_non_duplicate(storage.edge_tokens(), 1)[0];
+
+            let et = storage.edge_tokens().choose(&mut thread_rng()).unwrap();
+            let (src_vt, dst_vt, _) = storage.edge(et);
+
+            assert!(storage
+                .remove_edge_checked(non_existent_src_vt, dst_vt, et)
+                .is_err());
+            assert!(storage
+                .remove_edge_checked(src_vt, non_existent_dst_vt, et)
+                .is_err());
+            assert!(storage
+                .remove_edge_checked(src_vt, dst_vt, non_existent_et)
+                .is_err());
+            assert!(storage.remove_edge_checked(src_vt, dst_vt, et).is_ok());
+        }
+    }
+
+    pub fn prop_edge_mut_checked<S>(mut storage: S)
+    where
+        S: CheckedMutStorage,
+        S::V: Debug + Hash + Clone,
+        S::E: Debug + Hash + Clone,
+    {
+        if storage.edge_count() > 0 {
+            let non_existent_et = get_non_duplicate(storage.edge_tokens(), 1)[0];
+            let et = storage.edge_tokens().choose(&mut thread_rng()).unwrap();
+
+            assert!(storage.edge_mut_checked(non_existent_et).is_err());
+            assert!(storage.edge_mut_checked(et).is_ok());
         }
     }
 }

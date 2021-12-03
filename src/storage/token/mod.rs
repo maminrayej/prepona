@@ -1,21 +1,25 @@
-use std::{collections::HashSet, ops::RangeInclusive};
+use std::{collections::HashSet, iter::Peekable, ops::RangeInclusive};
 
 #[derive(Debug)]
 pub struct UsizeTokenProvider {
     reusable_tokens: HashSet<usize>,
-    inner: RangeInclusive<usize>,
+    inner: Peekable<RangeInclusive<usize>>,
 }
 
 impl UsizeTokenProvider {
     pub fn init() -> Self {
         UsizeTokenProvider {
             reusable_tokens: HashSet::new(),
-            inner: (usize::MIN..=usize::MAX),
+            inner: (usize::MIN..=usize::MAX).peekable(),
         }
     }
 
     pub fn get(&mut self) -> Option<usize> {
         self.inner.next()
+    }
+
+    pub fn has_next(&mut self) -> bool {
+        self.inner.peek().is_some()
     }
 
     pub fn free(&mut self, token: usize) {
