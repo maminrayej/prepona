@@ -1,62 +1,266 @@
-use crate::{
-    common::DynIter,
-    storage::{edge::EdgeDescriptor, vertex::VertexDescriptor},
-};
+mod edge;
+mod vertex;
+mod view;
 
-pub trait Vertices {
-    type V: VertexDescriptor;
+pub use edge::*;
+pub use vertex::*;
+pub use view::*;
 
-    fn vertex(&self, vt: usize) -> &Self::V;
+pub trait Storage: Vertices + Edges {}
+impl<T: Vertices + Edges> Storage for T {}
 
-    fn vertex_count(&self) -> usize;
+pub trait MutStorage: Storage + MutVertices + MutEdges {}
+impl<T: Storage + MutVertices + MutEdges> MutStorage for T {}
 
-    fn vertex_tokens(&self) -> DynIter<'_, usize>;
+#[cfg(test)]
+pub(crate) mod storage_test_suit {
+    use rand::distributions::Standard;
+    use rand::prelude::{Distribution, IteratorRandom};
+    use rand::{thread_rng, Rng};
+    use std::collections::HashSet;
+    use std::fmt::Debug;
+    use std::hash::Hash;
 
-    fn vertices(&self) -> DynIter<'_, &Self::V>;
+    use super::{MutStorage, Storage};
 
-    fn neighbors(&self, vt: usize) -> DynIter<'_, usize>;
+    fn validate_storage<S>(storage: S)
+    where
+        S: Storage,
+        S::V: Debug + Hash + Clone,
+        S::E: Debug + Hash + Clone,
+    {
+        let vertex_tokens_set: HashSet<usize> = storage.vertex_tokens().collect();
 
-    fn has_vt(&self, vt: usize) -> bool;
+        assert_eq!(vertex_tokens_set.len(), storage.vertex_count());
 
-    fn successors(&self, vt: usize) -> DynIter<'_, usize>;
+        for vt in vertex_tokens_set.iter().copied() {
+            assert!(storage.has_vt(vt));
+        }
 
-    fn predecessors(&self, vt: usize) -> DynIter<'_, usize>;
-}
+        let vertex_set: HashSet<S::V> = vertex_tokens_set
+            .into_iter()
+            .map(|vt| storage.vertex(vt).clone())
+            .collect();
+        assert_eq!(
+            vertex_set,
+            storage.vertices().cloned().collect::<HashSet<S::V>>()
+        );
 
-pub trait MutVertices {
-    type V: VertexDescriptor;
+        for (src_vt, dst_vt, edge) in storage.edges() {
+            assert!(storage
+                .neighbors(src_vt)
+                .find(|n_vt| *n_vt == dst_vt)
+                .is_some());
 
-    fn vertex_mut(&mut self, vt: usize) -> &mut Self::V;
+            assert!(storage
+                .successors(src_vt)
+                .find(|s_vt| *s_vt == dst_vt)
+                .is_some());
 
-    fn add_vertex(&mut self, vertex: Self::V) -> usize;
+            assert!(storage
+                .predecessors(dst_vt)
+                .find(|p_id| *p_id == src_vt)
+                .is_some());
 
-    fn remove_vertex(&mut self, vt: usize) -> Self::V;
-}
+            assert!(storage
+                .outgoing_edges(src_vt)
+                .map(|et| storage.edge(et))
+                .find(|(_, _, e)| *e == edge)
+                .is_some());
 
-pub trait Edges<const DIR: bool> {
-    type E: EdgeDescriptor<DIR>;
+            assert!(storage
+                .ingoing_edges(dst_vt)
+                .map(|et| storage.edge(et))
+                .find(|(_, _, e)| *e == edge)
+                .is_some());
+        }
 
-    fn edge(&self, et: usize) -> &Self::E;
+        assert_eq!(storage.edge_tokens().count(), storage.edge_count());
+        for et in storage.edge_tokens() {
+            assert!(storage.has_et(et))
+        }
 
-    fn edge_count(&self) -> usize;
+        assert_eq!(
+            storage
+                .edge_tokens()
+                .map(|et| storage.edge(et))
+                .collect::<HashSet<(usize, usize, &S::E)>>(),
+            storage.edges().collect()
+        );
+    }
 
-    fn edge_tokens(&self) -> DynIter<'_, usize>;
+    pub fn prop_storage<S>(storage: S)
+    where
+        S: Storage,
+        S::V: Debug + Hash + Clone,
+        S::E: Debug + Hash + Clone,
+    {
+        validate_storage(storage)
+    }
 
-    fn edges(&self) -> DynIter<'_, &Self::E>;
+    pub fn prop_add_vertex<S>(mut storage: S)
+    where
+        S: MutStorage,
+        S::V: Debug + Hash + Clone,
+        S::E: Debug + Hash + Clone,
+        Standard: Distribution<S::V>,
+    {
+        let before_vertex_count = storage.vertex_count();
+        let vertex = thread_rng().gen();
 
-    fn ingoing_edges(&self, vt: usize) -> DynIter<'_, usize>;
+        let vt = storage.add_vertex(vertex.clone());
 
-    fn outgoing_edges(&self, vt: usize) -> DynIter<'_, usize>;
+        assert_eq!(storage.vertex_count(), before_vertex_count + 1);
+        assert!(storage.has_vt(vt));
+        assert_eq!(storage.vertex(vt).clone(), vertex);
+        validate_storage(storage);
+    }
 
-    fn has_edge(&self, et: usize) -> bool;
-}
+    pub fn prop_remove_vertex<S>(mut storage: S)
+    where
+        S: MutStorage,
+        S::V: Debug + Hash + Clone,
+        S::E: Debug + Hash + Clone,
+        Standard: Distribution<S::V>,
+    {
+        let before_vertex_count = storage.vertex_count();
+        if before_vertex_count > 0 {
+            let vt = storage.vertex_tokens().choose(&mut thread_rng()).unwrap();
+            let vertex = storage.vertex(vt).clone();
 
-pub trait MutEdges<const DIR: bool> {
-    type E: EdgeDescriptor<DIR>;
+            let removed_vertex = storage.remove_vertex(vt);
 
-    fn edge_mut(&mut self, et: usize) -> &mut Self::E;
+            assert_eq!(storage.vertex_count(), before_vertex_count - 1);
+            assert_eq!(vertex, removed_vertex);
+            assert!(!storage.has_vt(vt));
+            validate_storage(storage);
+        }
+    }
 
-    fn add_edge(&mut self, src_vt: usize, dst_vt: usize, edge: Self::E) -> usize;
+    pub fn prop_update_vertex<S>(mut storage: S)
+    where
+        S: MutStorage,
+        S::V: Debug + Hash + Clone,
+        S::E: Debug + Hash + Clone,
+        Standard: Distribution<S::V>,
+    {
+        let before_vertex_count = storage.vertex_count();
+        let mut rng = thread_rng();
 
-    fn remove_edge(&mut self, src_vt: usize, dst_vt: usize, et: usize) -> Self::E;
+        if before_vertex_count > 0 {
+            let vt = storage.vertex_tokens().choose(&mut rng).unwrap();
+            let mut new_vertex = rng.gen();
+            let new_vertex_copy = new_vertex.clone();
+
+            std::mem::swap(storage.vertex_mut(vt), &mut new_vertex);
+
+            assert_eq!(storage.vertex_count(), before_vertex_count);
+            assert_eq!(storage.vertex(vt).clone(), new_vertex_copy);
+            assert!(storage.has_vt(vt));
+            validate_storage(storage);
+        }
+    }
+
+    pub fn prop_add_edge<S>(mut storage: S)
+    where
+        S: MutStorage,
+        S::V: Debug + Hash + Clone,
+        S::E: Debug + Hash + Clone,
+        Standard: Distribution<S::V>,
+        Standard: Distribution<S::E>,
+    {
+        if storage.vertex_count() > 0 {
+            let mut rng = thread_rng();
+            let src_vt = storage.vertex_tokens().choose(&mut rng).unwrap();
+            let dst_vt = storage.vertex_tokens().choose(&mut rng).unwrap();
+
+            let before_total_edge = storage.edge_count();
+            let before_outgoing_edges = storage.outgoing_edges(src_vt).count();
+            let before_ingoing_edges = storage.ingoing_edges(dst_vt).count();
+
+            let edge: S::E = rng.gen();
+            let et = storage.add_edge(src_vt, dst_vt, edge.clone());
+
+            assert_eq!(storage.edge_count(), before_total_edge + 1);
+            assert_eq!(
+                storage.outgoing_edges(src_vt).count(),
+                before_outgoing_edges + 1
+            );
+            assert_eq!(
+                storage.ingoing_edges(dst_vt).count(),
+                before_ingoing_edges + 1
+            );
+            assert_eq!(storage.edge(et).2.clone(), edge);
+            assert!(storage.has_et(et));
+            validate_storage(storage);
+        }
+    }
+
+    pub fn prop_remove_edge<S>(mut storage: S)
+    where
+        S: MutStorage,
+        S::V: Debug + Hash + Clone,
+        S::E: Debug + Hash + Clone,
+        Standard: Distribution<S::V>,
+        Standard: Distribution<S::E>,
+    {
+        if storage.edge_count() > 0 {
+            let et = storage.edge_tokens().choose(&mut thread_rng()).unwrap();
+            let (src_vt, dst_vt, _edge) = storage.edge(et);
+            let edge = _edge.clone();
+
+            let before_total_edge = storage.edge_count();
+            let before_outgoing_edges = storage.outgoing_edges(src_vt).count();
+            let before_ingoing_edges = storage.ingoing_edges(dst_vt).count();
+
+            let removed_edge = storage.remove_edge(src_vt, dst_vt, et);
+
+            assert_eq!(storage.edge_count(), before_total_edge - 1);
+            assert_eq!(
+                storage.outgoing_edges(src_vt).count(),
+                before_outgoing_edges - 1
+            );
+            assert_eq!(
+                storage.ingoing_edges(dst_vt).count(),
+                before_ingoing_edges - 1
+            );
+            assert_eq!(edge, removed_edge);
+            assert!(!storage.has_et(et));
+            validate_storage(storage);
+        }
+    }
+
+    pub fn prop_update_edge<S>(mut storage: S)
+    where
+        S: MutStorage,
+        S::V: Debug + Hash + Clone,
+        S::E: Debug + Hash + Clone,
+        Standard: Distribution<S::V>,
+        Standard: Distribution<S::E>,
+    {
+        if storage.edge_count() > 0 {
+            let mut rng = thread_rng();
+            let et = storage.edge_tokens().choose(&mut rng).unwrap();
+
+            let (src_vt, dst_vt, _) = storage.edge(et);
+            let mut new_edge: S::E = rng.gen();
+            let new_edge_copy = new_edge.clone();
+
+            let before_total_edge = storage.edge_count();
+            let before_outgoing_edges = storage.outgoing_edges(src_vt).count();
+            let before_ingoing_edges = storage.ingoing_edges(dst_vt).count();
+
+            std::mem::swap(&mut new_edge, storage.edge_mut(et).2);
+
+            assert_eq!(storage.edge_count(), before_total_edge);
+            assert_eq!(
+                storage.outgoing_edges(src_vt).count(),
+                before_outgoing_edges
+            );
+            assert_eq!(storage.ingoing_edges(dst_vt).count(), before_ingoing_edges);
+            assert_eq!(*storage.edge(et).2, new_edge_copy);
+            assert!(storage.has_et(et));
+            validate_storage(storage);
+        }
+    }
 }

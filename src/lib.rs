@@ -1,5 +1,3 @@
-#![feature(generic_associated_types)]
-
 // #![warn(missing_docs)]
 // #![warn(rustdoc::missing_doc_code_examples)]
 // #![deny(rustdoc::broken_intra_doc_links)]
@@ -32,10 +30,10 @@
 //! If you can satisfy the preconditions implicitly and want maximum performance, use the basic implementation.\
 //! If you are working with unknown inputs and you're not sure about their validity, use the checked version of the method.
 
-pub mod doc;
-pub mod storage;
-pub mod provide;
 pub mod common;
+pub mod doc;
+pub mod provide;
+pub mod storage;
 
 #[cfg(test)]
 pub mod test_utils;

@@ -1,24 +1,23 @@
 use crate::common::DynIter;
 use crate::provide::{Edges, MutEdges, MutVertices, Vertices};
-use crate::storage::edge::EdgeDescriptor;
+use crate::storage::edge::{Edge, EdgeDescriptor};
 use crate::storage::token::UsizeTokenProvider;
 use crate::storage::vertex::VertexDescriptor;
 use itertools::Itertools;
 use std::collections::HashMap;
 
-// TODO: Test
 // TODO: Benchmark
-
+#[derive(Debug)]
 pub struct AdjMap<V, E, const DIR: bool>
 where
     V: VertexDescriptor,
-    E: EdgeDescriptor<DIR>,
+    E: EdgeDescriptor,
 {
     vt_provider: UsizeTokenProvider,
     et_provider: UsizeTokenProvider,
 
     vt_to_v: HashMap<usize, V>,
-    et_to_e: HashMap<usize, E>,
+    et_to_e: HashMap<usize, Edge<E>>,
 
     adj_map: HashMap<usize, HashMap<usize, Vec<usize>>>,
     pred: HashMap<usize, HashMap<usize, Vec<usize>>>,
@@ -27,7 +26,7 @@ where
 impl<V, E, const DIR: bool> AdjMap<V, E, DIR>
 where
     V: VertexDescriptor,
-    E: EdgeDescriptor<DIR>,
+    E: EdgeDescriptor,
 {
     pub fn init() -> Self {
         AdjMap {
@@ -46,7 +45,7 @@ where
 impl<V, E, const DIR: bool> Vertices for AdjMap<V, E, DIR>
 where
     V: VertexDescriptor,
-    E: EdgeDescriptor<DIR>,
+    E: EdgeDescriptor,
 {
     type V = V;
 
@@ -106,10 +105,8 @@ where
 impl<V, E, const DIR: bool> MutVertices for AdjMap<V, E, DIR>
 where
     V: VertexDescriptor,
-    E: EdgeDescriptor<DIR>,
+    E: EdgeDescriptor,
 {
-    type V = V;
-
     fn vertex_mut(&mut self, vt: usize) -> &mut Self::V {
         self.vt_to_v.get_mut(&vt).unwrap()
     }
@@ -117,7 +114,7 @@ where
     fn add_vertex(&mut self, vertex: Self::V) -> usize {
         let vt = self
             .vt_provider
-            .next()
+            .get()
             .expect("There are no more vertex tokens available");
 
         self.vt_to_v.insert(vt, vertex);
@@ -150,15 +147,15 @@ where
     }
 }
 
-impl<V, E, const DIR: bool> Edges<DIR> for AdjMap<V, E, DIR>
+impl<V, E, const DIR: bool> Edges for AdjMap<V, E, DIR>
 where
     V: VertexDescriptor,
-    E: EdgeDescriptor<DIR>,
+    E: EdgeDescriptor,
 {
     type E = E;
 
-    fn edge(&self, et: usize) -> &Self::E {
-        &self.et_to_e[&et]
+    fn edge(&self, et: usize) -> (usize, usize, &E) {
+        self.et_to_e[&et].view()
     }
 
     fn edge_count(&self) -> usize {
@@ -169,8 +166,8 @@ where
         DynIter::init(self.et_to_e.keys().copied())
     }
 
-    fn edges(&self) -> DynIter<'_, &Self::E> {
-        DynIter::init(self.et_to_e.values())
+    fn edges(&self) -> DynIter<'_, (usize, usize, &Self::E)> {
+        DynIter::init(self.et_to_e.values().map(|e| e.view()))
     }
 
     fn ingoing_edges(&self, vt: usize) -> DynIter<'_, usize> {
@@ -182,6 +179,7 @@ where
                     .values()
                     .flatten()
                     .chain(self.adj_map[&vt].values().flatten())
+                    .unique()
                     .copied(),
             )
         }
@@ -196,45 +194,44 @@ where
                     .values()
                     .flatten()
                     .chain(self.pred[&vt].values().flatten())
+                    .unique()
                     .copied(),
             )
         }
     }
 
-    fn has_edge(&self, et: usize) -> bool {
+    fn has_et(&self, et: usize) -> bool {
         self.et_to_e.contains_key(&et)
     }
 }
 
-impl<V, E, const DIR: bool> MutEdges<DIR> for AdjMap<V, E, DIR>
+impl<V, E, const DIR: bool> MutEdges for AdjMap<V, E, DIR>
 where
     V: VertexDescriptor,
-    E: EdgeDescriptor<DIR>,
+    E: EdgeDescriptor,
 {
-    type E = E;
-
-    fn edge_mut(&mut self, et: usize) -> &mut Self::E {
-        self.et_to_e.get_mut(&et).unwrap()
+    fn edge_mut(&mut self, et: usize) -> (usize, usize, &mut E) {
+        self.et_to_e.get_mut(&et).unwrap().view_mut()
     }
 
     fn add_edge(&mut self, src_vt: usize, dst_vt: usize, edge: Self::E) -> usize {
-        let et = self.et_provider.next().unwrap();
+        let et = self.et_provider.get().unwrap();
 
         self.adj_map
             .get_mut(&src_vt)
             .unwrap()
             .entry(dst_vt)
-            .or_insert(Vec::new())
+            .or_insert_with(Vec::new)
             .push(et);
 
         self.pred
             .get_mut(&dst_vt)
             .unwrap()
             .entry(src_vt)
-            .or_insert(Vec::new())
+            .or_insert_with(Vec::new)
             .push(et);
 
-        self.et_to_e.insert(et, edge);
+        self.et_to_e.insert(et, Edge::init(src_vt, dst_vt, edge));
 
         et
     }
@@ -272,6 +269,167 @@ where
 
         self.et_provider.free(et);
 
-        self.et_to_e.remove(&et).unwrap()
+        self.et_to_e.remove(&et).unwrap().into_inner()
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use std::collections::HashMap;
+
+    use super::AdjMap;
+    use crate::provide::{Edges, MutEdges, MutVertices, Vertices};
+    use crate::storage::{edge::EdgeDescriptor, vertex::VertexDescriptor};
+    use quickcheck::Arbitrary;
+    use rand::{thread_rng, Rng};
+
+    impl<V, E, const DIR: bool> Clone for AdjMap<V, E, DIR>
+    where
+        V: VertexDescriptor + Arbitrary,
+        E: EdgeDescriptor + Arbitrary,
+    {
+        fn clone(&self) -> Self {
+            Self {
+                vt_provider: self.vt_provider.clone(),
+                et_provider: self.et_provider.clone(),
+                vt_to_v: self.vt_to_v.clone(),
+                et_to_e: self.et_to_e.clone(),
+                adj_map: self.adj_map.clone(),
+                pred: self.pred.clone(),
+            }
+        }
+    }
+
+    impl<V, E, const DIR: bool> Arbitrary for AdjMap<V, E, DIR>
+    where
+        V: VertexDescriptor + Arbitrary,
+        E: EdgeDescriptor + Arbitrary,
+    {
+        fn arbitrary(g: &mut quickcheck::Gen) -> Self {
+            let vertex_count = usize::arbitrary(g) % 100;
+
+            let mut rng = thread_rng();
+            let edge_probability = rng.gen::<f64>() * rng.gen::<f64>();
+
+            let mut adj_map = AdjMap::<V, E, DIR>::init();
+
+            let vts: Vec<usize> = (0..vertex_count)
+                .map(|_| adj_map.add_vertex(V::arbitrary(g)))
+                .collect();
+
+            vts.iter().zip(vts.iter()).for_each(|(i, j)| {
+                let p = rng.gen::<f64>();
+
+                if p <= edge_probability {
+                    adj_map.add_edge(*i, *j, E::arbitrary(g));
+                }
+            });
+
+            adj_map
+        }
+
+        fn shrink(&self) -> Box<dyn Iterator<Item = Self>> {
+            let mut adj_map_even = Self::init();
+            let mut adj_map_odd = Self::init();
+
+            let mut vt_map = HashMap::new();
+
+            for (index, vt) in self.vertex_tokens().enumerate() {
+                let new_vt = if index % 2 == 0 {
+                    adj_map_even.add_vertex(self.vertex(vt).clone())
+                } else {
+                    adj_map_odd.add_vertex(self.vertex(vt).clone())
+                };
+
+                vt_map.insert(vt, new_vt);
+            }
+
+            for (src_vt, dst_vt, edge) in self.edges() {
+                let new_src_vt = vt_map[&src_vt];
+                let new_dst_vt = vt_map[&dst_vt];
+
+                if adj_map_even.has_vt(new_src_vt) && adj_map_even.has_vt(new_dst_vt) {
+                    adj_map_even.add_edge(new_src_vt, new_dst_vt, edge.clone());
+                } else if adj_map_odd.has_vt(new_src_vt) && adj_map_odd.has_vt(new_dst_vt) {
+                    adj_map_odd.add_edge(new_src_vt, new_dst_vt, edge.clone());
+                }
+            }
+
+            let before_count = self.vertex_count();
+
+            Box::new(
+                [adj_map_even, adj_map_odd]
+                    .into_iter()
+                    .filter(move |adj_map| adj_map.vertex_count() < before_count),
+            )
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use quickcheck_macros::quickcheck;
+
+    use crate::provide::storage_test_suit;
+    use crate::storage::AdjMap;
+
+    #[quickcheck]
+    fn prop_storage(storage: AdjMap<usize, usize, false>, dir_storage: AdjMap<usize, usize, true>) {
+        storage_test_suit::prop_storage(storage);
+        storage_test_suit::prop_storage(dir_storage);
+    }
+
+    #[quickcheck]
+    fn prop_add_vertex(
+        storage: AdjMap<usize, usize, false>,
+        dir_storage: AdjMap<usize, usize, true>,
+    ) {
+        storage_test_suit::prop_add_vertex(storage);
+        storage_test_suit::prop_add_vertex(dir_storage);
+    }
+
+    #[quickcheck]
+    fn prop_remove_vertex(
+        storage: AdjMap<usize, usize, false>,
+        dir_storage: AdjMap<usize, usize, true>,
+    ) {
+        storage_test_suit::prop_remove_vertex(storage);
+        storage_test_suit::prop_remove_vertex(dir_storage);
+    }
+
+    #[quickcheck]
+    fn prop_update_vertex(
+        storage: AdjMap<usize, usize, false>,
+        dir_storage: AdjMap<usize, usize, true>,
+    ) {
+        storage_test_suit::prop_update_vertex(storage);
+        storage_test_suit::prop_update_vertex(dir_storage);
+    }
+
+    #[quickcheck]
+    fn prop_add_edge(
+        storage: AdjMap<usize, usize, false>,
+        dir_storage: AdjMap<usize, usize, true>,
+    ) {
+        storage_test_suit::prop_add_edge(storage);
+        storage_test_suit::prop_add_edge(dir_storage);
+    }
+
+    #[quickcheck]
+    fn prop_remove_edge(
+        storage: AdjMap<usize, usize, false>,
+        dir_storage: AdjMap<usize, usize, true>,
+    ) {
+        storage_test_suit::prop_remove_edge(storage);
+        storage_test_suit::prop_remove_edge(dir_storage);
+    }
+
+    #[quickcheck]
+    fn prop_update_edge(
+        storage: AdjMap<usize, usize, false>,
+        dir_storage: AdjMap<usize, usize, true>,
+    ) {
+        storage_test_suit::prop_update_edge(storage);
+        storage_test_suit::prop_update_edge(dir_storage);
     }
 }

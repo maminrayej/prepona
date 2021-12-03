@@ -1,3 +1,3 @@
-use super::Direction;
+pub trait EdgeDescriptor: PartialEq + Eq {}
 
-pub trait EdgeDescriptor<const DIR: bool>: PartialEq + Eq + Direction<DIR> {}
+impl<T> EdgeDescriptor for T where T: PartialEq + Eq {}

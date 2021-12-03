@@ -1,81 +1,38 @@
-use std::{collections::HashSet, hash::Hash, ops::RangeInclusive};
+use std::{collections::HashSet, ops::RangeInclusive};
 
-pub trait Walkable {
-    type Walker: Walker<Item = Self>;
-
-    fn walker() -> Self::Walker;
+#[derive(Debug)]
+pub struct UsizeTokenProvider {
+    reusable_tokens: HashSet<usize>,
+    inner: RangeInclusive<usize>,
 }
 
-impl Walkable for usize {
-    type Walker = IterWalker<usize, RangeInclusive<usize>>;
-
-    fn walker() -> Self::Walker {
-        IterWalker::init(usize::MIN..=usize::MAX)
-    }
-}
-
-pub trait Walker {
-    type Item;
-
-    fn next(&mut self) -> Option<Self::Item>;
-}
-
-pub struct IterWalker<T, I>
-where
-    I: Iterator<Item = T>,
-{
-    inner: I,
-}
-
-impl<T, I> IterWalker<T, I>
-where
-    I: Iterator<Item = T>,
-{
-    pub fn init(iter: I) -> Self {
-        IterWalker { inner: iter }
-    }
-}
-
-impl<T, I> Walker for IterWalker<T, I>
-where
-    I: Iterator<Item = T>,
-{
-    type Item = T;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.inner.next()
-    }
-}
-
-pub type UsizeTokenProvider = TokenProvider<usize, IterWalker<usize, RangeInclusive<usize>>>;
-
-pub struct TokenProvider<T, W>
-where
-    T: Walkable + Eq + Hash,
-    W: Walker<Item = T>,
-{
-    reusable_tokens: HashSet<T>,
-
-    walker: W,
-}
-
-impl<T, W> TokenProvider<T, W>
-where
-    T: Walkable<Walker = W> + Eq + Hash,
-    W: Walker<Item = T>,
-{
+impl UsizeTokenProvider {
     pub fn init() -> Self {
-        TokenProvider {
+        UsizeTokenProvider {
             reusable_tokens: HashSet::new(),
-            walker: T::walker(),
+            inner: (usize::MIN..=usize::MAX),
         }
     }
 
-    pub fn next(&mut self) -> Option<T> {
-        self.walker.next()
+    pub fn get(&mut self) -> Option<usize> {
+        self.inner.next()
     }
 
-    pub fn free(&mut self, token: T) {
+    pub fn free(&mut self, token: usize) {
         self.reusable_tokens.insert(token);
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::UsizeTokenProvider;
+
+    impl Clone for UsizeTokenProvider {
+        fn clone(&self) -> Self {
+            Self {
+                reusable_tokens: self.reusable_tokens.clone(),
+                inner: self.inner.clone(),
+            }
+        }
     }
 }
