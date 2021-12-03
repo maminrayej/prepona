@@ -321,7 +321,11 @@ mod test {
                 let p = rng.gen::<f64>();
 
                 if p <= edge_probability {
-                    adj_map.add_edge(*i, *j, E::arbitrary(g));
+                    let num_of_edges = (usize::arbitrary(g) % 3) + 1;
+
+                    for _ in 0..num_of_edges {
+                        adj_map.add_edge(*i, *j, E::arbitrary(g));
+                    }
                 }
             });
 
