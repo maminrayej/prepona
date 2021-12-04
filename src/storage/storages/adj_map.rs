@@ -1,7 +1,7 @@
 use crate::common::DynIter;
 use crate::provide::{
-    CheckedEdges, CheckedMutEdges, CheckedMutVertices, CheckedVertices, Edges, MutEdges,
-    MutVertices, Vertices,
+    CheckedEdges, CheckedMutEdges, CheckedMutVertices, CheckedVertices, Edges,
+    InitializableStorage, MutEdges, MutVertices, Vertices,
 };
 use crate::storage::edge::{Edge, EdgeDescriptor};
 use crate::storage::token::UsizeTokenProvider;
@@ -42,6 +42,16 @@ where
             adj_map: HashMap::new(),
             pred: HashMap::new(),
         }
+    }
+}
+
+impl<V, E, const DIR: bool> InitializableStorage for AdjMap<V, E, DIR>
+where
+    V: VertexDescriptor,
+    E: EdgeDescriptor,
+{
+    fn init() -> Self {
+        AdjMap::init()
     }
 }
 

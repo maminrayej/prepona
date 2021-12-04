@@ -6,6 +6,12 @@ pub use edge::*;
 pub use vertex::*;
 pub use view::*;
 
+// TODO: Specify direction for a storage. Some generators don't work for both directed and undirected storages.
+
+pub trait InitializableStorage {
+    fn init() -> Self;
+}
+
 pub trait Storage: Vertices + Edges {}
 impl<T: Vertices + Edges> Storage for T {}
 

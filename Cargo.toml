@@ -16,11 +16,11 @@ documentation = "https://docs.rs/prepona"
 anyhow = "1.0.44"
 thiserror = "1.0.30"
 itertools = "0.10.1"
+rand = "0.8.4"
 
 [dev-dependencies]
 quickcheck = "1.0.3"
 quickcheck_macros = "1.0.0"
-rand = "0.8.4"
 criterion = "0.3.5"
 
 # Benchmarks
