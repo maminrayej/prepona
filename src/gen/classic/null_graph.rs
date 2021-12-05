@@ -2,7 +2,7 @@ use rand::{distributions::Standard, prelude::Distribution};
 
 use crate::provide::{InitializableStorage, MutStorage};
 
-use super::Generator;
+use crate::gen::Generator;
 
 pub struct NullGraphGenerator;
 

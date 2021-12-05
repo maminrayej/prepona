@@ -1,8 +1,9 @@
 use rand::{distributions::Standard, prelude::Distribution};
 
+use crate::gen::Generator;
 use crate::provide::{InitializableStorage, MutStorage};
 
-use super::{FullRAryTreeGenerator, Generator};
+use super::FullRAryTreeGenerator;
 
 pub struct BalancedTreeGenerator {
     height: usize,
@@ -10,9 +11,9 @@ pub struct BalancedTreeGenerator {
 }
 
 impl BalancedTreeGenerator {
-    pub fn init(vertex_count: usize, balance_factor: usize) -> Self {
+    pub fn init(height: usize, balance_factor: usize) -> Self {
         BalancedTreeGenerator {
-            height: vertex_count,
+            height,
             balance_factor,
         }
     }

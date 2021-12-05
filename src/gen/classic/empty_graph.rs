@@ -2,7 +2,7 @@ use rand::{distributions::Standard, prelude::Distribution, thread_rng, Rng};
 
 use crate::provide::{InitializableStorage, MutStorage};
 
-use super::Generator;
+use crate::gen::Generator;
 
 pub struct EmptyGraphGenerator {
     vertex_count: usize,

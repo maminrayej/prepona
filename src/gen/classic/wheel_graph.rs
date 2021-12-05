@@ -2,7 +2,8 @@ use rand::{distributions::Standard, prelude::Distribution, thread_rng, Rng};
 
 use crate::provide::{InitializableStorage, MutStorage};
 
-use super::{CycleGraphGenerator, Generator};
+use super::CycleGraphGenerator;
+use crate::gen::Generator;
 
 pub struct WheelGraphGenerator {
     vertex_count: usize,

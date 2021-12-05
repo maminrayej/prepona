@@ -1,25 +1,20 @@
-use itertools::Itertools;
 use rand::{distributions::Standard, prelude::Distribution, thread_rng, Rng};
 
 use crate::provide::{InitializableStorage, MutStorage};
 
-use super::Generator;
+use crate::gen::Generator;
 
-pub struct CycleGraphGenerator {
+pub struct PathGraphGenerator {
     vertex_count: usize,
 }
 
-impl CycleGraphGenerator {
+impl PathGraphGenerator {
     pub fn init(vertex_count: usize) -> Self {
-        if vertex_count < 3 {
-            panic!("Vertex count must be atleast 3 to form a cycle graph")
-        }
-
-        CycleGraphGenerator { vertex_count }
+        PathGraphGenerator { vertex_count }
     }
 }
 
-impl<S> Generator<S> for CycleGraphGenerator
+impl<S> Generator<S> for PathGraphGenerator
 where
     S: InitializableStorage + MutStorage,
     Standard: Distribution<S::V>,
@@ -34,10 +29,8 @@ where
             .map(|_| storage.add_vertex(rng.gen()))
             .collect();
 
-        if self.vertex_count > 1 {
-            for (src_vt, dst_vt) in vertex_tokens.into_iter().circular_tuple_windows() {
-                storage.add_edge(src_vt, dst_vt, rng.gen());
-            }
+        for vts in vertex_tokens.windows(2) {
+            storage.add_edge(vts[0], vts[1], rng.gen());
         }
 
         storage
