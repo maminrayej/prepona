@@ -5,6 +5,7 @@ use crate::provide::{InitializableStorage, MutStorage};
 
 use crate::gen::Generator;
 
+#[derive(Debug)]
 pub struct CompleteGraphGenerator {
     vertex_count: usize,
 }
@@ -36,9 +37,74 @@ where
             .cartesian_product(vertex_tokens.iter().copied());
 
         for (src_vt, dst_vt) in vt_pairs {
-            storage.add_edge(src_vt, dst_vt, rng.gen());
+            if src_vt < dst_vt {
+                storage.add_edge(src_vt, dst_vt, rng.gen());
+            }
         }
 
         storage
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::CompleteGraphGenerator;
+    use quickcheck::Arbitrary;
+
+    impl Clone for CompleteGraphGenerator {
+        fn clone(&self) -> Self {
+            Self {
+                vertex_count: self.vertex_count.clone(),
+            }
+        }
+    }
+
+    impl Arbitrary for CompleteGraphGenerator {
+        fn arbitrary(g: &mut quickcheck::Gen) -> Self {
+            let vertex_count = usize::arbitrary(g) % 16 + 1;
+
+            CompleteGraphGenerator::init(vertex_count)
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use itertools::Itertools;
+    use quickcheck_macros::quickcheck;
+
+    use crate::{
+        gen::Generator,
+        provide::{Edges, Vertices},
+        storage::AdjMap,
+    };
+
+    use super::CompleteGraphGenerator;
+
+    #[quickcheck]
+    fn prop_gen_complete_graph(generator: CompleteGraphGenerator) {
+        let graph: AdjMap<(), (), false> = generator.generate();
+
+        if graph.vertex_count() > 0 {
+            assert_eq!(
+                graph.edge_count(),
+                graph.vertex_count() * (graph.vertex_count() - 1) / 2
+            );
+        }
+
+        let vts: Vec<usize> = graph.vertex_tokens().collect();
+        let vt_pairs = vts.iter().copied().cartesian_product(vts.iter().copied());
+
+        for (src_vt, dst_vt) in vt_pairs {
+            assert_eq!(
+                graph
+                    .outgoing_edges(src_vt)
+                    .map(|et| graph.edge(et))
+                    .filter(|(s_vt, d_vt, _)| (*s_vt == src_vt && *d_vt == dst_vt)
+                        || (*d_vt == src_vt && *s_vt == dst_vt))
+                    .count(),
+                if src_vt != dst_vt { 1 } else { 0 }
+            )
+        }
     }
 }
