@@ -5,6 +5,7 @@ use crate::provide::{InitializableStorage, MutStorage};
 
 use crate::gen::Generator;
 
+#[derive(Debug)]
 pub struct CycleGraphGenerator {
     vertex_count: usize,
 }
@@ -39,5 +40,58 @@ where
         }
 
         storage
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::CycleGraphGenerator;
+    use quickcheck::Arbitrary;
+
+    impl Clone for CycleGraphGenerator {
+        fn clone(&self) -> Self {
+            Self {
+                vertex_count: self.vertex_count.clone(),
+            }
+        }
+    }
+
+    impl Arbitrary for CycleGraphGenerator {
+        fn arbitrary(g: &mut quickcheck::Gen) -> Self {
+            let vertex_count = usize::arbitrary(g) % 16 + 3;
+
+            CycleGraphGenerator::init(vertex_count)
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use quickcheck_macros::quickcheck;
+
+    use crate::{
+        gen::Generator,
+        provide::{Edges, Vertices},
+        storage::AdjMap,
+    };
+
+    use super::CycleGraphGenerator;
+
+    #[quickcheck]
+    fn prop_gen_cycle_graph(generator: CycleGraphGenerator) {
+        let graph: AdjMap<(), (), false> = generator.generate();
+
+        for vt in graph.vertex_tokens() {
+            assert_eq!(graph.neighbors(vt).filter(|n_vt| *n_vt != vt).count(), 2);
+        }
+
+        assert_eq!(
+            graph
+                .vertex_tokens()
+                .map(|vt| graph.outgoing_edges(vt).count())
+                .filter(|out_degree| *out_degree == 2)
+                .count(),
+            graph.vertex_count()
+        );
     }
 }
