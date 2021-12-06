@@ -4,6 +4,7 @@ use crate::provide::{InitializableStorage, MutStorage};
 
 use crate::gen::Generator;
 
+#[derive(Debug)]
 pub struct EmptyGraphGenerator {
     vertex_count: usize,
 }
@@ -29,5 +30,43 @@ where
         }
 
         storage
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::EmptyGraphGenerator;
+    use quickcheck::Arbitrary;
+
+    impl Clone for EmptyGraphGenerator {
+        fn clone(&self) -> Self {
+            Self {
+                vertex_count: self.vertex_count.clone(),
+            }
+        }
+    }
+
+    impl Arbitrary for EmptyGraphGenerator {
+        fn arbitrary(g: &mut quickcheck::Gen) -> Self {
+            let vertex_count = usize::arbitrary(g) % 16 + 1;
+
+            EmptyGraphGenerator::init(vertex_count)
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use quickcheck_macros::quickcheck;
+
+    use crate::{gen::Generator, provide::Edges, storage::AdjMap};
+
+    use super::EmptyGraphGenerator;
+
+    #[quickcheck]
+    fn prop_gen_empty_graph(generator: EmptyGraphGenerator) {
+        let graph: AdjMap<(), (), false> = generator.generate();
+
+        assert_eq!(graph.edge_count(), 0);
     }
 }
