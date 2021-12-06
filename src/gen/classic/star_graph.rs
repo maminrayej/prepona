@@ -4,6 +4,7 @@ use crate::provide::{InitializableStorage, MutStorage};
 
 use crate::gen::Generator;
 
+#[derive(Debug)]
 pub struct StarGraphGenerator {
     vertex_count: usize,
 }
@@ -40,5 +41,63 @@ where
         }
 
         storage
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::StarGraphGenerator;
+    use quickcheck::Arbitrary;
+
+    impl Clone for StarGraphGenerator {
+        fn clone(&self) -> Self {
+            Self {
+                vertex_count: self.vertex_count.clone(),
+            }
+        }
+    }
+
+    impl Arbitrary for StarGraphGenerator {
+        fn arbitrary(g: &mut quickcheck::Gen) -> Self {
+            let vertex_count = usize::arbitrary(g) % 16 + 3;
+
+            StarGraphGenerator::init(vertex_count)
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use quickcheck_macros::quickcheck;
+
+    use crate::{
+        gen::Generator,
+        provide::{Edges, Vertices},
+        storage::AdjMap,
+    };
+
+    use super::StarGraphGenerator;
+
+    #[quickcheck]
+    fn prop_gen_star_graph(generator: StarGraphGenerator) {
+        let graph: AdjMap<(), (), false> = generator.generate();
+
+        assert_eq!(
+            graph
+                .vertex_tokens()
+                .map(|vt| graph.outgoing_edges(vt).count())
+                .filter(|out_degree| *out_degree == 1)
+                .count(),
+            graph.vertex_count() - 1
+        );
+
+        assert_eq!(
+            graph
+                .vertex_tokens()
+                .map(|vt| graph.outgoing_edges(vt).count())
+                .filter(|out_degree| *out_degree == graph.vertex_count() - 1)
+                .count(),
+            1
+        );
     }
 }
