@@ -160,7 +160,7 @@ where
 
         let preds: Vec<usize> = self.pred[&vt].keys().copied().collect();
         for pred_vt in preds {
-            let ets: Vec<usize> = self.adj_map[&vt][&pred_vt].iter().copied().collect();
+            let ets: Vec<usize> = self.pred[&vt][&pred_vt].iter().copied().collect();
 
             for et in ets {
                 self.remove_edge(pred_vt, vt, et);
@@ -279,7 +279,7 @@ where
     }
 
     fn remove_edge(&mut self, mut src_vt: usize, mut dst_vt: usize, et: usize) -> Self::E {
-        if self.pred[&src_vt][&dst_vt].contains(&et) {
+        if !self.pred[&dst_vt][&src_vt].contains(&et) {
             std::mem::swap(&mut src_vt, &mut dst_vt)
         }
 
