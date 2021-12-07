@@ -5,16 +5,20 @@ use crate::provide::{InitializableStorage, MutStorage};
 
 use crate::gen::Generator;
 
+#[derive(Debug)]
 pub struct CompleteMultiPartiteGraphGenerator {
     set_sizes: Vec<usize>,
 }
 
 impl CompleteMultiPartiteGraphGenerator {
     pub fn init(set_sizes: impl Iterator<Item = usize>) -> Self {
-        // TODO: Validate sizes
-        CompleteMultiPartiteGraphGenerator {
-            set_sizes: set_sizes.collect(),
+        let set_sizes = set_sizes.collect_vec();
+
+        if set_sizes.iter().any(|size| *size == 0) {
+            panic!("Each set must contain at least one element to create a complete multipartite graph")
         }
+
+        CompleteMultiPartiteGraphGenerator { set_sizes }
     }
 }
 
@@ -28,27 +32,85 @@ where
         let mut storage = S::init();
         let mut rng = thread_rng();
 
-        let mut first_set_tokens: Vec<usize> = (0..self.set_sizes[0])
-            .map(|_| storage.add_vertex(rng.gen()))
-            .collect();
+        let partitions = (0..self.set_sizes.len())
+            .map(|set_index| {
+                (0..self.set_sizes[set_index])
+                    .map(|_| storage.add_vertex(rng.gen()))
+                    .collect_vec()
+            })
+            .collect_vec();
 
-        for set_size in self.set_sizes.iter().skip(1).copied() {
-            let second_set_tokens: Vec<usize> = (0..set_size)
-                .map(|_| storage.add_vertex(rng.gen()))
-                .collect();
+        // Connect each partition to all other partitions
+        for i in 0..partitions.len() {
+            for j in (i + 1)..partitions.len() {
+                let vt_pairs = partitions[i]
+                    .iter()
+                    .copied()
+                    .cartesian_product(partitions[j].iter().copied());
 
-            let vt_pairs = first_set_tokens
-                .iter()
-                .copied()
-                .cartesian_product(second_set_tokens.iter().copied());
-
-            for (src_vt, dst_vt) in vt_pairs {
-                storage.add_edge(src_vt, dst_vt, rng.gen());
+                for (src_vt, dst_vt) in vt_pairs {
+                    storage.add_edge(src_vt, dst_vt, rng.gen());
+                }
             }
-
-            first_set_tokens = second_set_tokens;
         }
 
         storage
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::CompleteMultiPartiteGraphGenerator;
+    use quickcheck::Arbitrary;
+
+    impl Clone for CompleteMultiPartiteGraphGenerator {
+        fn clone(&self) -> Self {
+            Self {
+                set_sizes: self.set_sizes.clone(),
+            }
+        }
+    }
+
+    impl Arbitrary for CompleteMultiPartiteGraphGenerator {
+        fn arbitrary(g: &mut quickcheck::Gen) -> Self {
+            let set_count = usize::arbitrary(g) % 3 + 1;
+
+            CompleteMultiPartiteGraphGenerator::init(
+                (0..set_count).map(|_| usize::arbitrary(g) % 5 + 1),
+            )
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use quickcheck_macros::quickcheck;
+
+    use crate::{
+        gen::Generator,
+        provide::{Edges, Vertices},
+        storage::AdjMap,
+    };
+
+    use super::CompleteMultiPartiteGraphGenerator;
+
+    #[quickcheck]
+    fn prop_gen_complete_multi_partite_graph(generator: CompleteMultiPartiteGraphGenerator) {
+        let graph: AdjMap<(), (), false> = generator.generate();
+
+        let set_sizes = generator.set_sizes;
+
+        let vertex_token_count = graph.vertex_tokens().count();
+
+        for set_size in &set_sizes {
+            assert_eq!(
+                graph
+                    .vertex_tokens()
+                    .map(|vt| graph.outgoing_edges(vt).count())
+                    .filter(|out_degree| *out_degree == vertex_token_count - *set_size)
+                    .count(),
+                set_sizes.iter().filter(|ss| *ss == set_size).sum::<usize>()
+            );
+        }
     }
 }
