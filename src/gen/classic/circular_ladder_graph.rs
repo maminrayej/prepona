@@ -6,6 +6,7 @@ use crate::provide::{InitializableStorage, MutStorage};
 use super::CycleGraphGenerator;
 use crate::gen::Generator;
 
+#[derive(Debug)]
 pub struct CircularLadderGraphGenerator {
     vertex_count: usize,
 }
@@ -51,5 +52,50 @@ where
         }
 
         storage
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::CircularLadderGraphGenerator;
+    use quickcheck::Arbitrary;
+
+    impl Clone for CircularLadderGraphGenerator {
+        fn clone(&self) -> Self {
+            Self {
+                vertex_count: self.vertex_count.clone(),
+            }
+        }
+    }
+
+    impl Arbitrary for CircularLadderGraphGenerator {
+        fn arbitrary(g: &mut quickcheck::Gen) -> Self {
+            let vertex_count = usize::arbitrary(g) % 16 + 3;
+
+            CircularLadderGraphGenerator::init(vertex_count)
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use quickcheck_macros::quickcheck;
+
+    use crate::{
+        gen::Generator,
+        provide::{Edges, Vertices},
+        storage::AdjMap,
+    };
+
+    use super::CircularLadderGraphGenerator;
+
+    #[quickcheck]
+    fn prop_gen_cicular_ladder_graph(generator: CircularLadderGraphGenerator) {
+        let graph: AdjMap<(), (), false> = generator.generate();
+
+        assert!(graph
+            .vertex_tokens()
+            .map(|vt| graph.outgoing_edges(vt).count())
+            .all(|deg| deg == 3))
     }
 }
