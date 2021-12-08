@@ -1,7 +1,10 @@
 use itertools::repeat_n;
 use rand::{distributions::Standard, prelude::Distribution};
 
-use crate::provide::{InitializableStorage, MutStorage};
+use crate::{
+    provide::{Edges, InitializableStorage, MutStorage, Vertices},
+    storage::edge::Undirected,
+};
 
 use super::CompleteMultiPartiteGraphGenerator;
 use crate::gen::Generator;
@@ -37,9 +40,12 @@ impl TuranGraphGenerator {
     }
 }
 
-impl<S> Generator<S> for TuranGraphGenerator
+impl<S> Generator<S, Undirected> for TuranGraphGenerator
 where
-    S: InitializableStorage + MutStorage,
+    S: Edges<Dir = Undirected>,
+    S: Vertices<Dir = Undirected>,
+    S: MutStorage,
+    S: InitializableStorage<Dir = Undirected>,
     Standard: Distribution<S::V>,
     Standard: Distribution<S::E>,
 {
@@ -47,7 +53,7 @@ where
         let set_sizes =
             TuranGraphGenerator::set_sizes_of(self.vertex_count, self.partition_count).into_iter();
 
-        CompleteMultiPartiteGraphGenerator::init(set_sizes.into_iter()).generate()
+        CompleteMultiPartiteGraphGenerator::init(set_sizes).generate()
     }
 }
 
@@ -82,14 +88,14 @@ mod tests {
     use crate::{
         gen::Generator,
         provide::{Edges, Vertices},
-        storage::AdjMap,
+        storage::{edge::Undirected, AdjMap},
     };
 
     use super::TuranGraphGenerator;
 
     #[quickcheck]
     fn prop_gen_turan_graph(generator: TuranGraphGenerator) {
-        let graph: AdjMap<(), (), false> = generator.generate();
+        let graph: AdjMap<(), (), Undirected> = generator.generate();
 
         let vertex_count = generator.vertex_count;
         let partition_count = generator.partition_count;

@@ -1,13 +1,14 @@
 use anyhow::Result;
 
 use crate::common::DynIter;
-use crate::storage::edge::EdgeDescriptor;
+use crate::storage::edge::{Direction, EdgeDescriptor};
 use crate::storage::StorageError;
 
 use super::Vertices;
 
 pub trait Edges {
     type E: EdgeDescriptor;
+    type Dir: Direction;
 
     fn edge(&self, et: usize) -> (usize, usize, &Self::E);
 

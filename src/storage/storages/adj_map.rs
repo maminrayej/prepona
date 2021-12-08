@@ -3,18 +3,20 @@ use crate::provide::{
     CheckedEdges, CheckedMutEdges, CheckedMutVertices, CheckedVertices, Edges,
     InitializableStorage, MutEdges, MutVertices, Vertices,
 };
-use crate::storage::edge::{Edge, EdgeDescriptor};
+use crate::storage::edge::{Direction, Edge, EdgeDescriptor};
 use crate::storage::token::UsizeTokenProvider;
 use crate::storage::vertex::VertexDescriptor;
 use itertools::Itertools;
 use std::collections::HashMap;
+use std::marker::PhantomData;
 
 // TODO: Benchmark
 #[derive(Debug)]
-pub struct AdjMap<V, E, const DIR: bool>
+pub struct AdjMap<V, E, Dir: Direction>
 where
     V: VertexDescriptor,
     E: EdgeDescriptor,
+    Dir: Direction,
 {
     vt_provider: UsizeTokenProvider,
     et_provider: UsizeTokenProvider,
@@ -24,12 +26,15 @@ where
 
     adj_map: HashMap<usize, HashMap<usize, Vec<usize>>>,
     pred: HashMap<usize, HashMap<usize, Vec<usize>>>,
+
+    phantom_dir: PhantomData<Dir>,
 }
 
-impl<V, E, const DIR: bool> AdjMap<V, E, DIR>
+impl<V, E, Dir: Direction> AdjMap<V, E, Dir>
 where
     V: VertexDescriptor,
     E: EdgeDescriptor,
+    Dir: Direction,
 {
     pub fn init() -> Self {
         AdjMap {
@@ -41,26 +46,33 @@ where
 
             adj_map: HashMap::new(),
             pred: HashMap::new(),
+
+            phantom_dir: PhantomData,
         }
     }
 }
 
-impl<V, E, const DIR: bool> InitializableStorage for AdjMap<V, E, DIR>
+impl<V, E, Dir: Direction> InitializableStorage for AdjMap<V, E, Dir>
 where
     V: VertexDescriptor,
     E: EdgeDescriptor,
+    Dir: Direction,
 {
+    type Dir = Dir;
+
     fn init() -> Self {
         AdjMap::init()
     }
 }
 
-impl<V, E, const DIR: bool> Vertices for AdjMap<V, E, DIR>
+impl<V, E, Dir: Direction> Vertices for AdjMap<V, E, Dir>
 where
     V: VertexDescriptor,
     E: EdgeDescriptor,
+    Dir: Direction,
 {
     type V = V;
+    type Dir = Dir;
 
     fn vertex(&self, vt: usize) -> &Self::V {
         &self.vt_to_v[&vt]
@@ -87,7 +99,7 @@ where
     }
 
     fn successors(&self, vt: usize) -> DynIter<'_, usize> {
-        if DIR {
+        if Dir::is_directed() {
             DynIter::init(self.adj_map[&vt].keys().copied())
         } else {
             DynIter::init(
@@ -101,7 +113,7 @@ where
     }
 
     fn predecessors(&self, vt: usize) -> DynIter<'_, usize> {
-        if DIR {
+        if Dir::is_directed() {
             DynIter::init(self.pred[&vt].keys().copied())
         } else {
             DynIter::init(
@@ -115,17 +127,19 @@ where
     }
 }
 
-impl<V, E, const DIR: bool> CheckedVertices for AdjMap<V, E, DIR>
+impl<V, E, Dir: Direction> CheckedVertices for AdjMap<V, E, Dir>
 where
     V: VertexDescriptor,
     E: EdgeDescriptor,
+    Dir: Direction,
 {
 }
 
-impl<V, E, const DIR: bool> MutVertices for AdjMap<V, E, DIR>
+impl<V, E, Dir: Direction> MutVertices for AdjMap<V, E, Dir>
 where
     V: VertexDescriptor,
     E: EdgeDescriptor,
+    Dir: Direction,
 {
     fn has_free_token(&mut self) -> bool {
         self.vt_provider.has_next()
@@ -171,19 +185,22 @@ where
     }
 }
 
-impl<V, E, const DIR: bool> CheckedMutVertices for AdjMap<V, E, DIR>
+impl<V, E, Dir: Direction> CheckedMutVertices for AdjMap<V, E, Dir>
 where
     V: VertexDescriptor,
     E: EdgeDescriptor,
+    Dir: Direction,
 {
 }
 
-impl<V, E, const DIR: bool> Edges for AdjMap<V, E, DIR>
+impl<V, E, Dir: Direction> Edges for AdjMap<V, E, Dir>
 where
     V: VertexDescriptor,
     E: EdgeDescriptor,
+    Dir: Direction,
 {
     type E = E;
+    type Dir = Dir;
 
     fn edge(&self, et: usize) -> (usize, usize, &E) {
         self.et_to_e[&et].view()
@@ -202,7 +219,7 @@ where
     }
 
     fn ingoing_edges(&self, vt: usize) -> DynIter<'_, usize> {
-        if DIR {
+        if Dir::is_directed() {
             DynIter::init(self.pred[&vt].values().flatten().copied())
         } else {
             DynIter::init(
@@ -217,7 +234,7 @@ where
     }
 
     fn outgoing_edges(&self, vt: usize) -> DynIter<'_, usize> {
-        if DIR {
+        if Dir::is_directed() {
             DynIter::init(self.adj_map[&vt].values().flatten().copied())
         } else {
             DynIter::init(
@@ -236,17 +253,19 @@ where
     }
 }
 
-impl<V, E, const DIR: bool> CheckedEdges for AdjMap<V, E, DIR>
+impl<V, E, Dir: Direction> CheckedEdges for AdjMap<V, E, Dir>
 where
     V: VertexDescriptor,
     E: EdgeDescriptor,
+    Dir: Direction,
 {
 }
 
-impl<V, E, const DIR: bool> MutEdges for AdjMap<V, E, DIR>
+impl<V, E, Dir: Direction> MutEdges for AdjMap<V, E, Dir>
 where
     V: VertexDescriptor,
     E: EdgeDescriptor,
+    Dir: Direction,
 {
     fn has_free_et(&mut self) -> bool {
         self.et_provider.has_next()
@@ -315,24 +334,27 @@ where
     }
 }
 
-impl<V, E, const DIR: bool> CheckedMutEdges for AdjMap<V, E, DIR>
+impl<V, E, Dir: Direction> CheckedMutEdges for AdjMap<V, E, Dir>
 where
     V: VertexDescriptor,
     E: EdgeDescriptor,
+    Dir: Direction,
 {
 }
 
 #[cfg(test)]
 mod test {
     use std::collections::HashMap;
+    use std::marker::PhantomData;
 
     use super::AdjMap;
     use crate::provide::{Edges, MutEdges, MutVertices, Vertices};
+    use crate::storage::edge::Direction;
     use crate::storage::{edge::EdgeDescriptor, vertex::VertexDescriptor};
     use quickcheck::Arbitrary;
     use rand::{thread_rng, Rng};
 
-    impl<V, E, const DIR: bool> Clone for AdjMap<V, E, DIR>
+    impl<V, E, Dir: Direction> Clone for AdjMap<V, E, Dir>
     where
         V: VertexDescriptor + Arbitrary,
         E: EdgeDescriptor + Arbitrary,
@@ -345,14 +367,16 @@ mod test {
                 et_to_e: self.et_to_e.clone(),
                 adj_map: self.adj_map.clone(),
                 pred: self.pred.clone(),
+                phantom_dir: PhantomData,
             }
         }
     }
 
-    impl<V, E, const DIR: bool> Arbitrary for AdjMap<V, E, DIR>
+    impl<V, E, Dir: Direction> Arbitrary for AdjMap<V, E, Dir>
     where
         V: VertexDescriptor + Arbitrary,
         E: EdgeDescriptor + Arbitrary,
+        Dir: Direction + Arbitrary,
     {
         fn arbitrary(g: &mut quickcheck::Gen) -> Self {
             let vertex_count = usize::arbitrary(g) % 100;
@@ -360,7 +384,7 @@ mod test {
             let mut rng = thread_rng();
             let edge_probability = rng.gen::<f64>() * rng.gen::<f64>();
 
-            let mut adj_map = AdjMap::<V, E, DIR>::init();
+            let mut adj_map = AdjMap::<V, E, Dir>::init();
 
             let vts: Vec<usize> = (0..vertex_count)
                 .map(|_| adj_map.add_vertex(V::arbitrary(g)))
@@ -424,18 +448,22 @@ mod tests {
     use quickcheck_macros::quickcheck;
 
     use crate::provide::storage_test_suit;
+    use crate::storage::edge::{Directed, Undirected};
     use crate::storage::AdjMap;
 
     #[quickcheck]
-    fn prop_storage(storage: AdjMap<usize, usize, false>, dir_storage: AdjMap<usize, usize, true>) {
+    fn prop_storage(
+        storage: AdjMap<usize, usize, Undirected>,
+        dir_storage: AdjMap<usize, usize, Directed>,
+    ) {
         storage_test_suit::prop_storage(storage);
         storage_test_suit::prop_storage(dir_storage);
     }
 
     #[quickcheck]
     fn prop_vertex_checked(
-        storage: AdjMap<usize, usize, false>,
-        dir_storage: AdjMap<usize, usize, true>,
+        storage: AdjMap<usize, usize, Undirected>,
+        dir_storage: AdjMap<usize, usize, Directed>,
     ) {
         storage_test_suit::prop_vertex_checked(storage);
         storage_test_suit::prop_vertex_checked(dir_storage);
@@ -443,8 +471,8 @@ mod tests {
 
     #[quickcheck]
     fn prop_vertex_count_checked(
-        storage: AdjMap<usize, usize, false>,
-        dir_storage: AdjMap<usize, usize, true>,
+        storage: AdjMap<usize, usize, Undirected>,
+        dir_storage: AdjMap<usize, usize, Directed>,
     ) {
         storage_test_suit::prop_vertex_count_checked(storage);
         storage_test_suit::prop_vertex_count_checked(dir_storage);
@@ -452,8 +480,8 @@ mod tests {
 
     #[quickcheck]
     fn prop_vertex_tokens_checked(
-        storage: AdjMap<usize, usize, false>,
-        dir_storage: AdjMap<usize, usize, true>,
+        storage: AdjMap<usize, usize, Undirected>,
+        dir_storage: AdjMap<usize, usize, Directed>,
     ) {
         storage_test_suit::prop_vertex_tokens_checked(storage);
         storage_test_suit::prop_vertex_tokens_checked(dir_storage);
@@ -461,8 +489,8 @@ mod tests {
 
     #[quickcheck]
     fn prop_vertices_checked(
-        storage: AdjMap<usize, usize, false>,
-        dir_storage: AdjMap<usize, usize, true>,
+        storage: AdjMap<usize, usize, Undirected>,
+        dir_storage: AdjMap<usize, usize, Directed>,
     ) {
         storage_test_suit::prop_vertices_checked(storage);
         storage_test_suit::prop_vertices_checked(dir_storage);
@@ -470,8 +498,8 @@ mod tests {
 
     #[quickcheck]
     fn prop_neighbors_checked(
-        storage: AdjMap<usize, usize, false>,
-        dir_storage: AdjMap<usize, usize, true>,
+        storage: AdjMap<usize, usize, Undirected>,
+        dir_storage: AdjMap<usize, usize, Directed>,
     ) {
         storage_test_suit::prop_neighbors_checked(storage);
         storage_test_suit::prop_neighbors_checked(dir_storage);
@@ -479,8 +507,8 @@ mod tests {
 
     #[quickcheck]
     fn prop_successors_checked(
-        storage: AdjMap<usize, usize, false>,
-        dir_storage: AdjMap<usize, usize, true>,
+        storage: AdjMap<usize, usize, Undirected>,
+        dir_storage: AdjMap<usize, usize, Directed>,
     ) {
         storage_test_suit::prop_successors_checked(storage);
         storage_test_suit::prop_successors_checked(dir_storage);
@@ -488,8 +516,8 @@ mod tests {
 
     #[quickcheck]
     fn prop_predecessors_checked(
-        storage: AdjMap<usize, usize, false>,
-        dir_storage: AdjMap<usize, usize, true>,
+        storage: AdjMap<usize, usize, Undirected>,
+        dir_storage: AdjMap<usize, usize, Directed>,
     ) {
         storage_test_suit::prop_predecessors_checked(storage);
         storage_test_suit::prop_predecessors_checked(dir_storage);
@@ -497,8 +525,8 @@ mod tests {
 
     #[quickcheck]
     fn prop_add_vertex(
-        storage: AdjMap<usize, usize, false>,
-        dir_storage: AdjMap<usize, usize, true>,
+        storage: AdjMap<usize, usize, Undirected>,
+        dir_storage: AdjMap<usize, usize, Directed>,
     ) {
         storage_test_suit::prop_add_vertex(storage);
         storage_test_suit::prop_add_vertex(dir_storage);
@@ -506,8 +534,8 @@ mod tests {
 
     #[quickcheck]
     fn prop_remove_vertex(
-        storage: AdjMap<usize, usize, false>,
-        dir_storage: AdjMap<usize, usize, true>,
+        storage: AdjMap<usize, usize, Undirected>,
+        dir_storage: AdjMap<usize, usize, Directed>,
     ) {
         storage_test_suit::prop_remove_vertex(storage);
         storage_test_suit::prop_remove_vertex(dir_storage);
@@ -515,8 +543,8 @@ mod tests {
 
     #[quickcheck]
     fn prop_update_vertex(
-        storage: AdjMap<usize, usize, false>,
-        dir_storage: AdjMap<usize, usize, true>,
+        storage: AdjMap<usize, usize, Undirected>,
+        dir_storage: AdjMap<usize, usize, Directed>,
     ) {
         storage_test_suit::prop_update_vertex(storage);
         storage_test_suit::prop_update_vertex(dir_storage);
@@ -524,8 +552,8 @@ mod tests {
 
     #[quickcheck]
     fn prop_remove_vertex_checked(
-        storage: AdjMap<usize, usize, false>,
-        dir_storage: AdjMap<usize, usize, true>,
+        storage: AdjMap<usize, usize, Undirected>,
+        dir_storage: AdjMap<usize, usize, Directed>,
     ) {
         storage_test_suit::prop_remove_vertex_checked(storage);
         storage_test_suit::prop_remove_vertex_checked(dir_storage);
@@ -533,8 +561,8 @@ mod tests {
 
     #[quickcheck]
     fn prop_vertex_mut_checked(
-        storage: AdjMap<usize, usize, false>,
-        dir_storage: AdjMap<usize, usize, true>,
+        storage: AdjMap<usize, usize, Undirected>,
+        dir_storage: AdjMap<usize, usize, Directed>,
     ) {
         storage_test_suit::prop_vertex_mut_checked(storage);
         storage_test_suit::prop_vertex_mut_checked(dir_storage);
@@ -542,8 +570,8 @@ mod tests {
 
     #[quickcheck]
     fn prop_edge_checked(
-        storage: AdjMap<usize, usize, false>,
-        dir_storage: AdjMap<usize, usize, true>,
+        storage: AdjMap<usize, usize, Undirected>,
+        dir_storage: AdjMap<usize, usize, Directed>,
     ) {
         storage_test_suit::prop_edge_checked(storage);
         storage_test_suit::prop_edge_checked(dir_storage);
@@ -551,8 +579,8 @@ mod tests {
 
     #[quickcheck]
     fn prop_edge_count_checked(
-        storage: AdjMap<usize, usize, false>,
-        dir_storage: AdjMap<usize, usize, true>,
+        storage: AdjMap<usize, usize, Undirected>,
+        dir_storage: AdjMap<usize, usize, Directed>,
     ) {
         storage_test_suit::prop_edge_count_checked(storage);
         storage_test_suit::prop_edge_count_checked(dir_storage);
@@ -560,8 +588,8 @@ mod tests {
 
     #[quickcheck]
     fn prop_edge_tokens_checked(
-        storage: AdjMap<usize, usize, false>,
-        dir_storage: AdjMap<usize, usize, true>,
+        storage: AdjMap<usize, usize, Undirected>,
+        dir_storage: AdjMap<usize, usize, Directed>,
     ) {
         storage_test_suit::prop_edge_tokens_checked(storage);
         storage_test_suit::prop_edge_tokens_checked(dir_storage);
@@ -569,8 +597,8 @@ mod tests {
 
     #[quickcheck]
     fn prop_edges_checked(
-        storage: AdjMap<usize, usize, false>,
-        dir_storage: AdjMap<usize, usize, true>,
+        storage: AdjMap<usize, usize, Undirected>,
+        dir_storage: AdjMap<usize, usize, Directed>,
     ) {
         storage_test_suit::prop_edges_checked(storage);
         storage_test_suit::prop_edges_checked(dir_storage);
@@ -578,8 +606,8 @@ mod tests {
 
     #[quickcheck]
     fn prop_ingoing_edges_checked(
-        storage: AdjMap<usize, usize, false>,
-        dir_storage: AdjMap<usize, usize, true>,
+        storage: AdjMap<usize, usize, Undirected>,
+        dir_storage: AdjMap<usize, usize, Directed>,
     ) {
         storage_test_suit::prop_ingoing_edges_checked(storage);
         storage_test_suit::prop_ingoing_edges_checked(dir_storage);
@@ -587,8 +615,8 @@ mod tests {
 
     #[quickcheck]
     fn prop_outgoing_edges_checked(
-        storage: AdjMap<usize, usize, false>,
-        dir_storage: AdjMap<usize, usize, true>,
+        storage: AdjMap<usize, usize, Undirected>,
+        dir_storage: AdjMap<usize, usize, Directed>,
     ) {
         storage_test_suit::prop_outgoing_edges_checked(storage);
         storage_test_suit::prop_outgoing_edges_checked(dir_storage);
@@ -596,8 +624,8 @@ mod tests {
 
     #[quickcheck]
     fn prop_add_edge(
-        storage: AdjMap<usize, usize, false>,
-        dir_storage: AdjMap<usize, usize, true>,
+        storage: AdjMap<usize, usize, Undirected>,
+        dir_storage: AdjMap<usize, usize, Directed>,
     ) {
         storage_test_suit::prop_add_edge(storage);
         storage_test_suit::prop_add_edge(dir_storage);
@@ -605,8 +633,8 @@ mod tests {
 
     #[quickcheck]
     fn prop_remove_edge(
-        storage: AdjMap<usize, usize, false>,
-        dir_storage: AdjMap<usize, usize, true>,
+        storage: AdjMap<usize, usize, Undirected>,
+        dir_storage: AdjMap<usize, usize, Directed>,
     ) {
         storage_test_suit::prop_remove_edge(storage);
         storage_test_suit::prop_remove_edge(dir_storage);
@@ -614,8 +642,8 @@ mod tests {
 
     #[quickcheck]
     fn prop_update_edge(
-        storage: AdjMap<usize, usize, false>,
-        dir_storage: AdjMap<usize, usize, true>,
+        storage: AdjMap<usize, usize, Undirected>,
+        dir_storage: AdjMap<usize, usize, Directed>,
     ) {
         storage_test_suit::prop_update_edge(storage);
         storage_test_suit::prop_update_edge(dir_storage);
@@ -623,8 +651,8 @@ mod tests {
 
     #[quickcheck]
     fn prop_remove_edge_checked(
-        storage: AdjMap<usize, usize, false>,
-        dir_storage: AdjMap<usize, usize, true>,
+        storage: AdjMap<usize, usize, Undirected>,
+        dir_storage: AdjMap<usize, usize, Directed>,
     ) {
         storage_test_suit::prop_remove_edge_checked(storage);
         storage_test_suit::prop_remove_edge_checked(dir_storage);
@@ -632,8 +660,8 @@ mod tests {
 
     #[quickcheck]
     fn prop_edge_mut_checked(
-        storage: AdjMap<usize, usize, false>,
-        dir_storage: AdjMap<usize, usize, true>,
+        storage: AdjMap<usize, usize, Undirected>,
+        dir_storage: AdjMap<usize, usize, Directed>,
     ) {
         storage_test_suit::prop_edge_mut_checked(storage);
         storage_test_suit::prop_edge_mut_checked(dir_storage);

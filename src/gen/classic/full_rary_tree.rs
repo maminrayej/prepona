@@ -1,9 +1,12 @@
 use rand::{distributions::Standard, prelude::Distribution, thread_rng, Rng};
 
-use crate::provide::{InitializableStorage, MutStorage};
+use crate::provide::{Edges, InitializableStorage, MutStorage, Vertices};
 
 use crate::gen::Generator;
+use crate::storage::edge::Undirected;
 
+// TODO: add property test when you have more algorithms in your disposal
+#[derive(Debug)]
 pub struct FullRAryTreeGenerator {
     vertex_count: usize,
     balance_factor: usize,
@@ -18,9 +21,12 @@ impl FullRAryTreeGenerator {
     }
 }
 
-impl<S> Generator<S> for FullRAryTreeGenerator
+impl<S> Generator<S, Undirected> for FullRAryTreeGenerator
 where
-    S: InitializableStorage + MutStorage,
+    S: Edges<Dir = Undirected>,
+    S: Vertices<Dir = Undirected>,
+    S: MutStorage,
+    S: InitializableStorage<Dir = Undirected>,
     Standard: Distribution<S::V>,
     Standard: Distribution<S::E>,
 {

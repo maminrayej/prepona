@@ -1,28 +1,30 @@
 mod edge;
 mod vertex;
-mod view;
 
 pub use edge::*;
 pub use vertex::*;
-pub use view::*;
+
+use crate::storage::edge::Direction;
 
 // TODO: Specify direction for a storage. Some generators don't work for both directed and undirected storages.
 
 pub trait InitializableStorage {
+    type Dir: Direction;
+
     fn init() -> Self;
 }
 
 pub trait Storage: Vertices + Edges {}
-impl<T: Vertices + Edges> Storage for T {}
+impl<T> Storage for T where T: Vertices + Edges {}
 
 pub trait CheckedStorage: Storage + CheckedVertices + CheckedEdges {}
-impl<T: Storage + CheckedVertices + CheckedEdges> CheckedStorage for T {}
+impl<T> CheckedStorage for T where T: Storage + CheckedVertices + CheckedEdges {}
 
 pub trait MutStorage: Storage + MutVertices + MutEdges {}
-impl<T: Storage + MutVertices + MutEdges> MutStorage for T {}
+impl<T> MutStorage for T where T: Storage + MutVertices + MutEdges {}
 
 pub trait CheckedMutStorage: CheckedStorage + CheckedMutVertices + CheckedMutEdges {}
-impl<T: CheckedStorage + CheckedMutVertices + CheckedMutEdges> CheckedMutStorage for T {}
+impl<T> CheckedMutStorage for T where T: CheckedStorage + CheckedMutVertices + CheckedMutEdges {}
 
 #[cfg(test)]
 pub(crate) mod storage_test_suit {

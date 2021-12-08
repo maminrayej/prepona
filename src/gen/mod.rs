@@ -2,12 +2,18 @@ mod classic;
 
 pub use classic::*;
 
-use crate::provide::{InitializableStorage, MutStorage};
+use crate::{
+    provide::{Edges, InitializableStorage, MutStorage, Vertices},
+    storage::edge::Direction,
+};
 use rand::{distributions::Standard, prelude::Distribution};
 
-pub trait Generator<S>
+pub trait Generator<S, Dir: Direction>
 where
-    S: InitializableStorage + MutStorage,
+    S: Edges<Dir = Dir>,
+    S: Vertices<Dir = Dir>,
+    S: MutStorage,
+    S: InitializableStorage<Dir = Dir>,
     Standard: Distribution<S::V>,
     Standard: Distribution<S::E>,
 {

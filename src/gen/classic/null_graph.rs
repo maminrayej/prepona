@@ -1,15 +1,19 @@
 use rand::{distributions::Standard, prelude::Distribution};
 
-use crate::provide::{InitializableStorage, MutStorage};
+use crate::provide::{Edges, InitializableStorage, MutStorage, Vertices};
 
 use crate::gen::Generator;
+use crate::storage::edge::Undirected;
 
 #[derive(Debug)]
 pub struct NullGraphGenerator;
 
-impl<S> Generator<S> for NullGraphGenerator
+impl<S> Generator<S, Undirected> for NullGraphGenerator
 where
-    S: InitializableStorage + MutStorage,
+    S: Edges<Dir = Undirected>,
+    S: Vertices<Dir = Undirected>,
+    S: MutStorage,
+    S: InitializableStorage<Dir = Undirected>,
     Standard: Distribution<S::V>,
     Standard: Distribution<S::E>,
 {
@@ -43,14 +47,14 @@ mod tests {
     use crate::{
         gen::Generator,
         provide::{Edges, Vertices},
-        storage::AdjMap,
+        storage::{edge::Undirected, AdjMap},
     };
 
     use super::NullGraphGenerator;
 
     #[quickcheck]
     fn prop_gen_null_graph(generator: NullGraphGenerator) {
-        let graph: AdjMap<(), (), false> = generator.generate();
+        let graph: AdjMap<(), (), Undirected> = generator.generate();
 
         assert_eq!(graph.vertex_count(), 0);
         assert_eq!(graph.edge_count(), 0);

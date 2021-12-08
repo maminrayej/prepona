@@ -1,7 +1,10 @@
 use itertools::Itertools;
 use rand::{distributions::Standard, prelude::Distribution, thread_rng, Rng};
 
-use crate::provide::{InitializableStorage, MutStorage};
+use crate::{
+    provide::{Edges, InitializableStorage, MutStorage, Vertices},
+    storage::edge::Undirected,
+};
 
 use super::CycleGraphGenerator;
 use crate::gen::Generator;
@@ -21,9 +24,12 @@ impl CircularLadderGraphGenerator {
     }
 }
 
-impl<S> Generator<S> for CircularLadderGraphGenerator
+impl<S> Generator<S, Undirected> for CircularLadderGraphGenerator
 where
-    S: InitializableStorage + MutStorage,
+    S: Edges<Dir = Undirected>,
+    S: Vertices<Dir = Undirected>,
+    S: MutStorage,
+    S: InitializableStorage<Dir = Undirected>,
     Standard: Distribution<S::V>,
     Standard: Distribution<S::E>,
 {
@@ -84,14 +90,14 @@ mod tests {
     use crate::{
         gen::Generator,
         provide::{Edges, Vertices},
-        storage::AdjMap,
+        storage::{edge::Undirected, AdjMap},
     };
 
     use super::CircularLadderGraphGenerator;
 
     #[quickcheck]
     fn prop_gen_cicular_ladder_graph(generator: CircularLadderGraphGenerator) {
-        let graph: AdjMap<(), (), false> = generator.generate();
+        let graph: AdjMap<(), (), Undirected> = generator.generate();
 
         assert!(graph
             .vertex_tokens()

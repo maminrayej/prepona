@@ -1,8 +1,9 @@
 use rand::{distributions::Standard, prelude::Distribution, thread_rng, Rng};
 
-use crate::provide::{InitializableStorage, MutStorage};
+use crate::provide::{Edges, InitializableStorage, MutStorage, Vertices};
 
 use crate::gen::Generator;
+use crate::storage::edge::Undirected;
 
 #[derive(Debug)]
 pub struct EmptyGraphGenerator {
@@ -15,9 +16,12 @@ impl EmptyGraphGenerator {
     }
 }
 
-impl<S> Generator<S> for EmptyGraphGenerator
+impl<S> Generator<S, Undirected> for EmptyGraphGenerator
 where
-    S: InitializableStorage + MutStorage,
+    S: Edges<Dir = Undirected>,
+    S: Vertices<Dir = Undirected>,
+    S: MutStorage,
+    S: InitializableStorage<Dir = Undirected>,
     Standard: Distribution<S::V>,
     Standard: Distribution<S::E>,
 {
@@ -59,13 +63,17 @@ mod test {
 mod tests {
     use quickcheck_macros::quickcheck;
 
-    use crate::{gen::Generator, provide::Edges, storage::AdjMap};
+    use crate::{
+        gen::Generator,
+        provide::Edges,
+        storage::{edge::Undirected, AdjMap},
+    };
 
     use super::EmptyGraphGenerator;
 
     #[quickcheck]
     fn prop_gen_empty_graph(generator: EmptyGraphGenerator) {
-        let graph: AdjMap<(), (), false> = generator.generate();
+        let graph: AdjMap<(), (), Undirected> = generator.generate();
 
         assert_eq!(graph.edge_count(), 0);
     }

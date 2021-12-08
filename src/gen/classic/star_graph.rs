@@ -1,8 +1,9 @@
 use rand::{distributions::Standard, prelude::Distribution, thread_rng, Rng};
 
-use crate::provide::{InitializableStorage, MutStorage};
+use crate::provide::{Edges, InitializableStorage, MutStorage, Vertices};
 
 use crate::gen::Generator;
+use crate::storage::edge::Undirected;
 
 #[derive(Debug)]
 pub struct StarGraphGenerator {
@@ -19,9 +20,12 @@ impl StarGraphGenerator {
     }
 }
 
-impl<S> Generator<S> for StarGraphGenerator
+impl<S> Generator<S, Undirected> for StarGraphGenerator
 where
-    S: InitializableStorage + MutStorage,
+    S: Edges<Dir = Undirected>,
+    S: Vertices<Dir = Undirected>,
+    S: MutStorage,
+    S: InitializableStorage<Dir = Undirected>,
     Standard: Distribution<S::V>,
     Standard: Distribution<S::E>,
 {
@@ -73,14 +77,14 @@ mod tests {
     use crate::{
         gen::Generator,
         provide::{Edges, Vertices},
-        storage::AdjMap,
+        storage::{edge::Undirected, AdjMap},
     };
 
     use super::StarGraphGenerator;
 
     #[quickcheck]
     fn prop_gen_star_graph(generator: StarGraphGenerator) {
-        let graph: AdjMap<(), (), false> = generator.generate();
+        let graph: AdjMap<(), (), Undirected> = generator.generate();
 
         assert_eq!(
             graph

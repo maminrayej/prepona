@@ -1,9 +1,11 @@
 use rand::{distributions::Standard, prelude::Distribution, thread_rng, Rng};
 
-use crate::provide::{InitializableStorage, MutStorage};
+use crate::provide::{Edges, InitializableStorage, MutStorage, Vertices};
 
 use crate::gen::Generator;
+use crate::storage::edge::Undirected;
 
+#[derive(Debug)]
 pub struct CirculantGraphGenerator {
     offsets: Vec<usize>,
     vertex_count: usize,
@@ -22,9 +24,12 @@ impl CirculantGraphGenerator {
     }
 }
 
-impl<S> Generator<S> for CirculantGraphGenerator
+impl<S> Generator<S, Undirected> for CirculantGraphGenerator
 where
-    S: InitializableStorage + MutStorage,
+    S: Edges<Dir = Undirected>,
+    S: Vertices<Dir = Undirected>,
+    S: MutStorage,
+    S: InitializableStorage<Dir = Undirected>,
     Standard: Distribution<S::V>,
     Standard: Distribution<S::E>,
 {
@@ -37,6 +42,7 @@ where
             .map(|_| storage.add_vertex(rng.gen()))
             .collect();
 
+        // FIXME: prevent multiple edges
         for (index, src_vt) in vertex_tokens.iter().copied().enumerate() {
             for offset in self.offsets.iter().copied() {
                 storage.add_edge(

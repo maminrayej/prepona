@@ -1,8 +1,9 @@
 use rand::{distributions::Standard, prelude::Distribution, thread_rng, Rng};
 
-use crate::provide::{InitializableStorage, MutStorage};
+use crate::provide::{Edges, InitializableStorage, MutStorage, Vertices};
 
 use crate::gen::Generator;
+use crate::storage::edge::Undirected;
 
 #[derive(Debug)]
 pub struct LadderGraphGenerator {
@@ -19,9 +20,12 @@ impl LadderGraphGenerator {
     }
 }
 
-impl<S> Generator<S> for LadderGraphGenerator
+impl<S> Generator<S, Undirected> for LadderGraphGenerator
 where
-    S: InitializableStorage + MutStorage,
+    S: Edges<Dir = Undirected>,
+    S: Vertices<Dir = Undirected>,
+    S: MutStorage,
+    S: InitializableStorage<Dir = Undirected>,
     Standard: Distribution<S::V>,
     Standard: Distribution<S::E>,
 {
@@ -29,16 +33,14 @@ where
         let mut storage = S::init();
         let mut rng = thread_rng();
 
-        let vertex_tokens: Vec<usize> = (0..self.vertex_count)
+        let mut index = 0;
+        let (odd, even): (Vec<usize>, Vec<usize>) = (0..self.vertex_count)
             .into_iter()
             .map(|_| storage.add_vertex(rng.gen()))
-            .collect();
-
-        let mut index = 0;
-        let (odd, even): (Vec<usize>, Vec<usize>) = vertex_tokens.into_iter().partition(|_| {
-            index += 1;
-            index % 2 == 0
-        });
+            .partition(|_| {
+                index += 1;
+                index % 2 == 0
+            });
 
         for vts in odd.windows(2) {
             storage.add_edge(vts[0], vts[1], rng.gen());
@@ -85,14 +87,14 @@ mod tests {
     use crate::{
         gen::Generator,
         provide::{Edges, Vertices},
-        storage::AdjMap,
+        storage::{edge::Undirected, AdjMap},
     };
 
     use super::LadderGraphGenerator;
 
     #[quickcheck]
     fn prop_gen_ladder_graph(generator: LadderGraphGenerator) {
-        let graph: AdjMap<(), (), false> = generator.generate();
+        let graph: AdjMap<(), (), Undirected> = generator.generate();
 
         if graph.vertex_count() == 2 {
             assert_eq!(graph.edge_count(), 1);

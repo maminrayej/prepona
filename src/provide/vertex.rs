@@ -1,11 +1,13 @@
 use anyhow::Result;
 
 use crate::common::DynIter;
+use crate::storage::edge::Direction;
 use crate::storage::vertex::VertexDescriptor;
 use crate::storage::StorageError;
 
 pub trait Vertices {
     type V: VertexDescriptor;
+    type Dir: Direction;
 
     fn vertex(&self, vt: usize) -> &Self::V;
 

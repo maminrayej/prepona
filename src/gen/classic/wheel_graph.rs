@@ -1,6 +1,9 @@
 use rand::{distributions::Standard, prelude::Distribution, thread_rng, Rng};
 
-use crate::provide::{InitializableStorage, MutStorage};
+use crate::{
+    provide::{Edges, InitializableStorage, MutStorage, Vertices},
+    storage::edge::Undirected,
+};
 
 use super::CycleGraphGenerator;
 use crate::gen::Generator;
@@ -20,9 +23,12 @@ impl WheelGraphGenerator {
     }
 }
 
-impl<S> Generator<S> for WheelGraphGenerator
+impl<S> Generator<S, Undirected> for WheelGraphGenerator
 where
-    S: InitializableStorage + MutStorage,
+    S: Edges<Dir = Undirected>,
+    S: Vertices<Dir = Undirected>,
+    S: MutStorage,
+    S: InitializableStorage<Dir = Undirected>,
     Standard: Distribution<S::V>,
     Standard: Distribution<S::E>,
 {
@@ -71,14 +77,14 @@ mod tests {
     use crate::{
         gen::Generator,
         provide::{Edges, MutVertices, Vertices},
-        storage::AdjMap,
+        storage::{edge::Undirected, AdjMap},
     };
 
     use super::WheelGraphGenerator;
 
     #[quickcheck]
     fn prop_gen_wheel_graph(generator: WheelGraphGenerator) {
-        let mut graph: AdjMap<(), (), false> = generator.generate();
+        let mut graph: AdjMap<(), (), Undirected> = generator.generate();
 
         let vt_out_degree: Vec<(usize, usize)> = graph
             .vertex_tokens()

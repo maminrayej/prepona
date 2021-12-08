@@ -3,7 +3,10 @@ use std::fmt::Debug;
 use itertools::Itertools;
 use rand::{distributions::Standard, prelude::Distribution, thread_rng, Rng};
 
-use crate::provide::{InitializableStorage, MutStorage};
+use crate::{
+    provide::{Edges, InitializableStorage, MutStorage, Vertices},
+    storage::edge::Undirected,
+};
 
 use super::CompleteGraphGenerator;
 use crate::gen::Generator;
@@ -27,9 +30,12 @@ impl BarbellGraphGenerator {
     }
 }
 
-impl<S> Generator<S> for BarbellGraphGenerator
+impl<S> Generator<S, Undirected> for BarbellGraphGenerator
 where
-    S: InitializableStorage + MutStorage + Debug,
+    S: Edges<Dir = Undirected>,
+    S: Vertices<Dir = Undirected>,
+    S: MutStorage,
+    S: InitializableStorage<Dir = Undirected>,
     Standard: Distribution<S::V>,
     Standard: Distribution<S::E>,
 {
@@ -118,14 +124,14 @@ mod tests {
     use crate::{
         gen::Generator,
         provide::{Edges, Vertices},
-        storage::AdjMap,
+        storage::{edge::Undirected, AdjMap},
     };
 
     use super::BarbellGraphGenerator;
 
     #[quickcheck]
     fn prop_gen_barbell_graph(generator: BarbellGraphGenerator) {
-        let graph: AdjMap<(), (), false> = generator.generate();
+        let graph: AdjMap<(), (), Undirected> = generator.generate();
 
         assert_eq!(
             graph
