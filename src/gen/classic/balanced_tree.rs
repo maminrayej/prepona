@@ -1,7 +1,7 @@
 use rand::{distributions::Standard, prelude::Distribution};
 
 use crate::gen::Generator;
-use crate::provide::{Edges, InitializableStorage, MutStorage, Vertices};
+use crate::provide::{Edges, InitializableStorage, MutEdges, MutVertices, Vertices};
 use crate::storage::edge::Undirected;
 
 use super::FullRAryTreeGenerator;
@@ -26,7 +26,7 @@ impl<S> Generator<S, Undirected> for BalancedTreeGenerator
 where
     S: Edges<Dir = Undirected>,
     S: Vertices<Dir = Undirected>,
-    S: MutStorage,
+    S: MutVertices + MutEdges,
     S: InitializableStorage<Dir = Undirected>,
     Standard: Distribution<S::V>,
     Standard: Distribution<S::E>,

@@ -1,6 +1,6 @@
 use rand::{distributions::Standard, prelude::Distribution, thread_rng, Rng};
 
-use crate::provide::{Edges, InitializableStorage, MutStorage, Vertices};
+use crate::provide::{Edges, InitializableStorage, MutEdges, MutVertices, Vertices};
 
 use crate::gen::Generator;
 use crate::storage::edge::Undirected;
@@ -28,7 +28,7 @@ impl<S> Generator<S, Undirected> for CirculantGraphGenerator
 where
     S: Edges<Dir = Undirected>,
     S: Vertices<Dir = Undirected>,
-    S: MutStorage,
+    S: MutVertices + MutEdges,
     S: InitializableStorage<Dir = Undirected>,
     Standard: Distribution<S::V>,
     Standard: Distribution<S::E>,
