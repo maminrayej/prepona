@@ -35,6 +35,7 @@
 pub mod common;
 pub mod doc;
 pub mod gen;
+pub mod graph;
 pub mod provide;
 pub mod storage;
 
