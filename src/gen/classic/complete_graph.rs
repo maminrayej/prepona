@@ -1,6 +1,7 @@
 use itertools::Itertools;
 use rand::{distributions::Standard, prelude::Distribution, thread_rng, Rng};
 
+use crate::common::DynIter;
 use crate::provide::{Edges, InitializableStorage, MutStorage, Vertices};
 
 use crate::gen::Generator;
@@ -15,22 +16,19 @@ impl CompleteGraphGenerator {
     pub fn init(vertex_count: usize) -> Self {
         CompleteGraphGenerator { vertex_count }
     }
-}
 
-impl<S> Generator<S, Undirected> for CompleteGraphGenerator
-where
-    S: Edges<Dir = Undirected>,
-    S: Vertices<Dir = Undirected>,
-    S: MutStorage,
-    S: InitializableStorage<Dir = Undirected>,
-    Standard: Distribution<S::V>,
-    Standard: Distribution<S::E>,
-{
-    fn generate(&self) -> S {
-        let mut storage = S::init();
+    pub fn add_component_to<S>(storage: &mut S, vertex_count: usize) -> DynIter<'_, usize>
+    where
+        S: Edges<Dir = Undirected>,
+        S: Vertices<Dir = Undirected>,
+        S: MutStorage,
+        S: InitializableStorage<Dir = Undirected>,
+        Standard: Distribution<S::V>,
+        Standard: Distribution<S::E>,
+    {
         let mut rng = thread_rng();
 
-        let vertex_tokens: Vec<usize> = (0..self.vertex_count)
+        let vertex_tokens: Vec<usize> = (0..vertex_count)
             .into_iter()
             .map(|_| storage.add_vertex(rng.gen()))
             .collect();
@@ -45,6 +43,24 @@ where
                 storage.add_edge(src_vt, dst_vt, rng.gen());
             }
         }
+
+        DynIter::init(vertex_tokens.into_iter())
+    }
+}
+
+impl<S> Generator<S, Undirected> for CompleteGraphGenerator
+where
+    S: Edges<Dir = Undirected>,
+    S: Vertices<Dir = Undirected>,
+    S: MutStorage,
+    S: InitializableStorage<Dir = Undirected>,
+    Standard: Distribution<S::V>,
+    Standard: Distribution<S::E>,
+{
+    fn generate(&self) -> S {
+        let mut storage = S::init();
+
+        CompleteGraphGenerator::add_component_to(&mut storage, self.vertex_count);
 
         storage
     }

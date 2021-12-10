@@ -1,3 +1,4 @@
+use itertools::Itertools;
 use rand::{distributions::Standard, prelude::Distribution, thread_rng, Rng};
 
 use crate::{
@@ -5,7 +6,7 @@ use crate::{
     storage::edge::Undirected,
 };
 
-use super::CompleteGraphGenerator;
+use super::{CompleteGraphGenerator, PathGraphGenerator};
 use crate::gen::Generator;
 
 #[derive(Debug)]
@@ -47,14 +48,8 @@ where
         let mut rng = thread_rng();
 
         // Create a bridge
-        let bridge_vertex_tokens: Vec<usize> = (0..self.bridge_size)
-            .into_iter()
-            .map(|_| storage.add_vertex(rng.gen()))
-            .collect();
-
-        for vts in bridge_vertex_tokens.windows(2) {
-            storage.add_edge(vts[0], vts[1], rng.gen());
-        }
+        let bridge_vertex_tokens: Vec<usize> =
+            PathGraphGenerator::add_component_to(&mut storage, self.bridge_size).collect_vec();
 
         // Connect complete graph to bridge
         storage.add_edge(first_graph_tokens[0], bridge_vertex_tokens[0], rng.gen());

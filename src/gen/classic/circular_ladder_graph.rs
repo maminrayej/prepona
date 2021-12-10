@@ -39,14 +39,8 @@ where
         let mut rng = thread_rng();
 
         let outer_circle_tokens: Vec<usize> = storage.vertex_tokens().collect();
-        let inner_circle_tokens: Vec<usize> = (0..self.vertex_count)
-            .into_iter()
-            .map(|_| storage.add_vertex(rng.gen()))
-            .collect();
-
-        for (src_vt, dst_vt) in inner_circle_tokens.iter().copied().circular_tuple_windows() {
-            storage.add_edge(src_vt, dst_vt, rng.gen());
-        }
+        let inner_circle_tokens: Vec<usize> =
+            CycleGraphGenerator::add_component_to(&mut storage, self.vertex_count).collect_vec();
 
         let vts_pair = outer_circle_tokens
             .iter()

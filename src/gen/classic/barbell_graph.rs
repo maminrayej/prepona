@@ -8,7 +8,7 @@ use crate::{
     storage::edge::Undirected,
 };
 
-use super::CompleteGraphGenerator;
+use super::{CompleteGraphGenerator, PathGraphGenerator};
 use crate::gen::Generator;
 
 #[derive(Debug)]
@@ -48,35 +48,17 @@ where
         let mut rng = thread_rng();
 
         // Create second compelete graph
-        let second_graph_tokens: Vec<usize> = (0..self.complete_graph_size)
-            .into_iter()
-            .map(|_| storage.add_vertex(rng.gen()))
-            .collect();
-
-        let vt_pairs = second_graph_tokens
-            .iter()
-            .copied()
-            .cartesian_product(second_graph_tokens.iter().copied());
-
-        for (src_vt, dst_vt) in vt_pairs {
-            if src_vt < dst_vt {
-                storage.add_edge(src_vt, dst_vt, rng.gen());
-            }
-        }
+        let second_graph_tokens: Vec<usize> =
+            CompleteGraphGenerator::add_component_to(&mut storage, self.complete_graph_size)
+                .collect_vec();
 
         if self.bridge_size == 0 {
             // Connect two graphs directly
             storage.add_edge(first_graph_tokens[0], second_graph_tokens[0], rng.gen());
         } else {
             // Create a bridge
-            let bridge_vertex_tokens: Vec<usize> = (0..self.bridge_size)
-                .into_iter()
-                .map(|_| storage.add_vertex(rng.gen()))
-                .collect();
-
-            for vts in bridge_vertex_tokens.windows(2) {
-                storage.add_edge(vts[0], vts[1], rng.gen());
-            }
+            let bridge_vertex_tokens: Vec<usize> =
+                PathGraphGenerator::add_component_to(&mut storage, self.bridge_size).collect_vec();
 
             // Connect first graph to bridge
             storage.add_edge(first_graph_tokens[0], bridge_vertex_tokens[0], rng.gen());
