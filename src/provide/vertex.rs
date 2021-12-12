@@ -1,6 +1,6 @@
 use anyhow::Result;
 
-use crate::common::DynIter;
+use crate::common::{DynIter, IdMap};
 use crate::storage::edge::Direction;
 use crate::storage::vertex::VertexDescriptor;
 use crate::storage::StorageError;
@@ -14,6 +14,10 @@ pub trait Vertices {
     fn vertex_count(&self) -> usize;
 
     fn vertex_tokens(&self) -> DynIter<'_, usize>;
+
+    fn id_map(&self) -> IdMap {
+        IdMap::init(self.vertex_tokens())
+    }
 
     fn vertices(&self) -> DynIter<'_, &Self::V>;
 
