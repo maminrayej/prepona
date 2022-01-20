@@ -1,33 +1,72 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, ops::Index};
 
 use itertools::Itertools;
 
-// TODO: provide new types for real and virtual id
-// TODO: Implement Index<RealId> -> VirtualId
-// TODO: Implement Index<VirtualId> -> RealId
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct RealID(usize);
+
+impl From<usize> for RealID {
+    fn from(value: usize) -> Self {
+        RealID(value)
+    }
+}
+
+impl RealID {
+    pub fn inner(&self) -> usize {
+        self.0
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct VirtID(usize);
+
+impl VirtID {
+    pub fn inner(&self) -> usize {
+        self.0
+    }
+}
+
+impl From<usize> for VirtID {
+    fn from(value: usize) -> Self {
+        VirtID(value)
+    }
+}
 
 pub struct IdMap {
-    real_to_virt: HashMap<usize, usize>,
-    virt_to_real: Vec<usize>,
+    real_to_virt: HashMap<RealID, VirtID>,
+    virt_to_real: Vec<RealID>,
 }
 
 impl IdMap {
     pub fn init(ids: impl Iterator<Item = usize>) -> Self {
-        let virt_to_real = ids.collect_vec();
-        let real_to_virt: HashMap<usize, usize> =
-            virt_to_real.iter().copied().enumerate().collect();
+        let virt_to_real = ids.map(|rid| rid.into()).collect_vec();
+
+        let real_to_virt: HashMap<RealID, VirtID> = virt_to_real
+            .iter()
+            .copied()
+            .enumerate()
+            .map(|(vid, real_id)| (real_id, vid.into()))
+            .collect();
 
         IdMap {
             real_to_virt,
             virt_to_real,
         }
     }
+}
 
-    pub fn virt_of(&self, real_id: usize) -> usize {
-        self.real_to_virt[&real_id]
+impl Index<RealID> for IdMap {
+    type Output = VirtID;
+
+    fn index(&self, index: RealID) -> &Self::Output {
+        &self.real_to_virt[&index]
     }
+}
 
-    pub fn real_of(&self, virt_id: usize) -> usize {
-        self.virt_to_real[virt_id]
+impl Index<VirtID> for IdMap {
+    type Output = RealID;
+
+    fn index(&self, index: VirtID) -> &Self::Output {
+        &self.virt_to_real[index.0]
     }
 }
