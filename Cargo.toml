@@ -17,6 +17,7 @@ anyhow = "1.0.44"
 thiserror = "1.0.30"
 itertools = "0.10.1"
 rand = "0.8.4"
+magnitude = "0.3.2"
 
 [dev-dependencies]
 quickcheck = "1.0.3"
