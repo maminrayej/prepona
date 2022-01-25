@@ -12,7 +12,7 @@ use std::marker::PhantomData;
 
 // TODO: Benchmark
 #[derive(Debug)]
-pub struct AdjMap<V, E, Dir: Direction>
+pub struct AdjMap<V, E, Dir>
 where
     V: VertexDescriptor,
     E: EdgeDescriptor,
@@ -30,7 +30,7 @@ where
     phantom_dir: PhantomData<Dir>,
 }
 
-impl<V, E, Dir: Direction> AdjMap<V, E, Dir>
+impl<V, E, Dir> AdjMap<V, E, Dir>
 where
     V: VertexDescriptor,
     E: EdgeDescriptor,
@@ -52,7 +52,7 @@ where
     }
 }
 
-impl<V, E, Dir: Direction> InitializableStorage for AdjMap<V, E, Dir>
+impl<V, E, Dir> InitializableStorage for AdjMap<V, E, Dir>
 where
     V: VertexDescriptor,
     E: EdgeDescriptor,
@@ -65,7 +65,22 @@ where
     }
 }
 
-impl<V, E, Dir: Direction> Vertices for AdjMap<V, E, Dir>
+impl<V, E, Dir> Direction for AdjMap<V, E, Dir>
+where
+    V: VertexDescriptor,
+    E: EdgeDescriptor,
+    Dir: Direction,
+{
+    fn is_directed() -> bool {
+        Dir::is_directed()
+    }
+
+    fn is_undirected() -> bool {
+        Dir::is_undirected()
+    }
+}
+
+impl<V, E, Dir> Vertices for AdjMap<V, E, Dir>
 where
     V: VertexDescriptor,
     E: EdgeDescriptor,
@@ -127,7 +142,7 @@ where
     }
 }
 
-impl<V, E, Dir: Direction> CheckedVertices for AdjMap<V, E, Dir>
+impl<V, E, Dir> CheckedVertices for AdjMap<V, E, Dir>
 where
     V: VertexDescriptor,
     E: EdgeDescriptor,
@@ -135,7 +150,7 @@ where
 {
 }
 
-impl<V, E, Dir: Direction> MutVertices for AdjMap<V, E, Dir>
+impl<V, E, Dir> MutVertices for AdjMap<V, E, Dir>
 where
     V: VertexDescriptor,
     E: EdgeDescriptor,
@@ -185,7 +200,7 @@ where
     }
 }
 
-impl<V, E, Dir: Direction> CheckedMutVertices for AdjMap<V, E, Dir>
+impl<V, E, Dir> CheckedMutVertices for AdjMap<V, E, Dir>
 where
     V: VertexDescriptor,
     E: EdgeDescriptor,
@@ -193,7 +208,7 @@ where
 {
 }
 
-impl<V, E, Dir: Direction> Edges for AdjMap<V, E, Dir>
+impl<V, E, Dir> Edges for AdjMap<V, E, Dir>
 where
     V: VertexDescriptor,
     E: EdgeDescriptor,
@@ -253,7 +268,7 @@ where
     }
 }
 
-impl<V, E, Dir: Direction> CheckedEdges for AdjMap<V, E, Dir>
+impl<V, E, Dir> CheckedEdges for AdjMap<V, E, Dir>
 where
     V: VertexDescriptor,
     E: EdgeDescriptor,
@@ -261,7 +276,7 @@ where
 {
 }
 
-impl<V, E, Dir: Direction> MutEdges for AdjMap<V, E, Dir>
+impl<V, E, Dir> MutEdges for AdjMap<V, E, Dir>
 where
     V: VertexDescriptor,
     E: EdgeDescriptor,
@@ -334,7 +349,7 @@ where
     }
 }
 
-impl<V, E, Dir: Direction> CheckedMutEdges for AdjMap<V, E, Dir>
+impl<V, E, Dir> CheckedMutEdges for AdjMap<V, E, Dir>
 where
     V: VertexDescriptor,
     E: EdgeDescriptor,
