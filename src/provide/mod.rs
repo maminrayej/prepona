@@ -6,9 +6,11 @@ pub use vertex::*;
 
 use crate::storage::edge::Direction;
 
-pub trait InitializableStorage {
+pub trait Storage {
     type Dir: Direction;
+}
 
+pub trait InitializableStorage: Storage {
     fn init() -> Self;
 }
 

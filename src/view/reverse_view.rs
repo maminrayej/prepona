@@ -2,12 +2,12 @@ use std::collections::HashSet;
 
 use super::{FrozenView, SubgraphView};
 use crate::common::DynIter;
-use crate::provide::{Edges, Vertices};
+use crate::provide::{Edges, Storage, Vertices};
 use crate::storage::edge::Directed;
 
 pub struct ReverseView<'a, G>
 where
-    G: Vertices<Dir = Directed> + Edges<Dir = Directed>,
+    G: Storage<Dir = Directed> + Vertices + Edges,
 {
     inner: &'a G,
 
@@ -17,7 +17,7 @@ where
 
 impl<'a, G> ReverseView<'a, G>
 where
-    G: Vertices<Dir = Directed> + Edges<Dir = Directed>,
+    G: Storage<Dir = Directed> + Vertices + Edges,
 {
     pub fn init(
         inner: &'a G,
@@ -48,13 +48,18 @@ where
     }
 }
 
+impl<'a, G> Storage for ReverseView<'a, G>
+where
+    G: Storage<Dir = Directed> + Vertices + Edges,
+{
+    type Dir = Directed;
+}
+
 impl<'a, G> Vertices for ReverseView<'a, G>
 where
-    G: Vertices<Dir = Directed> + Edges<Dir = Directed>,
+    G: Storage<Dir = Directed> + Vertices + Edges,
 {
     type V = G::V;
-
-    type Dir = Directed;
 
     fn has_vt(&self, vt: usize) -> bool {
         self.filtered_vertices.contains(&vt)
@@ -115,11 +120,9 @@ where
 
 impl<'a, G> Edges for ReverseView<'a, G>
 where
-    G: Vertices<Dir = Directed> + Edges<Dir = Directed>,
+    G: Storage<Dir = Directed> + Vertices + Edges,
 {
     type E = G::E;
-
-    type Dir = Directed;
 
     fn has_et(&self, et: usize) -> bool {
         self.filtered_edges.contains(&et)
@@ -174,7 +177,7 @@ where
 
 impl<'a, G> FrozenView<G> for ReverseView<'a, G>
 where
-    G: Vertices<Dir = Directed> + Edges<Dir = Directed>,
+    G: Storage<Dir = Directed> + Vertices + Edges,
 {
     fn inner(&self) -> &G {
         self.inner
@@ -183,7 +186,7 @@ where
 
 impl<'a, G> SubgraphView<G> for ReverseView<'a, G>
 where
-    G: Vertices<Dir = Directed> + Edges<Dir = Directed>,
+    G: Storage<Dir = Directed> + Vertices + Edges,
 {
     fn add_vertex_from_inner(&mut self, vid: usize) {
         self.filtered_vertices.insert(vid);

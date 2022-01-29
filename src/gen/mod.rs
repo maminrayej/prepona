@@ -3,7 +3,7 @@ mod classic;
 pub use classic::*;
 
 use crate::{
-    provide::{Edges, InitializableStorage, MutEdges, MutVertices, Vertices},
+    provide::{Edges, Storage, MutEdges, MutVertices, Vertices},
     storage::edge::Direction,
 };
 use rand::{distributions::Standard, prelude::Distribution};
@@ -13,7 +13,7 @@ where
     S: Edges<Dir = Dir>,
     S: Vertices<Dir = Dir>,
     S: MutVertices + MutEdges,
-    S: InitializableStorage<Dir = Dir>,
+    S: Storage<Dir = Dir>,
     Standard: Distribution<S::V>,
     Standard: Distribution<S::E>,
 {

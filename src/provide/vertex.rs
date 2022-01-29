@@ -1,13 +1,12 @@
 use anyhow::Result;
 
+use super::Storage;
 use crate::common::{DynIter, IdMap};
-use crate::storage::edge::Direction;
 use crate::storage::vertex::VertexDescriptor;
 use crate::storage::StorageError;
 
-pub trait Vertices {
+pub trait Vertices: Storage {
     type V: VertexDescriptor;
-    type Dir: Direction;
 
     fn has_vt(&self, vt: usize) -> bool;
 

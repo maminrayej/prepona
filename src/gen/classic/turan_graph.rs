@@ -2,7 +2,7 @@ use itertools::repeat_n;
 use rand::{distributions::Standard, prelude::Distribution};
 
 use crate::{
-    provide::{Edges, InitializableStorage, MutEdges, MutVertices, Vertices},
+    provide::{Edges, MutEdges, MutVertices, Storage, Vertices, InitializableStorage},
     storage::edge::Undirected,
 };
 
@@ -42,10 +42,7 @@ impl TuranGraphGenerator {
 
 impl<S> Generator<S, Undirected> for TuranGraphGenerator
 where
-    S: Edges<Dir = Undirected>,
-    S: Vertices<Dir = Undirected>,
-    S: MutVertices + MutEdges,
-    S: InitializableStorage<Dir = Undirected>,
+    S: Storage<Dir = Undirected> + InitializableStorage + Vertices + Edges + MutVertices + MutEdges,
     Standard: Distribution<S::V>,
     Standard: Distribution<S::E>,
 {

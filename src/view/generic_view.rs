@@ -2,12 +2,11 @@ use std::collections::HashSet;
 
 use super::{FrozenView, SubgraphView};
 use crate::common::DynIter;
-use crate::provide::{Edges, Vertices};
-use crate::storage::edge::Directed;
+use crate::provide::{Edges, Storage, Vertices};
 
 pub struct GenericView<'a, G>
 where
-    G: Vertices + Edges,
+    G: Storage + Vertices + Edges,
 {
     inner: &'a G,
 
@@ -17,7 +16,7 @@ where
 
 impl<'a, G> GenericView<'a, G>
 where
-    G: Vertices + Edges,
+    G: Storage + Vertices + Edges,
 {
     pub fn init(
         inner: &'a G,
@@ -48,13 +47,18 @@ where
     }
 }
 
+impl<'a, G> Storage for GenericView<'a, G>
+where
+    G: Storage + Vertices + Edges,
+{
+    type Dir = G::Dir;
+}
+
 impl<'a, G> Vertices for GenericView<'a, G>
 where
-    G: Vertices + Edges,
+    G: Storage + Vertices + Edges,
 {
     type V = G::V;
-
-    type Dir = Directed;
 
     fn has_vt(&self, vt: usize) -> bool {
         self.filtered_vertices.contains(&vt)
@@ -115,11 +119,9 @@ where
 
 impl<'a, G> Edges for GenericView<'a, G>
 where
-    G: Vertices + Edges,
+    G: Storage + Vertices + Edges,
 {
     type E = G::E;
-
-    type Dir = Directed;
 
     fn has_et(&self, et: usize) -> bool {
         self.filtered_edges.contains(&et)
@@ -172,7 +174,7 @@ where
 
 impl<'a, G> FrozenView<G> for GenericView<'a, G>
 where
-    G: Vertices + Edges,
+    G: Storage + Vertices + Edges,
 {
     fn inner(&self) -> &G {
         self.inner
@@ -181,7 +183,7 @@ where
 
 impl<'a, G> SubgraphView<G> for GenericView<'a, G>
 where
-    G: Vertices + Edges,
+    G: Storage + Vertices + Edges,
 {
     fn add_vertex_from_inner(&mut self, vid: usize) {
         self.filtered_vertices.insert(vid);

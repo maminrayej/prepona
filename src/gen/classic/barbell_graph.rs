@@ -4,7 +4,7 @@ use itertools::Itertools;
 use rand::{distributions::Standard, prelude::Distribution, thread_rng, Rng};
 
 use crate::{
-    provide::{Edges, InitializableStorage, MutEdges, MutVertices, Vertices},
+    provide::{Edges, MutEdges, MutVertices, Storage, Vertices, InitializableStorage},
     storage::edge::Undirected,
 };
 
@@ -32,10 +32,7 @@ impl BarbellGraphGenerator {
 
 impl<S> Generator<S, Undirected> for BarbellGraphGenerator
 where
-    S: Edges<Dir = Undirected>,
-    S: Vertices<Dir = Undirected>,
-    S: MutVertices + MutEdges,
-    S: InitializableStorage<Dir = Undirected>,
+    S: Storage<Dir = Undirected> + InitializableStorage + Vertices + Edges + MutVertices + MutEdges,
     Standard: Distribution<S::V>,
     Standard: Distribution<S::E>,
 {

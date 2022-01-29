@@ -2,7 +2,7 @@ use itertools::Itertools;
 use rand::{distributions::Standard, prelude::Distribution, thread_rng, Rng};
 
 use crate::common::DynIter;
-use crate::provide::{Edges, InitializableStorage, MutEdges, MutVertices, Vertices};
+use crate::provide::{Edges, InitializableStorage, MutEdges, MutVertices, Storage, Vertices};
 
 use crate::gen::Generator;
 use crate::storage::edge::Undirected;
@@ -19,10 +19,12 @@ impl CompleteGraphGenerator {
 
     pub fn add_component_to<S>(storage: &mut S, vertex_count: usize) -> DynIter<'_, usize>
     where
-        S: Edges<Dir = Undirected>,
-        S: Vertices<Dir = Undirected>,
-        S: MutVertices + MutEdges,
-        S: InitializableStorage<Dir = Undirected>,
+        S: Storage<Dir = Undirected>
+            + InitializableStorage
+            + Vertices
+            + Edges
+            + MutVertices
+            + MutEdges,
         Standard: Distribution<S::V>,
         Standard: Distribution<S::E>,
     {
@@ -50,10 +52,7 @@ impl CompleteGraphGenerator {
 
 impl<S> Generator<S, Undirected> for CompleteGraphGenerator
 where
-    S: Edges<Dir = Undirected>,
-    S: Vertices<Dir = Undirected>,
-    S: MutVertices + MutEdges,
-    S: InitializableStorage<Dir = Undirected>,
+    S: Storage<Dir = Undirected> + InitializableStorage + Vertices + Edges + MutVertices + MutEdges,
     Standard: Distribution<S::V>,
     Standard: Distribution<S::E>,
 {

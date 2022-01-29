@@ -1,12 +1,12 @@
 use rand::{distributions::Standard, prelude::Distribution};
 
 use crate::gen::Generator;
-use crate::provide::{Edges, InitializableStorage, MutEdges, MutVertices, Vertices};
+use crate::provide::{Edges, InitializableStorage, MutEdges, MutVertices, Storage, Vertices};
 use crate::storage::edge::Undirected;
 
 use super::FullRAryTreeGenerator;
 
-// TODO: Test it when you've testes full r-ary tree
+// TODO: Test it when you've tested full r-ary tree
 #[derive(Debug)]
 pub struct BalancedTreeGenerator {
     height: usize,
@@ -24,10 +24,7 @@ impl BalancedTreeGenerator {
 
 impl<S> Generator<S, Undirected> for BalancedTreeGenerator
 where
-    S: Edges<Dir = Undirected>,
-    S: Vertices<Dir = Undirected>,
-    S: MutVertices + MutEdges,
-    S: InitializableStorage<Dir = Undirected>,
+    S: Storage<Dir = Undirected> + InitializableStorage + Vertices + Edges + MutVertices + MutEdges,
     Standard: Distribution<S::V>,
     Standard: Distribution<S::E>,
 {

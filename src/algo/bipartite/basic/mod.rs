@@ -4,7 +4,7 @@ use anyhow::Result;
 
 use crate::algo::errors::AlgoError;
 use crate::common::{RealID, VirtID};
-use crate::provide::Vertices;
+use crate::provide::{Storage, Vertices};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Color {
@@ -33,7 +33,7 @@ impl Color {
 
 pub fn color<G>(graph: &G) -> Result<HashMap<RealID, Color>>
 where
-    G: Vertices,
+    G: Storage + Vertices,
 {
     use super::Color::*;
 
@@ -81,7 +81,7 @@ where
 
 pub fn is_bipartite<G>(graph: &G) -> bool
 where
-    G: Vertices,
+    G: Storage + Vertices,
 {
     color(graph).is_ok()
 }
@@ -128,18 +128,18 @@ mod tests {
             assert!(bipartite::color(&graph).is_err());
             assert!(!bipartite::is_bipartite(&graph));
         } else {
-            let colors = bipartite::color(&graph); 
+            let colors = bipartite::color(&graph);
             assert!(colors.is_ok());
             assert!(bipartite::is_bipartite(&graph));
             assert_coloring(&graph, colors.unwrap());
         }
     }
-    
+
     #[quickcheck]
     fn prop_two_coloring_empty_graph(generator: EmptyGraphGenerator) {
         let graph: AdjMap<(), (), Undirected> = generator.generate();
-        
-        let colors = bipartite::color(&graph); 
+
+        let colors = bipartite::color(&graph);
         assert!(colors.is_ok());
         assert!(bipartite::is_bipartite(&graph));
         assert_coloring(&graph, colors.unwrap());
@@ -149,7 +149,7 @@ mod tests {
     fn prop_two_coloring_null_graph(generator: NullGraphGenerator) {
         let graph: AdjMap<(), (), Undirected> = generator.generate();
 
-        let colors = bipartite::color(&graph); 
+        let colors = bipartite::color(&graph);
         assert!(colors.is_ok());
         assert!(bipartite::is_bipartite(&graph));
         assert_coloring(&graph, colors.unwrap());
@@ -160,7 +160,7 @@ mod tests {
         let graph: AdjMap<(), (), Undirected> = generator.generate();
 
         if graph.vertex_count() % 2 == 0 {
-            let colors = bipartite::color(&graph); 
+            let colors = bipartite::color(&graph);
             assert!(colors.is_ok());
             assert!(bipartite::is_bipartite(&graph));
             assert_coloring(&graph, colors.unwrap());
@@ -174,7 +174,7 @@ mod tests {
     fn prop_two_coloring_ladder_graph(generator: LadderGraphGenerator) {
         let graph: AdjMap<(), (), Undirected> = generator.generate();
 
-        let colors = bipartite::color(&graph); 
+        let colors = bipartite::color(&graph);
         assert!(colors.is_ok());
         assert!(bipartite::is_bipartite(&graph));
         assert_coloring(&graph, colors.unwrap());
@@ -184,7 +184,7 @@ mod tests {
     fn prop_two_coloring_path_graph(generator: PathGraphGenerator) {
         let graph: AdjMap<(), (), Undirected> = generator.generate();
 
-        let colors = bipartite::color(&graph); 
+        let colors = bipartite::color(&graph);
         assert!(colors.is_ok());
         assert!(bipartite::is_bipartite(&graph));
         assert_coloring(&graph, colors.unwrap());
@@ -210,7 +210,7 @@ mod tests {
     fn prop_two_coloring_star_graph(generator: StarGraphGenerator) {
         let graph: AdjMap<(), (), Undirected> = generator.generate();
 
-        let colors = bipartite::color(&graph); 
+        let colors = bipartite::color(&graph);
         assert!(colors.is_ok());
         assert!(bipartite::is_bipartite(&graph));
         assert_coloring(&graph, colors.unwrap());

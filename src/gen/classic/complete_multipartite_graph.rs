@@ -1,7 +1,7 @@
 use itertools::Itertools;
 use rand::{distributions::Standard, prelude::Distribution, thread_rng, Rng};
 
-use crate::provide::{Edges, InitializableStorage, MutEdges, MutVertices, Vertices};
+use crate::provide::{Edges, MutEdges, MutVertices, Storage, Vertices, InitializableStorage};
 
 use crate::gen::Generator;
 use crate::storage::edge::Undirected;
@@ -25,10 +25,7 @@ impl CompleteMultiPartiteGraphGenerator {
 
 impl<S> Generator<S, Undirected> for CompleteMultiPartiteGraphGenerator
 where
-    S: Edges<Dir = Undirected>,
-    S: Vertices<Dir = Undirected>,
-    S: MutVertices + MutEdges,
-    S: InitializableStorage<Dir = Undirected>,
+    S: Storage<Dir = Undirected> + InitializableStorage + Vertices + Edges + MutVertices + MutEdges,
     Standard: Distribution<S::V>,
     Standard: Distribution<S::E>,
 {

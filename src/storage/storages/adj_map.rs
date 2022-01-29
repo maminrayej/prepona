@@ -1,5 +1,5 @@
 use crate::common::DynIter;
-use crate::provide::{Edges, InitializableStorage, MutEdges, MutVertices, Vertices};
+use crate::provide::{Edges, MutEdges, MutVertices, Storage, Vertices, InitializableStorage};
 use crate::storage::edge::{Direction, Edge, EdgeDescriptor};
 use crate::storage::token::UsizeTokenProvider;
 use crate::storage::vertex::VertexDescriptor;
@@ -7,7 +7,6 @@ use itertools::Itertools;
 use std::collections::HashMap;
 use std::marker::PhantomData;
 
-// TODO: Benchmark
 #[derive(Debug)]
 pub struct AdjMap<V, E, Dir>
 where
@@ -49,31 +48,23 @@ where
     }
 }
 
-impl<V, E, Dir> InitializableStorage for AdjMap<V, E, Dir>
+impl<V, E, Dir> Storage for AdjMap<V, E, Dir>
 where
     V: VertexDescriptor,
     E: EdgeDescriptor,
     Dir: Direction,
 {
     type Dir = Dir;
-
-    fn init() -> Self {
-        AdjMap::init()
-    }
 }
 
-impl<V, E, Dir> Direction for AdjMap<V, E, Dir>
+impl<V, E, Dir> InitializableStorage for AdjMap<V, E, Dir>
 where
     V: VertexDescriptor,
     E: EdgeDescriptor,
     Dir: Direction,
 {
-    fn is_directed() -> bool {
-        Dir::is_directed()
-    }
-
-    fn is_undirected() -> bool {
-        Dir::is_undirected()
+    fn init() -> Self {
+        AdjMap::init()
     }
 }
 
@@ -84,7 +75,6 @@ where
     Dir: Direction,
 {
     type V = V;
-    type Dir = Dir;
 
     fn has_vt(&self, vt: usize) -> bool {
         self.vt_to_v.contains_key(&vt)
@@ -196,7 +186,6 @@ where
     Dir: Direction,
 {
     type E = E;
-    type Dir = Dir;
 
     fn has_et(&self, et: usize) -> bool {
         self.et_to_e.contains_key(&et)

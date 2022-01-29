@@ -1,7 +1,7 @@
 use std::marker::PhantomData;
 
 use super::GraphError;
-use crate::provide::{Edges, InitializableStorage, MutEdges, MutVertices, Vertices};
+use crate::provide::{Edges, InitializableStorage, MutEdges, MutVertices, Storage, Vertices};
 use crate::storage::edge::{Direction, EdgeDescriptor};
 use crate::storage::vertex::VertexDescriptor;
 use crate::storage::AdjMap;
@@ -14,7 +14,7 @@ where
     V: VertexDescriptor,
     E: EdgeDescriptor,
     Dir: Direction,
-    S: InitializableStorage<Dir = Dir> + Vertices<V = V, Dir = Dir> + Edges<E = E, Dir = Dir>,
+    S: Storage<Dir = Dir> + InitializableStorage + Vertices<V = V> + Edges<E = E>,
 {
     storage: S,
 
@@ -28,7 +28,7 @@ where
     V: VertexDescriptor,
     E: EdgeDescriptor,
     Dir: Direction,
-    S: InitializableStorage<Dir = Dir> + Vertices<V = V, Dir = Dir> + Edges<E = E, Dir = Dir>,
+    S: Storage<Dir = Dir> + InitializableStorage + Vertices<V = V> + Edges<E = E>,
 {
     pub fn init() -> Self {
         SimpleGraph {
@@ -40,19 +40,25 @@ where
     }
 }
 
-impl<S, V, E, Dir> Direction for SimpleGraph<S, V, E, Dir>
+impl<S, V, E, Dir> Storage for SimpleGraph<S, V, E, Dir>
 where
     V: VertexDescriptor,
     E: EdgeDescriptor,
     Dir: Direction,
-    S: InitializableStorage<Dir = Dir> + Vertices<V = V, Dir = Dir> + Edges<E = E, Dir = Dir>,
+    S: Storage<Dir = Dir> + InitializableStorage + Vertices<V = V> + Edges<E = E>,
 {
-    fn is_directed() -> bool {
-        Dir::is_directed()
-    }
+    type Dir = Dir;
+}
 
-    fn is_undirected() -> bool {
-        Dir::is_undirected()
+impl<S, V, E, Dir> InitializableStorage for SimpleGraph<S, V, E, Dir>
+where
+    V: VertexDescriptor,
+    E: EdgeDescriptor,
+    Dir: Direction,
+    S: Storage<Dir = Dir> + InitializableStorage + Vertices<V = V> + Edges<E = E>,
+{
+    fn init() -> Self {
+        SimpleGraph::init()
     }
 }
 
@@ -61,11 +67,9 @@ where
     V: VertexDescriptor,
     E: EdgeDescriptor,
     Dir: Direction,
-    S: InitializableStorage<Dir = Dir> + Vertices<V = V, Dir = Dir> + Edges<E = E, Dir = Dir>,
+    S: Storage<Dir = Dir> + InitializableStorage + Vertices<V = V> + Edges<E = E>,
 {
     type V = V;
-
-    type Dir = Dir;
 
     fn has_vt(&self, vt: usize) -> bool {
         self.storage.has_vt(vt)
@@ -105,11 +109,9 @@ where
     V: VertexDescriptor,
     E: EdgeDescriptor,
     Dir: Direction,
-    S: InitializableStorage<Dir = Dir> + Vertices<V = V, Dir = Dir> + Edges<E = E, Dir = Dir>,
+    S: Storage<Dir = Dir> + InitializableStorage + Vertices<V = V> + Edges<E = E>,
 {
     type E = E;
-
-    type Dir = Dir;
 
     fn has_et(&self, et: usize) -> bool {
         self.storage.has_et(et)
@@ -145,10 +147,7 @@ where
     V: VertexDescriptor,
     E: EdgeDescriptor,
     Dir: Direction,
-    S: InitializableStorage<Dir = Dir>
-        + Vertices<V = V, Dir = Dir>
-        + Edges<E = E, Dir = Dir>
-        + MutVertices,
+    S: Storage<Dir = Dir> + InitializableStorage + Vertices<V = V> + Edges<E = E> + MutVertices,
 {
     fn has_free_token(&mut self) -> bool {
         self.storage.has_free_token()
@@ -172,10 +171,7 @@ where
     V: VertexDescriptor,
     E: EdgeDescriptor,
     Dir: Direction,
-    S: InitializableStorage<Dir = Dir>
-        + Vertices<V = V, Dir = Dir>
-        + Edges<E = E, Dir = Dir>
-        + MutEdges,
+    S: Storage<Dir = Dir> + InitializableStorage + Vertices<V = V> + Edges<E = E> + MutEdges,
 {
     fn has_free_et(&mut self) -> bool {
         self.storage.has_free_et()
@@ -223,7 +219,7 @@ mod test {
     use quickcheck::Arbitrary;
     use rand::{thread_rng, Rng};
 
-    use crate::provide::{Edges, InitializableStorage, MutEdges, MutVertices, Vertices};
+    use crate::provide::{Edges, InitializableStorage, MutEdges, MutVertices, Storage, Vertices};
     use crate::storage::edge::{Direction, EdgeDescriptor};
     use crate::storage::vertex::VertexDescriptor;
 
@@ -234,10 +230,7 @@ mod test {
         V: VertexDescriptor,
         E: EdgeDescriptor,
         Dir: Direction,
-        S: InitializableStorage<Dir = Dir>
-            + Vertices<V = V, Dir = Dir>
-            + Edges<E = E, Dir = Dir>
-            + Clone,
+        S: Storage<Dir = Dir> + InitializableStorage + Vertices<V = V> + Edges<E = E> + Clone,
     {
         fn clone(&self) -> Self {
             Self {
@@ -254,9 +247,10 @@ mod test {
         V: VertexDescriptor + Arbitrary,
         E: EdgeDescriptor + Arbitrary,
         Dir: Direction + Arbitrary,
-        S: InitializableStorage<Dir = Dir>
-            + Vertices<V = V, Dir = Dir>
-            + Edges<E = E, Dir = Dir>
+        S: Storage<Dir = Dir>
+            + InitializableStorage
+            + Vertices<V = V>
+            + Edges<E = E>
             + MutVertices
             + MutEdges
             + Arbitrary,

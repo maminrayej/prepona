@@ -3,7 +3,7 @@ mod misc;
 pub use misc::*;
 
 use crate::common::{RealID, VirtID};
-use crate::provide;
+use crate::provide::{Storage, Vertices};
 use crate::storage::edge::Direction;
 use itertools::Itertools;
 use magnitude::Magnitude::{self, PosInfinite};
@@ -21,7 +21,7 @@ macro_rules! callback {
 
 pub struct DFS<'a, G>
 where
-    G: provide::Vertices + Direction,
+    G: Storage + Vertices,
 {
     graph: &'a G,
     starting_vertex_ids: Vec<usize>,
@@ -31,7 +31,7 @@ where
 
 impl<'a, G> DFS<'a, G>
 where
-    G: provide::Vertices + Direction,
+    G: Storage + Vertices,
 {
     //--- Init functions
     pub fn init(graph: &'a G) -> Self {
@@ -140,7 +140,7 @@ where
 
                             dbg!(n_vid);
 
-                            if G::is_undirected()
+                            if G::Dir::is_undirected()
                                 && (self.parent_of(v_rid) == Some(n_rid) || self.is_finished(n_vid))
                             {
                                 dbg!("immediate parent");
@@ -206,7 +206,11 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::gen::{CycleGraphGenerator, Generator, NullGraphGenerator, PathGraphGenerator, StarGraphGenerator, EmptyGraphGenerator, CompleteGraphGenerator, LollipopGraphGenerator, BarbellGraphGenerator, LadderGraphGenerator};
+    use crate::gen::{
+        BarbellGraphGenerator, CompleteGraphGenerator, CycleGraphGenerator, EmptyGraphGenerator,
+        Generator, LadderGraphGenerator, LollipopGraphGenerator, NullGraphGenerator,
+        PathGraphGenerator, StarGraphGenerator,
+    };
     use crate::storage::edge::Undirected;
     use crate::storage::AdjMap;
 
@@ -415,24 +419,24 @@ mod tests {
         assert_eq!(event_counter.back_edge_found, 3);
         assert_eq!(event_counter.cross_edge_found, 0);
     }
-    
+
     #[test]
     fn dfs_on_barbell_graph() {
         let graph: AdjMap<(), (), Undirected> = BarbellGraphGenerator::init(4, 4).generate();
-    
+
         let mut event_counter = EventCounter::init();
-    
+
         DFS::init(&graph).execute(|event| {
             event_counter.count(event);
-    
+
             Continue
         });
-    
+
         assert_eq!(event_counter.begin_called, 1);
         assert_eq!(event_counter.discover_called, 12);
         assert_eq!(event_counter.finish_called, 12);
         assert_eq!(event_counter.end_called, 1);
-    
+
         assert_eq!(event_counter.forward_edge_found, 0);
         assert_eq!(event_counter.tree_edge_found, 1 + 3 + 1 + 3 + 3);
         assert_eq!(event_counter.back_edge_found, 6);
@@ -442,24 +446,23 @@ mod tests {
     #[test]
     fn dfs_on_ladder_graph() {
         let graph: AdjMap<(), (), Undirected> = LadderGraphGenerator::init(6).generate();
-    
+
         let mut event_counter = EventCounter::init();
-    
+
         DFS::init(&graph).execute(|event| {
             event_counter.count(event);
-    
+
             Continue
         });
-    
+
         assert_eq!(event_counter.begin_called, 1);
         assert_eq!(event_counter.discover_called, 6);
         assert_eq!(event_counter.finish_called, 6);
         assert_eq!(event_counter.end_called, 1);
-    
+
         assert_eq!(event_counter.forward_edge_found, 0);
         assert_eq!(event_counter.tree_edge_found, 5);
         assert_eq!(event_counter.back_edge_found, 2);
         assert_eq!(event_counter.cross_edge_found, 0);
     }
-
 }
