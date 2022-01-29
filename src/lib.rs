@@ -37,6 +37,7 @@ pub mod gen;
 pub mod graph;
 pub mod provide;
 pub mod storage;
+pub mod view;
 
 #[cfg(test)]
 pub mod test_utils;
