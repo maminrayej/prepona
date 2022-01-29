@@ -1,22 +1,13 @@
 use std::marker::PhantomData;
 
-use crate::storage::AdjMap;
-use crate::{
-    provide::{
-        CheckedEdges, CheckedMutEdges, CheckedVertices, Edges, InitializableStorage, MutEdges,
-        MutVertices, Vertices,
-    },
-    storage::{
-        edge::{Direction, EdgeDescriptor},
-        vertex::VertexDescriptor,
-    },
-};
-
 use super::GraphError;
+use crate::provide::{Edges, InitializableStorage, MutEdges, MutVertices, Vertices};
+use crate::storage::edge::{Direction, EdgeDescriptor};
+use crate::storage::vertex::VertexDescriptor;
+use crate::storage::AdjMap;
 
 pub type SimpleGraphMap<V, E, DIR> = SimpleGraph<AdjMap<V, E, DIR>, V, E, DIR>;
 
-// TODO: Add Direction trait bound to S
 #[derive(Debug)]
 pub struct SimpleGraph<S, V, E, Dir>
 where
@@ -76,6 +67,10 @@ where
 
     type Dir = Dir;
 
+    fn has_vt(&self, vt: usize) -> bool {
+        self.storage.has_vt(vt)
+    }
+
     fn vertex(&self, vt: usize) -> &Self::V {
         self.storage.vertex(vt)
     }
@@ -96,10 +91,6 @@ where
         self.storage.neighbors(vt)
     }
 
-    fn has_vt(&self, vt: usize) -> bool {
-        self.storage.has_vt(vt)
-    }
-
     fn successors(&self, vt: usize) -> crate::common::DynIter<'_, usize> {
         self.storage.successors(vt)
     }
@@ -107,15 +98,6 @@ where
     fn predecessors(&self, vt: usize) -> crate::common::DynIter<'_, usize> {
         self.storage.predecessors(vt)
     }
-}
-
-impl<S, V, E, Dir> CheckedVertices for SimpleGraph<S, V, E, Dir>
-where
-    V: VertexDescriptor,
-    E: EdgeDescriptor,
-    Dir: Direction,
-    S: InitializableStorage<Dir = Dir> + Vertices<V = V, Dir = Dir> + Edges<E = E, Dir = Dir>,
-{
 }
 
 impl<S, V, E, Dir> Edges for SimpleGraph<S, V, E, Dir>
@@ -128,6 +110,10 @@ where
     type E = E;
 
     type Dir = Dir;
+
+    fn has_et(&self, et: usize) -> bool {
+        self.storage.has_et(et)
+    }
 
     fn edge(&self, et: usize) -> (usize, usize, &Self::E) {
         self.storage.edge(et)
@@ -152,19 +138,6 @@ where
     fn outgoing_edges(&self, vt: usize) -> crate::common::DynIter<'_, usize> {
         self.storage.outgoing_edges(vt)
     }
-
-    fn has_et(&self, et: usize) -> bool {
-        self.storage.has_et(et)
-    }
-}
-
-impl<S, V, E, Dir> CheckedEdges for SimpleGraph<S, V, E, Dir>
-where
-    V: VertexDescriptor,
-    E: EdgeDescriptor,
-    Dir: Direction,
-    S: InitializableStorage<Dir = Dir> + Vertices<V = V, Dir = Dir> + Edges<E = E, Dir = Dir>,
-{
 }
 
 impl<S, V, E, Dir> MutVertices for SimpleGraph<S, V, E, Dir>
@@ -222,21 +195,6 @@ where
         self.storage.add_edge(src_vt, dst_vt, edge)
     }
 
-    fn remove_edge(&mut self, src_vt: usize, dst_vt: usize, et: usize) -> Self::E {
-        self.storage.remove_edge(src_vt, dst_vt, et)
-    }
-}
-
-impl<S, V, E, Dir> CheckedMutEdges for SimpleGraph<S, V, E, Dir>
-where
-    V: VertexDescriptor,
-    E: EdgeDescriptor,
-    Dir: Direction,
-    S: InitializableStorage<Dir = Dir>
-        + Vertices<V = V, Dir = Dir>
-        + Edges<E = E, Dir = Dir>
-        + CheckedMutEdges,
-{
     fn add_edge_checked(
         &mut self,
         src_vt: usize,
@@ -250,6 +208,10 @@ where
         }
 
         self.storage.add_edge_checked(src_vt, dst_vt, edge)
+    }
+
+    fn remove_edge(&mut self, src_vt: usize, dst_vt: usize, et: usize) -> Self::E {
+        self.storage.remove_edge(src_vt, dst_vt, et)
     }
 }
 
@@ -376,7 +338,7 @@ mod tests {
     use rand::thread_rng;
 
     use crate::graph::SimpleGraphMap;
-    use crate::provide::{CheckedMutEdges, MutEdges, Vertices};
+    use crate::provide::{MutEdges, Vertices};
     use crate::storage::edge::{Directed, Direction, Undirected};
     use crate::test_utils::get_non_duplicate;
 

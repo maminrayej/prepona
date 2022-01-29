@@ -1,8 +1,5 @@
 use crate::common::DynIter;
-use crate::provide::{
-    CheckedEdges, CheckedMutEdges, CheckedMutVertices, CheckedVertices, Edges,
-    InitializableStorage, MutEdges, MutVertices, Vertices,
-};
+use crate::provide::{Edges, InitializableStorage, MutEdges, MutVertices, Vertices};
 use crate::storage::edge::{Direction, Edge, EdgeDescriptor};
 use crate::storage::token::UsizeTokenProvider;
 use crate::storage::vertex::VertexDescriptor;
@@ -89,6 +86,10 @@ where
     type V = V;
     type Dir = Dir;
 
+    fn has_vt(&self, vt: usize) -> bool {
+        self.vt_to_v.contains_key(&vt)
+    }
+
     fn vertex(&self, vt: usize) -> &Self::V {
         &self.vt_to_v[&vt]
     }
@@ -107,10 +108,6 @@ where
 
     fn neighbors(&self, vt: usize) -> DynIter<'_, usize> {
         self.successors(vt)
-    }
-
-    fn has_vt(&self, vt: usize) -> bool {
-        self.vt_to_v.contains_key(&vt)
     }
 
     fn successors(&self, vt: usize) -> DynIter<'_, usize> {
@@ -140,14 +137,6 @@ where
             )
         }
     }
-}
-
-impl<V, E, Dir> CheckedVertices for AdjMap<V, E, Dir>
-where
-    V: VertexDescriptor,
-    E: EdgeDescriptor,
-    Dir: Direction,
-{
 }
 
 impl<V, E, Dir> MutVertices for AdjMap<V, E, Dir>
@@ -200,14 +189,6 @@ where
     }
 }
 
-impl<V, E, Dir> CheckedMutVertices for AdjMap<V, E, Dir>
-where
-    V: VertexDescriptor,
-    E: EdgeDescriptor,
-    Dir: Direction,
-{
-}
-
 impl<V, E, Dir> Edges for AdjMap<V, E, Dir>
 where
     V: VertexDescriptor,
@@ -216,6 +197,10 @@ where
 {
     type E = E;
     type Dir = Dir;
+
+    fn has_et(&self, et: usize) -> bool {
+        self.et_to_e.contains_key(&et)
+    }
 
     fn edge(&self, et: usize) -> (usize, usize, &E) {
         self.et_to_e[&et].view()
@@ -262,18 +247,6 @@ where
             )
         }
     }
-
-    fn has_et(&self, et: usize) -> bool {
-        self.et_to_e.contains_key(&et)
-    }
-}
-
-impl<V, E, Dir> CheckedEdges for AdjMap<V, E, Dir>
-where
-    V: VertexDescriptor,
-    E: EdgeDescriptor,
-    Dir: Direction,
-{
 }
 
 impl<V, E, Dir> MutEdges for AdjMap<V, E, Dir>
@@ -347,14 +320,6 @@ where
 
         self.et_to_e.remove(&et).unwrap().into_inner()
     }
-}
-
-impl<V, E, Dir> CheckedMutEdges for AdjMap<V, E, Dir>
-where
-    V: VertexDescriptor,
-    E: EdgeDescriptor,
-    Dir: Direction,
-{
 }
 
 #[cfg(test)]

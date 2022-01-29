@@ -23,14 +23,11 @@ pub(crate) mod storage_test_suit {
 
     use crate::test_utils::get_non_duplicate;
 
-    use super::{
-        CheckedEdges, CheckedMutEdges, CheckedMutVertices, CheckedVertices, Edges, MutEdges,
-        MutVertices, Vertices,
-    };
+    use super::{Edges, MutEdges, MutVertices, Vertices};
 
     fn validate_storage<S>(storage: S)
     where
-        S: Vertices + Edges,
+        S: Edges,
         S::V: Debug + Hash + Clone,
         S::E: Debug + Hash + Clone,
     {
@@ -96,7 +93,7 @@ pub(crate) mod storage_test_suit {
 
     pub fn prop_storage<S>(storage: S)
     where
-        S: Vertices + Edges,
+        S: Edges,
         S::V: Debug + Hash + Clone,
         S::E: Debug + Hash + Clone,
     {
@@ -105,8 +102,7 @@ pub(crate) mod storage_test_suit {
 
     pub fn prop_vertex_checked<S>(storage: S)
     where
-        S: CheckedVertices,
-        S::V: Debug + Hash + Clone,
+        S: Vertices,
     {
         if storage.vertex_count() > 0 {
             let non_existent_vt = get_non_duplicate(storage.vertex_tokens(), 1)[0];
@@ -119,32 +115,28 @@ pub(crate) mod storage_test_suit {
 
     pub fn prop_vertex_count_checked<S>(storage: S)
     where
-        S: CheckedVertices,
-        S::V: Debug + Hash + Clone,
+        S: Vertices,
     {
         assert!(storage.vertex_count_checked().is_ok())
     }
 
     pub fn prop_vertex_tokens_checked<S>(storage: S)
     where
-        S: CheckedVertices,
-        S::V: Debug + Hash + Clone,
+        S: Vertices,
     {
         assert!(storage.vertex_tokens_checked().is_ok())
     }
 
     pub fn prop_vertices_checked<S>(storage: S)
     where
-        S: CheckedVertices,
-        S::V: Debug + Hash + Clone,
+        S: Vertices,
     {
         assert!(storage.vertices_checked().is_ok())
     }
 
     pub fn prop_neighbors_checked<S>(storage: S)
     where
-        S: CheckedVertices,
-        S::V: Debug + Hash + Clone,
+        S: Vertices,
     {
         if storage.vertex_count() > 0 {
             let non_existent_vt = get_non_duplicate(storage.vertex_tokens(), 1)[0];
@@ -157,8 +149,7 @@ pub(crate) mod storage_test_suit {
 
     pub fn prop_successors_checked<S>(storage: S)
     where
-        S: CheckedVertices,
-        S::V: Debug + Hash + Clone,
+        S: Vertices,
     {
         if storage.vertex_count() > 0 {
             let non_existent_vt = get_non_duplicate(storage.vertex_tokens(), 1)[0];
@@ -171,8 +162,7 @@ pub(crate) mod storage_test_suit {
 
     pub fn prop_predecessors_checked<S>(storage: S)
     where
-        S: CheckedVertices,
-        S::V: Debug + Hash + Clone,
+        S: Vertices,
     {
         if storage.vertex_count() > 0 {
             let non_existent_vt = get_non_duplicate(storage.vertex_tokens(), 1)[0];
@@ -206,7 +196,6 @@ pub(crate) mod storage_test_suit {
         S: Edges + MutVertices,
         S::V: Debug + Hash + Clone,
         S::E: Debug + Hash + Clone,
-        Standard: Distribution<S::V>,
     {
         let before_vertex_count = storage.vertex_count();
         if before_vertex_count > 0 {
@@ -248,8 +237,7 @@ pub(crate) mod storage_test_suit {
 
     pub fn prop_remove_vertex_checked<S>(mut storage: S)
     where
-        S: CheckedMutVertices,
-        S::V: Debug + Hash + Clone,
+        S: MutVertices,
     {
         if storage.vertex_count() > 0 {
             let non_existent_vt = get_non_duplicate(storage.vertex_tokens(), 1)[0];
@@ -262,8 +250,7 @@ pub(crate) mod storage_test_suit {
 
     pub fn prop_vertex_mut_checked<S>(mut storage: S)
     where
-        S: CheckedMutVertices,
-        S::V: Debug + Hash + Clone,
+        S: MutVertices,
     {
         if storage.vertex_count() > 0 {
             let non_existent_vt = get_non_duplicate(storage.vertex_tokens(), 1)[0];
@@ -276,9 +263,7 @@ pub(crate) mod storage_test_suit {
 
     pub fn prop_edge_checked<S>(storage: S)
     where
-        S: CheckedEdges,
-        S::V: Debug + Hash + Clone,
-        S::E: Debug + Hash + Clone,
+        S: Edges,
     {
         if storage.edge_count() > 0 {
             let non_existent_et = get_non_duplicate(storage.edge_tokens(), 1)[0];
@@ -291,36 +276,28 @@ pub(crate) mod storage_test_suit {
 
     pub fn prop_edge_count_checked<S>(storage: S)
     where
-        S: CheckedEdges,
-        S::V: Debug + Hash + Clone,
-        S::E: Debug + Hash + Clone,
+        S: Edges,
     {
         assert!(storage.edge_count_checked().is_ok())
     }
 
     pub fn prop_edge_tokens_checked<S>(storage: S)
     where
-        S: CheckedEdges,
-        S::V: Debug + Hash + Clone,
-        S::E: Debug + Hash + Clone,
+        S: Edges,
     {
         assert!(storage.edge_tokens_checked().is_ok())
     }
 
     pub fn prop_edges_checked<S>(storage: S)
     where
-        S: CheckedEdges,
-        S::V: Debug + Hash + Clone,
-        S::E: Debug + Hash + Clone,
+        S: Edges,
     {
         assert!(storage.edges_checked().is_ok())
     }
 
     pub fn prop_ingoing_edges_checked<S>(storage: S)
     where
-        S: CheckedEdges,
-        S::V: Debug + Hash + Clone,
-        S::E: Debug + Hash + Clone,
+        S: Edges,
     {
         if storage.vertex_count() > 0 {
             let non_existent_vt = get_non_duplicate(storage.vertex_tokens(), 1)[0];
@@ -333,9 +310,7 @@ pub(crate) mod storage_test_suit {
 
     pub fn prop_outgoing_edges_checked<S>(storage: S)
     where
-        S: CheckedEdges,
-        S::V: Debug + Hash + Clone,
-        S::E: Debug + Hash + Clone,
+        S: Edges,
     {
         if storage.vertex_count() > 0 {
             let non_existent_vt = get_non_duplicate(storage.vertex_tokens(), 1)[0];
@@ -348,10 +323,9 @@ pub(crate) mod storage_test_suit {
 
     pub fn prop_add_edge<S>(mut storage: S)
     where
-        S: Vertices + MutEdges,
+        S: MutEdges,
         S::V: Debug + Hash + Clone,
         S::E: Debug + Hash + Clone,
-        Standard: Distribution<S::V>,
         Standard: Distribution<S::E>,
     {
         if storage.vertex_count() > 0 {
@@ -383,7 +357,7 @@ pub(crate) mod storage_test_suit {
 
     pub fn prop_remove_edge<S>(mut storage: S)
     where
-        S: Vertices + MutEdges,
+        S: MutEdges,
         S::V: Debug + Hash + Clone,
         S::E: Debug + Hash + Clone,
         Standard: Distribution<S::E>,
@@ -416,7 +390,7 @@ pub(crate) mod storage_test_suit {
 
     pub fn prop_update_edge<S>(mut storage: S)
     where
-        S: Vertices + MutEdges,
+        S: MutEdges,
         S::V: Debug + Hash + Clone,
         S::E: Debug + Hash + Clone,
         Standard: Distribution<S::E>,
@@ -449,11 +423,7 @@ pub(crate) mod storage_test_suit {
 
     pub fn prop_remove_edge_checked<S>(mut storage: S)
     where
-        S: CheckedMutEdges,
-        S::V: Debug + Hash + Clone,
-        S::E: Debug + Hash + Clone,
-        Standard: Distribution<S::V>,
-        Standard: Distribution<S::E>,
+        S: MutEdges,
     {
         if storage.edge_count() > 0 {
             let non_existent_src_vt = get_non_duplicate(storage.vertex_tokens(), 1)[0];
@@ -478,9 +448,7 @@ pub(crate) mod storage_test_suit {
 
     pub fn prop_edge_mut_checked<S>(mut storage: S)
     where
-        S: CheckedMutEdges,
-        S::V: Debug + Hash + Clone,
-        S::E: Debug + Hash + Clone,
+        S: MutEdges,
     {
         if storage.edge_count() > 0 {
             let non_existent_et = get_non_duplicate(storage.edge_tokens(), 1)[0];
