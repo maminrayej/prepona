@@ -216,6 +216,7 @@ mod test {
     use std::collections::HashMap;
     use std::marker::PhantomData;
 
+    use itertools::Itertools;
     use quickcheck::Arbitrary;
     use rand::{thread_rng, Rng};
 
@@ -256,7 +257,7 @@ mod test {
             + Arbitrary,
     {
         fn arbitrary(g: &mut quickcheck::Gen) -> Self {
-            let vertex_count = usize::arbitrary(g) % 100;
+            let vertex_count = usize::arbitrary(g) % 20;
 
             let mut rng = thread_rng();
             let edge_probability = rng.gen::<f64>() * rng.gen::<f64>();
@@ -267,7 +268,7 @@ mod test {
                 .map(|_| adj_map.add_vertex(V::arbitrary(g)))
                 .collect();
 
-            vts.iter().zip(vts.iter()).for_each(|(i, j)| {
+            vts.iter().cartesian_product(vts.iter()).for_each(|(i, j)| {
                 let p = rng.gen::<f64>();
 
                 if i < j && p <= edge_probability {

@@ -4,7 +4,7 @@ use itertools::Itertools;
 use rand::{distributions::Standard, prelude::Distribution, thread_rng, Rng};
 
 use crate::{
-    provide::{Edges, MutEdges, MutVertices, Storage, Vertices, InitializableStorage},
+    provide::{Edges, InitializableStorage, MutEdges, MutVertices, Storage, Vertices},
     storage::edge::Undirected,
 };
 

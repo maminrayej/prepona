@@ -1,5 +1,5 @@
 use crate::common::DynIter;
-use crate::provide::{Edges, MutEdges, MutVertices, Storage, Vertices, InitializableStorage};
+use crate::provide::{Edges, InitializableStorage, MutEdges, MutVertices, Storage, Vertices};
 use crate::storage::edge::{Direction, Edge, EdgeDescriptor};
 use crate::storage::token::UsizeTokenProvider;
 use crate::storage::vertex::VertexDescriptor;
@@ -320,6 +320,7 @@ mod test {
     use crate::provide::{Edges, MutEdges, MutVertices, Vertices};
     use crate::storage::edge::Direction;
     use crate::storage::{edge::EdgeDescriptor, vertex::VertexDescriptor};
+    use itertools::Itertools;
     use quickcheck::Arbitrary;
     use rand::{thread_rng, Rng};
 
@@ -348,7 +349,7 @@ mod test {
         Dir: Direction + Arbitrary,
     {
         fn arbitrary(g: &mut quickcheck::Gen) -> Self {
-            let vertex_count = usize::arbitrary(g) % 100;
+            let vertex_count = usize::arbitrary(g) % 20;
 
             let mut rng = thread_rng();
             let edge_probability = rng.gen::<f64>() * rng.gen::<f64>();
@@ -359,7 +360,7 @@ mod test {
                 .map(|_| adj_map.add_vertex(V::arbitrary(g)))
                 .collect();
 
-            vts.iter().zip(vts.iter()).for_each(|(i, j)| {
+            vts.iter().cartesian_product(vts.iter()).for_each(|(i, j)| {
                 let p = rng.gen::<f64>();
 
                 if p <= edge_probability {

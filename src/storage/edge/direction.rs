@@ -1,7 +1,7 @@
 /// Describes wether an entity is directed or not.
 ///
 /// The entity can be an edge, a graph or any other struct that can act as an entity with direction.
-pub trait  Direction {
+pub trait Direction {
     /// # Returns
     /// * `true`: If the entity has direction.
     /// * `false`: Otherwise.

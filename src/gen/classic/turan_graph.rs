@@ -2,7 +2,7 @@ use itertools::repeat_n;
 use rand::{distributions::Standard, prelude::Distribution};
 
 use crate::{
-    provide::{Edges, MutEdges, MutVertices, Storage, Vertices, InitializableStorage},
+    provide::{Edges, InitializableStorage, MutEdges, MutVertices, Storage, Vertices},
     storage::edge::Undirected,
 };
 

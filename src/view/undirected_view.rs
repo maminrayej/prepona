@@ -218,15 +218,24 @@ mod tests {
         for vid in graph.vertex_tokens() {
             assert_eq!(
                 view.successors(vid).collect::<HashSet<usize>>(),
-                graph.successors(vid).chain(graph.predecessors(vid)).collect()
+                graph
+                    .successors(vid)
+                    .chain(graph.predecessors(vid))
+                    .collect()
             );
             assert_eq!(
                 view.predecessors(vid).collect::<HashSet<usize>>(),
-                graph.predecessors(vid).chain(graph.successors(vid)).collect()
+                graph
+                    .predecessors(vid)
+                    .chain(graph.successors(vid))
+                    .collect()
             );
             assert_eq!(
                 view.neighbors(vid).collect::<HashSet<usize>>(),
-                graph.successors(vid).chain(graph.predecessors(vid)).collect()
+                graph
+                    .successors(vid)
+                    .chain(graph.predecessors(vid))
+                    .collect()
             )
         }
     }
