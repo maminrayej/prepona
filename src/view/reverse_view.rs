@@ -197,7 +197,7 @@ where
             self.filtered_edges.retain(|et| {
                 let (sid, did, _) = self.inner.edge(*et);
 
-                sid == vid || did == vid
+                sid != vid && did != vid
             });
         });
     }
@@ -212,5 +212,45 @@ where
 
     fn remove_edge_from_view(&mut self, eid: usize) {
         self.filtered_edges.remove(&eid);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::ReverseView;
+    use crate::provide::{Edges, Vertices};
+    use crate::storage::edge::Directed;
+    use crate::storage::AdjMap;
+    use quickcheck_macros::quickcheck;
+    use std::collections::HashSet;
+
+    #[quickcheck]
+    fn prop_reverse_view(graph: AdjMap<(), (), Directed>) {
+        let view = ReverseView::init(&graph, |_| true, |_| true);
+
+        assert_eq!(graph.vertex_count(), view.vertex_count());
+        assert_eq!(graph.edge_count(), view.edge_count());
+
+        for vid in graph.vertex_tokens() {
+            assert_eq!(
+                graph.successors(vid).collect::<HashSet<usize>>(),
+                view.predecessors(vid).collect()
+            );
+            assert_eq!(
+                graph.predecessors(vid).collect::<HashSet<usize>>(),
+                view.successors(vid).collect()
+            );
+            assert_eq!(
+                graph.neighbors(vid).collect::<HashSet<usize>>(),
+                view.predecessors(vid).collect()
+            )
+        }
+
+        for eid in graph.edge_tokens() {
+            let (g_sid, g_did, g_edge) = graph.edge(eid);
+            let (v_sid, v_did, v_edge) = view.edge(eid);
+
+            assert_eq!((g_sid, g_did, g_edge), (v_did, v_sid, v_edge))
+        }
     }
 }

@@ -18,6 +18,7 @@ impl<'a, G> GenericView<'a, G>
 where
     G: Storage + Vertices + Edges,
 {
+    // TODO: This method is shared between all view. DRY it!
     pub fn init(
         inner: &'a G,
         vertex_filter: impl Fn(usize) -> bool,
@@ -194,7 +195,7 @@ where
             self.filtered_edges.retain(|et| {
                 let (sid, did, _) = self.inner.edge(*et);
 
-                sid == vid || did == vid
+                sid != vid && did != vid
             });
         });
     }
@@ -209,5 +210,79 @@ where
 
     fn remove_edge_from_view(&mut self, eid: usize) {
         self.filtered_edges.remove(&eid);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use itertools::Itertools;
+    use quickcheck::quickcheck;
+
+    use crate::provide::{Edges, Vertices};
+    use crate::storage::edge::{Directed, Direction, Undirected};
+    use crate::storage::AdjMap;
+    use crate::view::{GenericView, SubgraphView};
+
+    #[test]
+    fn prop_generic_view() {
+        fn prop<Dir: Direction>(graph: AdjMap<(), (), Dir>) {
+            let total_vertex_count = graph.vertex_count();
+            let odd_vertices_count = graph.vertex_tokens().filter(|vid| *vid % 2 != 0).count();
+
+            let mut view = GenericView::init(&graph, |vid| vid % 2 == 0, |eid| eid % 2 == 0);
+
+            let view_vertex_count = view.vertex_count();
+            let view_edge_count = view.edge_count();
+
+            assert!(view.vertex_tokens().all(|vid| vid % 2 == 0));
+            assert_eq!(view.vertex_count(), total_vertex_count - odd_vertices_count);
+
+            for vid in view.vertex_tokens() {
+                assert!(view.neighbors(vid).all(|nid| nid % 2 == 0));
+                assert!(view.successors(vid).all(|nid| nid % 2 == 0));
+                assert!(view.predecessors(vid).all(|nid| nid % 2 == 0));
+                assert_eq!(view.vertex(vid), graph.vertex(vid));
+            }
+
+            for eid in view.edge_tokens() {
+                let (sid, did, edge) = view.edge(eid);
+
+                assert!(view.has_vt(sid));
+                assert!(view.has_vt(did));
+                assert_eq!(edge, graph.edge(eid).2);
+            }
+
+            // If we add back all the removed vertices and edges, view must be equal to the original graph
+            graph
+                .vertex_tokens()
+                .filter(|vid| *vid % 2 != 0)
+                .for_each(|vid| view.add_vertex_from_inner_checked(vid).unwrap());
+            graph
+                .edge_tokens()
+                .for_each(|eid| view.add_edge_from_inner_checked(eid).unwrap());
+
+            assert_eq!(view.vertex_count(), graph.vertex_count());
+            assert_eq!(view.edge_count(), graph.edge_count());
+
+            // If we remove them again, we must have the old view back
+            graph
+                .vertex_tokens()
+                .filter(|vid| *vid % 2 != 0)
+                .for_each(|vid| view.remove_vertex_from_view_checked(vid).unwrap());
+
+            let to_remove_eids = graph
+                .edge_tokens()
+                .filter(|eid| *eid % 2 != 0 && view.has_et(*eid))
+                .collect_vec();
+            to_remove_eids
+                .into_iter()
+                .for_each(|eid| view.remove_edge_from_view_checked(eid).unwrap());
+
+            assert_eq!(view.vertex_count(), view_vertex_count);
+            assert_eq!(view.edge_count(), view_edge_count);
+        }
+
+        quickcheck(prop as fn(AdjMap<(), (), Undirected>));
+        quickcheck(prop as fn(AdjMap<(), (), Directed>));
     }
 }

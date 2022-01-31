@@ -101,7 +101,7 @@ where
         DynIter::init(
             self.inner
                 .successors(vt)
-                .chain(self.predecessors(vt))
+                .chain(self.inner.predecessors(vt))
                 .filter(|nid| self.filtered_vertices.contains(nid)),
         )
     }
@@ -181,7 +181,7 @@ where
             self.filtered_edges.retain(|et| {
                 let (sid, did, _) = self.inner.edge(*et);
 
-                sid == vid || did == vid
+                sid != vid && did != vid
             });
         });
     }
@@ -196,5 +196,38 @@ where
 
     fn remove_edge_from_view(&mut self, eid: usize) {
         self.filtered_edges.remove(&eid);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::UndirectedView;
+    use crate::provide::{Edges, Vertices};
+    use crate::storage::edge::Directed;
+    use crate::storage::AdjMap;
+    use quickcheck_macros::quickcheck;
+    use std::collections::HashSet;
+
+    #[quickcheck]
+    fn prop_undirected_view(graph: AdjMap<(), (), Directed>) {
+        let view = UndirectedView::init(&graph, |_| true, |_| true);
+
+        assert_eq!(graph.vertex_count(), view.vertex_count());
+        assert_eq!(graph.edge_count(), view.edge_count());
+
+        for vid in graph.vertex_tokens() {
+            assert_eq!(
+                view.successors(vid).collect::<HashSet<usize>>(),
+                graph.successors(vid).chain(graph.predecessors(vid)).collect()
+            );
+            assert_eq!(
+                view.predecessors(vid).collect::<HashSet<usize>>(),
+                graph.predecessors(vid).chain(graph.successors(vid)).collect()
+            );
+            assert_eq!(
+                view.neighbors(vid).collect::<HashSet<usize>>(),
+                graph.successors(vid).chain(graph.predecessors(vid)).collect()
+            )
+        }
     }
 }
