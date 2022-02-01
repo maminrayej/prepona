@@ -1,10 +1,14 @@
-use std::collections::{HashMap, VecDeque};
+use std::collections::{HashMap, HashSet, VecDeque};
 
 use anyhow::Result;
+use itertools::{Either, Itertools};
 
+use crate::algo::component::connected_components;
 use crate::algo::errors::AlgoError;
 use crate::common::{RealID, VirtID};
-use crate::provide::{Storage, Vertices};
+use crate::provide::{Edges, Storage, Vertices};
+use crate::storage::edge::{Direction, Undirected};
+use crate::view::GenericView;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Color {
@@ -62,7 +66,9 @@ where
 
                 if color_of[n_vid.inner()].is_known() {
                     if color_of[n_vid.inner()] == color_of[v_vid.inner()] {
-                        return Err(AlgoError::GraphIsNotBipartite.into());
+                        return Err(
+                            AlgoError::NotBipartite("Graph is not bipartite".to_string()).into(),
+                        );
                     }
                 } else {
                     color_of[n_vid.inner()] = color;
@@ -84,6 +90,63 @@ where
     G: Storage + Vertices,
 {
     color(graph).is_ok()
+}
+
+pub fn is_bipartite_node_set<G>(
+    graph: &G,
+    top_vertex_ids: impl Iterator<Item = usize>,
+) -> Result<bool>
+where
+    G: Storage<Dir = Undirected> + Vertices + Edges,
+{
+    let top_vertex_set: HashSet<usize> = top_vertex_ids.collect();
+    for cc in connected_components(graph) {
+        let view = GenericView::init(graph, |vid| cc.contains(&RealID::from(vid)), |_| true);
+
+        if let Ok(color_map) = color(&view) {
+            let (x, y): (HashSet<_>, HashSet<_>) =
+                color_map.into_iter().partition_map(|(rid, color)| {
+                    if color == Color::Blue {
+                        Either::Left(rid.inner())
+                    } else {
+                        Either::Right(rid.inner())
+                    }
+                });
+
+            if !(x.is_subset(&top_vertex_set) && y.is_disjoint(&top_vertex_set))
+                || (y.is_subset(&top_vertex_set) && x.is_disjoint(&top_vertex_set))
+            {
+                return Ok(false);
+            }
+        } else {
+            return Err(AlgoError::NotBipartite(
+                "Graph contains a connected component that is not bipartite".to_string(),
+            )
+            .into());
+        }
+    }
+
+    Ok(true)
+}
+
+pub fn density<G>(graph: &G, top_vertex_ids: impl Iterator<Item = usize>) -> f64
+where
+    G: Storage + Vertices + Edges,
+{
+    let n = graph.vertex_count() as f64;
+    let m = graph.edge_count() as f64;
+    let nb = top_vertex_ids.count() as f64;
+    let nt = n - nb;
+
+    return if m == 0.0 {
+        return 0.0;
+    } else {
+        if G::Dir::is_directed() {
+            m / (2.0 * (nb * nt))
+        } else {
+            m / (nb * nt)
+        }
+    };
 }
 
 #[cfg(test)]
