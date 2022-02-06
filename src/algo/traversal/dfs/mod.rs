@@ -123,8 +123,6 @@ where
                 self.state.time = self.state.time + 1;
                 self.state.discover[s_vid.inner()] = self.state.time.into();
 
-                dbg!(s_vid);
-
                 // callback -> onDiscover
                 callback!(callback(Discover(&self.state, s_rid)), {
                     let mut stack = vec![(s_rid, 0, self.graph.neighbors(s_rid.inner()))];
@@ -133,25 +131,17 @@ where
                         let (v_rid, depth, mut neighbors) = stack.pop().unwrap();
                         let v_vid = self.state.id_map[v_rid];
 
-                        dbg!(v_vid);
-
                         if let Some(n_rid) = neighbors.next().map(|n_id| RealID::from(n_id)) {
                             let n_vid = self.state.id_map[n_rid];
-
-                            dbg!(n_vid);
 
                             if G::Dir::is_undirected()
                                 && (self.parent_of(v_rid) == Some(n_rid) || self.is_finished(n_vid))
                             {
-                                dbg!("immediate parent");
-
                                 stack.push((v_rid, depth, neighbors));
                                 continue;
                             }
 
                             let edge_type = self.edge_type_of(v_vid, n_vid);
-
-                            dbg!(edge_type);
 
                             match edge_type {
                                 EdgeType::TreeEdge(_, _) => {
@@ -172,7 +162,6 @@ where
                                     });
                                 }
                                 _ => {
-                                    dbg!("Pushing back!", v_vid);
                                     stack.push((v_rid, depth, neighbors));
                                 }
                             }
@@ -184,8 +173,6 @@ where
                         } else {
                             self.state.time = self.state.time + 1;
                             self.state.finished[v_vid.inner()] = self.state.time.into();
-
-                            dbg!("Finished", v_vid);
 
                             // callback -> onFinish
                             if callback(Finish(&self.state, v_rid)) == Return {
