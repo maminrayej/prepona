@@ -1,3 +1,4 @@
+use std::fmt::{Debug, Display};
 use std::{collections::HashMap, ops::Index};
 
 use itertools::Itertools;
@@ -17,6 +18,12 @@ impl RealID {
     }
 }
 
+impl Display for RealID {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        <Self as Debug>::fmt(self, f)
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct VirtID(usize);
 
@@ -29,6 +36,12 @@ impl VirtID {
 impl From<usize> for VirtID {
     fn from(value: usize) -> Self {
         VirtID(value)
+    }
+}
+
+impl Display for VirtID {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        <Self as Debug>::fmt(self, f)
     }
 }
 
