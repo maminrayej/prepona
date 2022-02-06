@@ -57,3 +57,54 @@ where
 
     Ok(node_boundries)
 }
+
+#[cfg(test)]
+mod tests {
+    use quickcheck_macros::quickcheck;
+
+    use crate::algo::boundry::{edge_boundry, node_boundry};
+    use crate::gen::{CompleteGraphGenerator, Generator};
+    use crate::provide::Edges;
+    use crate::storage::edge::Undirected;
+    use crate::storage::AdjMap;
+
+    #[quickcheck]
+    fn prop_edge_boundry(generator: CompleteGraphGenerator) {
+        let graph: AdjMap<(), (), Undirected> = generator.generate();
+
+        let boundry_edges = edge_boundry(&graph, |vid| vid % 2 == 0, |vid| vid % 2 != 0).unwrap();
+
+        assert!(graph
+            .edge_tokens()
+            .filter(|eid| boundry_edges.contains(eid))
+            .all(|eid| {
+                let (sid, did, _) = graph.edge(eid);
+
+                (sid % 2) != (did % 2)
+            }))
+    }
+
+    #[quickcheck]
+    fn prop_edge_boundry_fail(generator: CompleteGraphGenerator) {
+        let graph: AdjMap<(), (), Undirected> = generator.generate();
+
+        assert!(edge_boundry(&graph, |vid| vid % 2 == 0, |vid| vid % 2 == 0).is_err());
+    }
+
+    #[quickcheck]
+    fn prop_vertex_boundry(generator: CompleteGraphGenerator) {
+        let graph: AdjMap<(), (), Undirected> = generator.generate();
+
+        let boundry_vertices =
+            node_boundry(&graph, |vid| vid % 2 == 0, |vid| vid % 2 != 0).unwrap();
+
+        assert!(boundry_vertices.into_iter().all(|vid| vid % 2 != 0))
+    }
+
+    #[quickcheck]
+    fn prop_vertex_boundry_fail(generator: CompleteGraphGenerator) {
+        let graph: AdjMap<(), (), Undirected> = generator.generate();
+
+        assert!(node_boundry(&graph, |vid| vid % 2 == 0, |vid| vid % 2 == 0).is_err());
+    }
+}
