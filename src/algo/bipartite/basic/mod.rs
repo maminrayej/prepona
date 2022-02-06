@@ -131,16 +131,16 @@ where
 {
     let n = graph.vertex_count() as f64;
     let m = graph.edge_count() as f64;
-    let nb = top_vertex_ids.count() as f64;
-    let nt = n - nb;
+    let nt = top_vertex_ids.count() as f64;
+    let nb = n - nt;
 
     return if m == 0.0 {
         return 0.0;
     } else {
         if G::Dir::is_directed() {
-            m / (2.0 * (nb * nt))
+            m / (2.0 * (nt * nb))
         } else {
-            m / (nb * nt)
+            m / (nt * nb)
         }
     };
 }
