@@ -50,3 +50,33 @@ where
         Ok(number_connected_components(graph) == 1)
     }
 }
+
+#[cfg(test)]
+mod tests {
+
+    use quickcheck_macros::quickcheck;
+
+    use crate::algo::component::{connected_components, is_connected, number_connected_components};
+    use crate::gen::{CompleteGraphGenerator, Generator, NullGraphGenerator};
+    use crate::storage::edge::Undirected;
+    use crate::storage::AdjMap;
+
+    #[quickcheck]
+    fn prop_connected_components(generator: NullGraphGenerator) {
+        let mut graph: AdjMap<(), (), Undirected> = generator.generate();
+
+        CompleteGraphGenerator::add_component_to(&mut graph, 3);
+        CompleteGraphGenerator::add_component_to(&mut graph, 4);
+        CompleteGraphGenerator::add_component_to(&mut graph, 5);
+        CompleteGraphGenerator::add_component_to(&mut graph, 6);
+
+        let ccs = connected_components(&graph);
+        let ccs_count = number_connected_components(&graph);
+        let is_connected = is_connected(&graph).unwrap();
+
+        assert_eq!(ccs.len(), 4);
+        assert_eq!(ccs.into_iter().map(|cc| cc.len()).sum::<usize>(), 18);
+        assert_eq!(ccs_count, 4);
+        assert!(!is_connected);
+    }
+}
