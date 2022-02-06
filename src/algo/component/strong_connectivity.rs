@@ -23,8 +23,8 @@ where
 
                 id_of[v_vid.inner()] = id;
                 low_id[v_vid.inner()] = id;
-                id += 1;
 
+                id += 1;
                 stack.push(v_rid);
             }
             Event::Finish(state, v_rid) => {
@@ -44,11 +44,12 @@ where
 
                     sccs.push(cc);
                 } else {
-                    let p_rid = RealID::from(state.parent[&v_vid.inner()]); // it can panic
-                    let p_vid = state.id_map[p_rid];
-                    let p_low_id = low_id[p_vid.inner()];
+                    if let Some(pid) = state.parent.get(&v_rid.inner()) {
+                        let p_vid = state.id_map[RealID::from(*pid)];
+                        let p_low_id = low_id[p_vid.inner()];
 
-                    low_id[p_vid.inner()] = std::cmp::min(v_low_id, p_low_id);
+                        low_id[p_vid.inner()] = std::cmp::min(v_low_id, p_low_id);
+                    }
                 }
             }
             Event::VisitEdge(state, edge_type) => match edge_type {
@@ -61,9 +62,9 @@ where
 
                     low_id[s_vid.inner()] = std::cmp::min(s_low_id, d_low_id);
                 }
-                _ => unreachable!(),
+                _ => {}
             },
-            _ => unreachable!(),
+            _ => {}
         }
 
         ControlFlow::Continue
@@ -90,5 +91,93 @@ where
         )
     } else {
         Ok(number_strongly_connected_components(graph) == 1)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::collections::HashSet;
+
+    use crate::algo::component::{
+        is_strongly_connected, number_strongly_connected_components, strongly_connected_components,
+    };
+    use crate::gen::{CompleteGraphGenerator, Generator, NullGraphGenerator};
+    use crate::provide::{MutEdges, MutVertices};
+    use crate::storage::edge::Directed;
+    use crate::storage::AdjMap;
+    use quickcheck_macros::quickcheck;
+
+    #[quickcheck]
+    fn prop_strong_connectivity(generator: NullGraphGenerator) {
+        let mut graph: AdjMap<(), (), Directed> = generator.generate();
+
+        CompleteGraphGenerator::add_component_to(&mut graph, 3);
+        CompleteGraphGenerator::add_component_to(&mut graph, 4);
+        CompleteGraphGenerator::add_component_to(&mut graph, 5);
+        CompleteGraphGenerator::add_component_to(&mut graph, 6);
+
+        let ccs = strongly_connected_components(&graph);
+        let ccs_count = number_strongly_connected_components(&graph);
+
+        assert_eq!(ccs.len(), 4);
+        assert_eq!(ccs.into_iter().map(|cc| cc.len()).sum::<usize>(), 18);
+        assert_eq!(ccs_count, 4);
+        assert!(!is_strongly_connected(&graph).unwrap())
+    }
+
+    #[test]
+    fn strong_connectivity_specific() {
+        let mut graph: AdjMap<(), (), Directed> = AdjMap::init();
+
+        let a = graph.add_vertex(());
+        let b = graph.add_vertex(());
+        let c = graph.add_vertex(());
+        let d = graph.add_vertex(());
+        let e = graph.add_vertex(());
+        let f = graph.add_vertex(());
+        let g = graph.add_vertex(());
+        let h = graph.add_vertex(());
+        let i = graph.add_vertex(());
+
+        //              .-------------------.
+        //              |           .---.   |
+        //              |           |   |   |
+        // a <-> b <--- f <-- g <-- i<--'   |
+        // ^     |      |     ^     |       |
+        // |     |      |     |     |       |
+        // v     v      v     |     |       |
+        // c --> d <--> e <-- h <---'-------'
+        graph.add_edge(a, b, ());
+        graph.add_edge(a, c, ());
+
+        graph.add_edge(b, a, ());
+        graph.add_edge(b, d, ());
+
+        graph.add_edge(c, a, ());
+        graph.add_edge(c, d, ());
+
+        graph.add_edge(d, e, ());
+
+        graph.add_edge(e, d, ());
+
+        graph.add_edge(f, b, ());
+        graph.add_edge(f, e, ());
+        graph.add_edge(f, h, ());
+
+        graph.add_edge(g, f, ());
+
+        graph.add_edge(h, g, ());
+        graph.add_edge(h, e, ());
+
+        graph.add_edge(i, i, ());
+        graph.add_edge(i, g, ());
+        graph.add_edge(i, h, ());
+
+        let ccs = strongly_connected_components(&graph);
+        assert_eq!(ccs.len(), 4);
+        assert_eq!(
+            HashSet::from([1, 2, 3, 3]),
+            ccs.iter().map(|cc| cc.len()).collect()
+        );
     }
 }
