@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet, VecDeque};
+use std::collections::{HashSet, VecDeque};
 
 use anyhow::Result;
 use itertools::{Either, Itertools};
@@ -35,7 +35,7 @@ impl Color {
     }
 }
 
-pub fn color<G>(graph: &G) -> Result<HashMap<RealID, Color>>
+pub fn color<G>(graph: &G) -> Result<(HashSet<RealID>, HashSet<RealID>)>
 where
     G: Storage + Vertices,
 {
@@ -77,12 +77,16 @@ where
             }
         }
     }
-
     Ok(color_of
         .into_iter()
         .enumerate()
-        .map(|(index, color)| (id_map[VirtID::from(index)], color))
-        .collect())
+        .partition_map(|(index, color)| {
+            if color == Color::Blue {
+                Either::Left(id_map[VirtID::from(index)])
+            } else {
+                Either::Right(id_map[VirtID::from(index)])
+            }
+        }))
 }
 
 pub fn is_bipartite<G>(graph: &G) -> bool
@@ -99,22 +103,14 @@ pub fn is_bipartite_node_set<G>(
 where
     G: Storage<Dir = Undirected> + Vertices + Edges,
 {
-    let top_vertex_set: HashSet<usize> = top_vertex_ids.collect();
+    let top_vertex_set: HashSet<RealID> = top_vertex_ids.map(|vid| RealID::from(vid)).collect();
+
     for cc in connected_components(graph) {
         let view = GenericView::init(graph, |vid| cc.contains(&RealID::from(vid)), |_| true);
 
-        if let Ok(color_map) = color(&view) {
-            let (x, y): (HashSet<_>, HashSet<_>) =
-                color_map.into_iter().partition_map(|(rid, color)| {
-                    if color == Color::Blue {
-                        Either::Left(rid.inner())
-                    } else {
-                        Either::Right(rid.inner())
-                    }
-                });
-
-            if !(x.is_subset(&top_vertex_set) && y.is_disjoint(&top_vertex_set))
-                || (y.is_subset(&top_vertex_set) && x.is_disjoint(&top_vertex_set))
+        if let Ok((x, y)) = color(&view) {
+            if !((x.is_subset(&top_vertex_set) && y.is_disjoint(&top_vertex_set))
+                || (y.is_subset(&top_vertex_set) && x.is_disjoint(&top_vertex_set)))
             {
                 return Ok(false);
             }
@@ -151,7 +147,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashMap;
+    use std::collections::{HashMap, HashSet};
 
     use quickcheck_macros::quickcheck;
 
@@ -162,23 +158,26 @@ mod tests {
         Generator, LadderGraphGenerator, LollipopGraphGenerator, NullGraphGenerator,
         PathGraphGenerator, StarGraphGenerator, WheelGraphGenerator,
     };
-    use crate::provide::Vertices;
+    use crate::provide::{Edges, MutEdges, MutVertices, Vertices};
     use crate::storage::edge::Undirected;
     use crate::storage::AdjMap;
 
-    use super::Color;
-
-    fn assert_coloring<G>(graph: &G, colors: HashMap<RealID, Color>)
-    where
+    fn assert_coloring<G>(
+        graph: &G,
+        (top_vertices, bottom_vertices): (HashSet<RealID>, HashSet<RealID>),
+    ) where
         G: Vertices,
     {
         for vid in graph.vertex_tokens() {
-            let v_color = colors[&RealID::from(vid)];
+            let v_rid = RealID::from(vid);
 
             for nid in graph.neighbors(vid) {
-                let n_color = colors[&RealID::from(nid)];
+                let n_rid = RealID::from(nid);
 
-                assert_ne!(v_color, n_color);
+                assert!(
+                    top_vertices.contains(&v_rid) && bottom_vertices.contains(&n_rid)
+                        || bottom_vertices.contains(&v_rid) && top_vertices.contains(&n_rid)
+                )
             }
         }
     }
@@ -285,5 +284,82 @@ mod tests {
 
         assert!(bipartite::color(&graph).is_err());
         assert!(!bipartite::is_bipartite(&graph));
+    }
+
+    #[quickcheck]
+    fn prop_two_coloring_node_set(generator: PathGraphGenerator) {
+        let mut path1: AdjMap<(), (), Undirected> = generator.generate();
+        let path2: AdjMap<(), (), Undirected> = generator.generate();
+
+        let (path1_top_vertices, _) = bipartite::color(&path1).unwrap();
+        let (path2_top_vertices, _) = bipartite::color(&path2).unwrap();
+
+        let vid_map: HashMap<usize, usize> = path2
+            .vertex_tokens()
+            .map(|vid| (vid, path1.add_vertex(())))
+            .collect();
+
+        path2.edge_tokens().for_each(|eid| {
+            let (sid, did, _) = path2.edge(eid);
+
+            let new_sid = vid_map[&sid];
+            let new_did = vid_map[&did];
+
+            path1.add_edge(new_sid, new_did, ());
+        });
+
+        let top_vertices = vid_map
+            .into_iter()
+            .filter(|(vid, _)| path2_top_vertices.contains(&RealID::from(*vid)))
+            .map(|(_, new_vid)| new_vid)
+            .chain(path1_top_vertices.into_iter().map(|v_rid| v_rid.inner()));
+
+        assert!(bipartite::is_bipartite_node_set(&path1, top_vertices).unwrap());
+    }
+
+    #[quickcheck]
+    fn prop_two_coloring_node_set_wrong_top_vertices(generator: PathGraphGenerator) {
+        let mut path1: AdjMap<(), (), Undirected> = generator.generate();
+        let path2: AdjMap<(), (), Undirected> = generator.generate();
+
+        let (path1_top_vertices, path2_bottom_vertices) = bipartite::color(&path1).unwrap();
+        let (path2_top_vertices, _) = bipartite::color(&path2).unwrap();
+
+        let vid_map: HashMap<usize, usize> = path2
+            .vertex_tokens()
+            .map(|vid| (vid, path1.add_vertex(())))
+            .collect();
+
+        path2.edge_tokens().for_each(|eid| {
+            let (sid, did, _) = path2.edge(eid);
+
+            let new_sid = vid_map[&sid];
+            let new_did = vid_map[&did];
+
+            path1.add_edge(new_sid, new_did, ());
+        });
+
+        let top_vertices = vid_map
+            .into_iter()
+            .filter(|(vid, _)| path2_top_vertices.contains(&RealID::from(*vid)))
+            .map(|(_, new_vid)| new_vid)
+            .chain(path1_top_vertices.into_iter().map(|v_rid| v_rid.inner()))
+            .chain(path2_bottom_vertices.into_iter().map(|v_rid| v_rid.inner()));
+
+        assert!(!bipartite::is_bipartite_node_set(&path1, top_vertices).unwrap());
+    }
+
+    #[quickcheck]
+    fn prop_two_coloring_node_set_fail(generator: PathGraphGenerator) {
+        let mut graph1: AdjMap<(), (), Undirected> = generator.generate();
+        let (top_vertices, _) = bipartite::color(&graph1).unwrap();
+
+        CompleteGraphGenerator::add_component_to(&mut graph1, 4);
+
+        assert!(bipartite::is_bipartite_node_set(
+            &graph1,
+            top_vertices.into_iter().map(|v_rid| v_rid.inner())
+        )
+        .is_err())
     }
 }
