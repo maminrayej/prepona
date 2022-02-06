@@ -5,7 +5,7 @@ use crate::common::DynIter;
 use crate::provide::{Edges, InitializableStorage, MutEdges, MutVertices, Storage, Vertices};
 
 use crate::gen::Generator;
-use crate::storage::edge::Undirected;
+use crate::storage::edge::Direction;
 
 #[derive(Debug)]
 pub struct CompleteGraphGenerator {
@@ -19,12 +19,7 @@ impl CompleteGraphGenerator {
 
     pub fn add_component_to<S>(storage: &mut S, vertex_count: usize) -> DynIter<'_, usize>
     where
-        S: Storage<Dir = Undirected>
-            + InitializableStorage
-            + Vertices
-            + Edges
-            + MutVertices
-            + MutEdges,
+        S: Storage + InitializableStorage + Vertices + Edges + MutVertices + MutEdges,
         Standard: Distribution<S::V>,
         Standard: Distribution<S::E>,
     {
@@ -41,7 +36,9 @@ impl CompleteGraphGenerator {
             .cartesian_product(vertex_tokens.iter().copied());
 
         for (src_vt, dst_vt) in vt_pairs {
-            if src_vt < dst_vt {
+            if (S::Dir::is_directed() && src_vt != dst_vt)
+                || (S::Dir::is_undirected() && src_vt < dst_vt)
+            {
                 storage.add_edge(src_vt, dst_vt, rng.gen());
             }
         }
@@ -50,9 +47,10 @@ impl CompleteGraphGenerator {
     }
 }
 
-impl<S> Generator<S, Undirected> for CompleteGraphGenerator
+impl<S, Dir> Generator<S, Dir> for CompleteGraphGenerator
 where
-    S: Storage<Dir = Undirected> + InitializableStorage + Vertices + Edges + MutVertices + MutEdges,
+    S: Storage<Dir = Dir> + InitializableStorage + Vertices + Edges + MutVertices + MutEdges,
+    Dir: Direction,
     Standard: Distribution<S::V>,
     Standard: Distribution<S::E>,
 {

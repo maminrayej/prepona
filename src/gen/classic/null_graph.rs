@@ -3,14 +3,15 @@ use rand::{distributions::Standard, prelude::Distribution};
 use crate::provide::{Edges, InitializableStorage, MutEdges, MutVertices, Storage, Vertices};
 
 use crate::gen::Generator;
-use crate::storage::edge::Undirected;
+use crate::storage::edge::Direction;
 
 #[derive(Debug)]
 pub struct NullGraphGenerator;
 
-impl<S> Generator<S, Undirected> for NullGraphGenerator
+impl<S, Dir> Generator<S, Dir> for NullGraphGenerator
 where
-    S: Storage<Dir = Undirected> + InitializableStorage + Vertices + Edges + MutVertices + MutEdges,
+    S: Storage<Dir = Dir> + InitializableStorage + Vertices + Edges + MutVertices + MutEdges,
+    Dir: Direction,
     Standard: Distribution<S::V>,
     Standard: Distribution<S::E>,
 {

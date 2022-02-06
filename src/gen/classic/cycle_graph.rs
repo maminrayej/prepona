@@ -5,7 +5,7 @@ use crate::common::DynIter;
 use crate::provide::{Edges, InitializableStorage, MutEdges, MutVertices, Storage, Vertices};
 
 use crate::gen::Generator;
-use crate::storage::edge::Undirected;
+use crate::storage::edge::Direction;
 
 #[derive(Debug)]
 pub struct CycleGraphGenerator {
@@ -23,12 +23,7 @@ impl CycleGraphGenerator {
 
     pub fn add_component_to<S>(storage: &mut S, vertex_count: usize) -> DynIter<'_, usize>
     where
-        S: Storage<Dir = Undirected>
-            + InitializableStorage
-            + Vertices
-            + Edges
-            + MutVertices
-            + MutEdges,
+        S: Storage + InitializableStorage + Vertices + Edges + MutVertices + MutEdges,
         Standard: Distribution<S::V>,
         Standard: Distribution<S::E>,
     {
@@ -47,9 +42,10 @@ impl CycleGraphGenerator {
     }
 }
 
-impl<S> Generator<S, Undirected> for CycleGraphGenerator
+impl<S, Dir> Generator<S, Dir> for CycleGraphGenerator
 where
-    S: Storage<Dir = Undirected> + InitializableStorage + Vertices + Edges + MutVertices + MutEdges,
+    S: Storage<Dir = Dir> + InitializableStorage + Vertices + Edges + MutVertices + MutEdges,
+    Dir: Direction,
     Standard: Distribution<S::V>,
     Standard: Distribution<S::E>,
 {
@@ -88,11 +84,10 @@ mod test {
 mod tests {
     use quickcheck_macros::quickcheck;
 
-    use crate::{
-        gen::Generator,
-        provide::{Edges, Vertices},
-        storage::{edge::Undirected, AdjMap},
-    };
+    use crate::gen::Generator;
+    use crate::provide::{Edges, Vertices};
+    use crate::storage::edge::{Directed, Undirected};
+    use crate::storage::AdjMap;
 
     use super::CycleGraphGenerator;
 
@@ -109,6 +104,24 @@ mod tests {
                 .vertex_tokens()
                 .map(|vt| graph.outgoing_edges(vt).count())
                 .filter(|out_degree| *out_degree == 2)
+                .count(),
+            graph.vertex_count()
+        );
+    }
+
+    #[quickcheck]
+    fn prop_gen_cycle_graph_directed(generator: CycleGraphGenerator) {
+        let graph: AdjMap<(), (), Directed> = generator.generate();
+
+        for vt in graph.vertex_tokens() {
+            assert_eq!(graph.neighbors(vt).filter(|n_vt| *n_vt != vt).count(), 1);
+        }
+
+        assert_eq!(
+            graph
+                .vertex_tokens()
+                .map(|vt| graph.outgoing_edges(vt).count())
+                .filter(|out_degree| *out_degree == 1)
                 .count(),
             graph.vertex_count()
         );

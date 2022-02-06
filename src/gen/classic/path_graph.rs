@@ -4,7 +4,7 @@ use crate::common::DynIter;
 use crate::provide::{Edges, InitializableStorage, MutEdges, MutVertices, Storage, Vertices};
 
 use crate::gen::Generator;
-use crate::storage::edge::Undirected;
+use crate::storage::edge::Direction;
 
 #[derive(Debug)]
 pub struct PathGraphGenerator {
@@ -21,12 +21,7 @@ impl PathGraphGenerator {
 
     pub fn add_component_to<S>(storage: &mut S, vertex_count: usize) -> DynIter<'_, usize>
     where
-        S: Storage<Dir = Undirected>
-            + InitializableStorage
-            + Vertices
-            + Edges
-            + MutVertices
-            + MutEdges,
+        S: Storage + InitializableStorage + Vertices + Edges + MutVertices + MutEdges,
         Standard: Distribution<S::V>,
         Standard: Distribution<S::E>,
     {
@@ -46,9 +41,10 @@ impl PathGraphGenerator {
     }
 }
 
-impl<S> Generator<S, Undirected> for PathGraphGenerator
+impl<S, Dir> Generator<S, Dir> for PathGraphGenerator
 where
-    S: Storage<Dir = Undirected> + InitializableStorage + Vertices + Edges + MutVertices + MutEdges,
+    S: Storage<Dir = Dir> + InitializableStorage + Vertices + Edges + MutVertices + MutEdges,
+    Dir: Direction,
     Standard: Distribution<S::V>,
     Standard: Distribution<S::E>,
 {
@@ -90,7 +86,10 @@ mod tests {
     use crate::{
         gen::Generator,
         provide::{Edges, Vertices},
-        storage::{edge::Undirected, AdjMap},
+        storage::{
+            edge::{Directed, Undirected},
+            AdjMap,
+        },
     };
 
     use super::PathGraphGenerator;
@@ -115,6 +114,44 @@ mod tests {
                 .filter(|out_degree| *out_degree == 2)
                 .count(),
             graph.vertex_count() - 2
+        );
+    }
+
+    #[quickcheck]
+    fn prop_gen_path_graph_directed(generator: PathGraphGenerator) {
+        let graph: AdjMap<(), (), Directed> = generator.generate();
+
+        assert_eq!(
+            graph
+                .vertex_tokens()
+                .map(|vid| graph.outgoing_edges(vid).count())
+                .filter(|out_degree| *out_degree == 0)
+                .count(),
+            1
+        );
+        assert_eq!(
+            graph
+                .vertex_tokens()
+                .map(|vid| graph.outgoing_edges(vid).count())
+                .filter(|out_degree| *out_degree == 1)
+                .count(),
+            graph.vertex_count() - 1
+        );
+        assert_eq!(
+            graph
+                .vertex_tokens()
+                .map(|vid| graph.ingoing_edges(vid).count())
+                .filter(|in_degree| *in_degree == 0)
+                .count(),
+            1
+        );
+        assert_eq!(
+            graph
+                .vertex_tokens()
+                .map(|vid| graph.outgoing_edges(vid).count())
+                .filter(|in_degree| *in_degree == 1)
+                .count(),
+            graph.vertex_count() - 1
         );
     }
 }
