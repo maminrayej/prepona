@@ -3,4 +3,5 @@ pub mod boundry;
 pub mod centrality;
 pub mod component;
 mod errors;
+pub mod shortest_paths;
 pub mod traversal;
