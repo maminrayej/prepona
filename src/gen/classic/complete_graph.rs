@@ -93,7 +93,10 @@ mod tests {
     use crate::{
         gen::Generator,
         provide::{Edges, Vertices},
-        storage::{edge::Undirected, AdjMap},
+        storage::{
+            edge::{Directed, Undirected},
+            AdjMap,
+        },
     };
 
     use super::CompleteGraphGenerator;
@@ -119,6 +122,33 @@ mod tests {
                     .map(|et| graph.edge(et))
                     .filter(|(s_vt, d_vt, _)| (*s_vt == src_vt && *d_vt == dst_vt)
                         || (*d_vt == src_vt && *s_vt == dst_vt))
+                    .count(),
+                if src_vt != dst_vt { 1 } else { 0 }
+            )
+        }
+    }
+
+    #[quickcheck]
+    fn prop_gen_complete_graph_directed(generator: CompleteGraphGenerator) {
+        let graph: AdjMap<(), (), Directed> = generator.generate();
+
+        if graph.vertex_count() > 0 {
+            assert_eq!(
+                graph.edge_count(),
+                graph.vertex_count() * (graph.vertex_count() - 1)
+            );
+        }
+
+        let vts: Vec<usize> = graph.vertex_tokens().collect();
+        let vt_pairs = vts.iter().copied().cartesian_product(vts.iter().copied());
+        
+        // There must be exactly one edge between any pair of vertices.
+        for (src_vt, dst_vt) in vt_pairs {
+            assert_eq!(
+                graph
+                    .outgoing_edges(src_vt)
+                    .map(|et| graph.edge(et))
+                    .filter(|(_, d_vt, _)| *d_vt == dst_vt)
                     .count(),
                 if src_vt != dst_vt { 1 } else { 0 }
             )
