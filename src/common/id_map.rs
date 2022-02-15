@@ -1,4 +1,5 @@
 use std::fmt::{Debug, Display};
+use std::ops::Deref;
 use std::{collections::HashMap, ops::Index};
 
 use itertools::Itertools;
@@ -24,6 +25,14 @@ impl Display for RealID {
     }
 }
 
+impl Deref for RealID {
+    type Target = usize;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct VirtID(usize);
 
@@ -42,6 +51,14 @@ impl From<usize> for VirtID {
 impl Display for VirtID {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         <Self as Debug>::fmt(self, f)
+    }
+}
+
+impl Deref for VirtID {
+    type Target = usize;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }
 
