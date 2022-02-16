@@ -1,6 +1,7 @@
 use std::marker::PhantomData;
 
 use super::GraphError;
+use crate::common::DynIter;
 use crate::provide::{Edges, InitializableStorage, MutEdges, MutVertices, Storage, Vertices};
 use crate::storage::edge::{Direction, EdgeDescriptor};
 use crate::storage::vertex::VertexDescriptor;
@@ -139,6 +140,14 @@ where
 
     fn outgoing_edges(&self, vt: usize) -> crate::common::DynIter<'_, usize> {
         self.storage.outgoing_edges(vt)
+    }
+
+    fn edges_between(&self, src_id: usize, dst_id: usize) -> crate::common::DynIter<'_, usize> {
+        if src_id != dst_id {
+            DynIter::init([].into_iter())
+        } else {
+            self.storage.edges_between(src_id, dst_id)
+        }
     }
 }
 

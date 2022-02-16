@@ -171,6 +171,20 @@ where
                 .filter(|eid| self.filtered_edges.contains(eid)),
         )
     }
+
+    fn edges_between(&self, src_id: usize, dst_id: usize) -> DynIter<'_, usize> {
+        if !self.has_vt(src_id) {
+            panic!("View does not contain vertex with id: {}", src_id);
+        } else if !self.has_vt(dst_id) {
+            panic!("View does not contain vertex with id: {}", dst_id);
+        }
+
+        DynIter::init(
+            self.inner
+                .edges_between(src_id, dst_id)
+                .filter(|eid| self.filtered_edges.contains(eid)),
+        )
+    }
 }
 
 impl<'a, G> FrozenView<G> for GenericView<'a, G>

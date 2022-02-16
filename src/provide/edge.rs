@@ -52,6 +52,17 @@ pub trait Edges: Vertices {
             Ok(self.outgoing_edges(vt))
         }
     }
+
+    fn edges_between(&self, src_id: usize, dst_id: usize) -> DynIter<'_, usize>;
+    fn edges_between_checked(&self, src_id: usize, dst_id: usize) -> Result<DynIter<'_, usize>> {
+        if !self.has_vt(src_id) {
+            Err(StorageError::InvalidVertexToken(src_id).into())
+        } else if !self.has_vt(dst_id) {
+            Err(StorageError::InvalidVertexToken(dst_id).into())
+        } else {
+            Ok(self.edges_between(src_id, dst_id))
+        }
+    }
 }
 
 pub trait MutEdges: Edges {

@@ -157,6 +157,21 @@ where
     fn outgoing_edges(&self, vt: usize) -> DynIter<'_, usize> {
         self.ingoing_edges(vt)
     }
+
+    fn edges_between(&self, src_id: usize, dst_id: usize) -> DynIter<'_, usize> {
+        if !self.has_vt(src_id) {
+            panic!("View does not contain vertex with id: {}", src_id);
+        } else if !self.has_vt(dst_id) {
+            panic!("View does not contain vertex with id: {}", dst_id);
+        }
+
+        DynIter::init(
+            self.inner
+                .edges_between(src_id, dst_id)
+                .chain(self.inner.edges_between(dst_id, src_id))
+                .filter(|eid| self.filtered_edges.contains(eid)),
+        )
+    }
 }
 
 impl<'a, G> FrozenView<G> for UndirectedView<'a, G>

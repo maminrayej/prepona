@@ -236,6 +236,14 @@ where
             )
         }
     }
+
+    fn edges_between(&self, src_id: usize, dst_id: usize) -> DynIter<'_, usize> {
+        if let Some(edges) = self.adj_map[&src_id].get(&dst_id) {
+            DynIter::init(edges.iter().copied())
+        } else {
+            DynIter::init([].into_iter())
+        }
+    }
 }
 
 impl<V, E, Dir> MutEdges for AdjMap<V, E, Dir>
