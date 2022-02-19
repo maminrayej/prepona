@@ -234,11 +234,6 @@ where
     }
 
     pub fn pop_state(&mut self, g1_node: usize, g2_node: usize, depth: usize) {
-        println!(
-            "Poping state: ({:?}, {:?}) with depth: {}",
-            g1_node, g2_node, depth
-        );
-
         self.core_1.remove(&g1_node);
         self.core_2.remove(&g2_node);
 
@@ -273,9 +268,7 @@ where
             let candidate_pairs = self.candidate_pairs_iter().collect_vec();
 
             for (g1_node, g2_node) in candidate_pairs {
-                println!("candidates: g1_node: {}, g2_node: {}", g1_node, g2_node);
                 if self.syntactic_feasibility(g1_node, g2_node) {
-                    println!("Feasible!");
                     let depth = self.core_1.len() + 1;
 
                     self.push_state(g1_node, g2_node, depth);
