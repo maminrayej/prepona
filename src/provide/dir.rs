@@ -22,6 +22,12 @@ impl Direction for Undirected {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Orientation {
+    Incoming,
+    Outgoing,
+}
+
 #[cfg(test)]
 mod arbitrary {
     use quickcheck::Arbitrary;
