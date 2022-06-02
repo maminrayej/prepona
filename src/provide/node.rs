@@ -5,6 +5,12 @@ use super::{ProviderError, Storage};
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Hash)]
 pub struct NodeId(usize);
 
+impl From<usize> for NodeId {
+    fn from(val: usize) -> Self {
+        NodeId(val)
+    }
+}
+
 pub trait NodeProvider: Storage {
     type Nodes<'a>: Iterator<Item = NodeId>
     where
