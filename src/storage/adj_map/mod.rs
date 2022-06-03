@@ -1,5 +1,6 @@
 mod iters;
 
+use indexmap::map::Entry::{Occupied, Vacant};
 pub use iters::*;
 
 use std::collections::HashSet;
@@ -118,6 +119,7 @@ impl<Dir: Direction> NodeProvider for AdjMap<Dir> {
     }
 
     fn is_successor(&self, node: NodeId, successor: NodeId) -> bool {
+        // FIXME: Can you panic naturally?
         self.edges.contains(&self.sort_nodes(node, successor))
     }
 
@@ -130,13 +132,17 @@ impl<Dir: Direction> NodeProvider for AdjMap<Dir> {
     }
 
     fn is_predecessor(&self, node: NodeId, predecessor: NodeId) -> bool {
+        // FIXME: Can you panic naturally?
         self.edges.contains(&self.sort_nodes(predecessor, node))
     }
 }
 
 impl<Dir: Direction> AddNodeProvider for AdjMap<Dir> {
     fn add_node(&mut self, node: NodeId) {
-        self.nodes.entry(node).or_insert_with(Vec::new);
+        match self.nodes.entry(node) {
+            Occupied(_) => panic!("Node with the provided id already exists: {:?}", node),
+            Vacant(entry) => entry.insert(Vec::new()),
+        };
     }
 }
 
@@ -168,6 +174,7 @@ impl<Dir: Direction> EdgeProvider for AdjMap<Dir> {
     type OutgoingEdges<'a> = OrientedNeighbors<'a, Dir> where Dir: 'a;
 
     fn contains_edge(&self, src_node: NodeId, dst_node: NodeId) -> bool {
+        // FIXME: Can you panic naturally?
         self.edges
             .get(&self.sort_nodes(src_node, dst_node))
             .is_some()
@@ -212,15 +219,18 @@ impl<Dir: Direction> AddEdgeProvider for AdjMap<Dir> {
     fn add_edge(&mut self, src_node: NodeId, dst_node: NodeId) {
         let sorted_nodes = self.sort_nodes(src_node, dst_node);
 
-        if self.edges.insert(sorted_nodes) {
-            let (src_node, dst_node) = sorted_nodes;
+        self.edges
+            .insert(sorted_nodes)
+            .then(|| {
+                let (src_node, dst_node) = sorted_nodes;
 
-            self[src_node].push((dst_node, Orientation::Outgoing));
+                self[src_node].push((dst_node, Orientation::Outgoing));
 
-            if src_node != dst_node {
-                self[dst_node].push((src_node, Orientation::Incoming));
-            }
-        }
+                if src_node != dst_node {
+                    self[dst_node].push((src_node, Orientation::Incoming));
+                }
+            })
+            .unwrap();
     }
 }
 
@@ -228,13 +238,16 @@ impl<Dir: Direction> DelEdgeProvider for AdjMap<Dir> {
     fn del_edge(&mut self, src_node: NodeId, dst_node: NodeId) {
         let (src_node, dst_node) = self.sort_nodes(src_node, dst_node);
 
-        self.edges.remove(&(src_node, dst_node));
+        self.edges
+            .remove(&(src_node, dst_node))
+            .then(|| {
+                self[src_node].retain(|(neighbor, _)| *neighbor != dst_node);
 
-        self[src_node].retain(|(neighbor, _)| *neighbor != dst_node);
-
-        if src_node != dst_node {
-            self[dst_node].retain(|(neighbor, _)| *neighbor != src_node);
-        }
+                if src_node != dst_node {
+                    self[dst_node].retain(|(neighbor, _)| *neighbor != src_node);
+                }
+            })
+            .unwrap();
     }
 }
 
