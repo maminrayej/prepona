@@ -1,11 +1,11 @@
 mod iters;
 
-use indexmap::map::Entry::{Occupied, Vacant};
 pub use iters::*;
 
 use std::collections::HashSet;
 use std::marker::PhantomData;
 
+use indexmap::map::Entry::{Occupied, Vacant};
 use indexmap::{IndexMap, IndexSet};
 
 use crate::provide::{
@@ -251,75 +251,6 @@ impl<Dir: Direction> DelEdgeProvider for AdjMap<Dir> {
     }
 }
 
-#[cfg(test)]
-mod arbitrary {
-    use itertools::Itertools;
-    use quickcheck::Arbitrary;
-    use rand::{thread_rng, Rng};
+crate::provide::test_util::impl_arbitrary!(AdjMap);
 
-    use crate::provide::{
-        AddEdgeProvider, AddNodeProvider, Direction, EdgeProvider, EmptyStorage, NodeProvider,
-    };
-
-    use super::AdjMap;
-
-    impl<Dir: Direction + Arbitrary> Arbitrary for AdjMap<Dir> {
-        fn arbitrary(g: &mut quickcheck::Gen) -> Self {
-            let node_count = usize::arbitrary(g) % 20;
-
-            let mut rng = thread_rng();
-            let edge_probability = rng.gen::<f64>() * rng.gen::<f64>();
-
-            let mut adj_map = Self::init();
-
-            let nodes = (0..node_count)
-                .map(|node_id| {
-                    adj_map.add_node(node_id.into());
-                    node_id.into()
-                })
-                .collect_vec();
-
-            nodes
-                .iter()
-                .cartesian_product(nodes.iter())
-                .for_each(|(src_node, dst_node)| {
-                    let p = rng.gen::<f64>();
-
-                    if p <= edge_probability {
-                        adj_map.add_edge(*src_node, *dst_node);
-                    }
-                });
-
-            adj_map
-        }
-
-        fn shrink(&self) -> Box<dyn Iterator<Item = Self>> {
-            let mut even_graph = Self::init();
-            let mut odd_graph = Self::init();
-
-            for (index, node) in self.nodes().enumerate() {
-                if index % 2 == 0 {
-                    even_graph.add_node(node)
-                } else {
-                    odd_graph.add_node(node)
-                };
-            }
-
-            for (src_node, dst_node) in self.edges() {
-                if even_graph.contains_node(src_node) && even_graph.contains_node(dst_node) {
-                    even_graph.add_edge(src_node, dst_node);
-                } else if odd_graph.contains_node(src_node) && odd_graph.contains_node(dst_node) {
-                    odd_graph.add_edge(src_node, dst_node);
-                }
-            }
-
-            let before_count = self.node_count();
-
-            Box::new(
-                [even_graph, odd_graph]
-                    .into_iter()
-                    .filter(move |adj_map| adj_map.node_count() < before_count),
-            )
-        }
-    }
-}
+crate::provide::test_util::impl_test_suite!(AdjMap);

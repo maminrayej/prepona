@@ -1,3 +1,5 @@
+use std::ops::Add;
+
 use anyhow::Result;
 
 use super::{ProviderError, Storage};
@@ -8,6 +10,14 @@ pub struct NodeId(usize);
 impl From<usize> for NodeId {
     fn from(val: usize) -> Self {
         NodeId(val)
+    }
+}
+
+impl Add<usize> for NodeId {
+    type Output = NodeId;
+
+    fn add(self, rhs: usize) -> Self::Output {
+        NodeId(self.0 + rhs)
     }
 }
 
