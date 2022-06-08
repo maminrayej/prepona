@@ -83,6 +83,7 @@ macro_rules! impl_test_suite {
         #[cfg(test)]
         mod impl_test_suite {
             use itertools::Itertools;
+            use rand::seq::IteratorRandom;
 
             use $crate::provide::NodeId;
             use $crate::provide::{
@@ -95,6 +96,31 @@ macro_rules! impl_test_suite {
                 P: NodeProvider,
             {
                 provider.nodes().max().map_or(0.into(), |node| node + 1)
+            }
+
+            macro_rules! assert_err {
+                ($result: expr, $err_type:tt::$err_kind:tt($expected_node: expr)) => {
+                    if let $err_type::$err_kind(node) =
+                        $result.err().unwrap().downcast::<$err_type>().unwrap()
+                    {
+                        if node != $expected_node {
+                            panic!("Function returned an incorrect node as part of its error")
+                        }
+                    } else {
+                        panic!("Function returned an incorrect error kind");
+                    }
+                };
+                ($result: expr, $err_type:tt::$err_kind:tt($expected_node1: expr, $expected_node2: expr)) => {
+                    if let $err_type::$err_kind(node1, node2) =
+                        $result.err().unwrap().downcast::<$err_type>().unwrap()
+                    {
+                        if node1 != $expected_node1 || node2 != $expected_node2 {
+                            panic!("Function returned an incorrect edge as part of its error")
+                        }
+                    } else {
+                        panic!("Function returned an incorrect error kind");
+                    }
+                };
             }
 
             #[test]
@@ -338,21 +364,14 @@ macro_rules! impl_test_suite {
             fn provider_neighbors_checked() {
                 fn test<P>(provider: P) -> bool
                 where
-                    P: AddNodeProvider + AddEdgeProvider + DelEdgeProvider,
+                    P: NodeProvider,
                 {
                     let invalid_node = new_node_id(&provider);
 
-                    let result = provider.neighbors_checked(invalid_node);
-
-                    if let ProviderError::InvalidNode(node) =
-                        result.err().unwrap().downcast::<ProviderError>().unwrap()
-                    {
-                        if node != invalid_node {
-                            panic!("Function returned an incorrect node as part of its error")
-                        }
-                    } else {
-                        panic!("Function returned an incorrect error kind");
-                    }
+                    assert_err!(
+                        provider.neighbors_checked(invalid_node),
+                        ProviderError::InvalidNode(invalid_node)
+                    );
 
                     true
                 }
@@ -365,21 +384,14 @@ macro_rules! impl_test_suite {
             fn provider_successors_checked() {
                 fn test<P>(provider: P) -> bool
                 where
-                    P: AddNodeProvider + AddEdgeProvider + DelEdgeProvider,
+                    P: NodeProvider,
                 {
                     let invalid_node = new_node_id(&provider);
 
-                    let result = provider.successors_checked(invalid_node);
-
-                    if let ProviderError::InvalidNode(node) =
-                        result.err().unwrap().downcast::<ProviderError>().unwrap()
-                    {
-                        if node != invalid_node {
-                            panic!("Function returned an incorrect node as part of its error")
-                        }
-                    } else {
-                        panic!("Function returned an incorrect error kind");
-                    }
+                    assert_err!(
+                        provider.successors_checked(invalid_node),
+                        ProviderError::InvalidNode(invalid_node)
+                    );
 
                     true
                 }
@@ -392,20 +404,42 @@ macro_rules! impl_test_suite {
             fn provider_predecessors_checked() {
                 fn test<P>(provider: P) -> bool
                 where
-                    P: AddNodeProvider + AddEdgeProvider + DelEdgeProvider,
+                    P: NodeProvider,
                 {
                     let invalid_node = new_node_id(&provider);
 
-                    let result = provider.predecessors_checked(invalid_node);
+                    assert_err!(
+                        provider.predecessors_checked(invalid_node),
+                        ProviderError::InvalidNode(invalid_node)
+                    );
 
-                    if let ProviderError::InvalidNode(node) =
-                        result.err().unwrap().downcast::<ProviderError>().unwrap()
-                    {
-                        if node != invalid_node {
-                            panic!("Function returned an incorrect node as part of its error")
-                        }
-                    } else {
-                        panic!("Function returned an incorrect error kind");
+                    true
+                }
+
+                quickcheck::quickcheck(test as fn(super::$provider<Directed>) -> bool);
+                quickcheck::quickcheck(test as fn(super::$provider<Undirected>) -> bool);
+            }
+
+            #[test]
+            fn provider_is_successor_checked() {
+                fn test<P>(provider: P) -> bool
+                where
+                    P: NodeProvider,
+                {
+                    if provider.node_count() != 0 {
+                        let invalid_node = new_node_id(&provider);
+
+                        let valid_node = provider.nodes().choose(&mut rand::thread_rng()).unwrap();
+
+                        assert_err!(
+                            provider.is_successor_checked(invalid_node, valid_node),
+                            ProviderError::InvalidNode(invalid_node)
+                        );
+
+                        assert_err!(
+                            provider.is_successor_checked(valid_node, invalid_node),
+                            ProviderError::InvalidNode(invalid_node)
+                        );
                     }
 
                     true
@@ -414,6 +448,244 @@ macro_rules! impl_test_suite {
                 quickcheck::quickcheck(test as fn(super::$provider<Directed>) -> bool);
                 quickcheck::quickcheck(test as fn(super::$provider<Undirected>) -> bool);
             }
+
+            #[test]
+            fn provider_is_predecessor_checked() {
+                fn test<P>(provider: P) -> bool
+                where
+                    P: NodeProvider,
+                {
+                    if provider.node_count() != 0 {
+                        let invalid_node = new_node_id(&provider);
+
+                        let valid_node = provider.nodes().choose(&mut rand::thread_rng()).unwrap();
+
+                        assert_err!(
+                            provider.is_predecessor_checked(invalid_node, valid_node),
+                            ProviderError::InvalidNode(invalid_node)
+                        );
+
+                        assert_err!(
+                            provider.is_predecessor_checked(valid_node, invalid_node),
+                            ProviderError::InvalidNode(invalid_node)
+                        );
+                    }
+
+                    true
+                }
+
+                quickcheck::quickcheck(test as fn(super::$provider<Directed>) -> bool);
+                quickcheck::quickcheck(test as fn(super::$provider<Undirected>) -> bool);
+            }
+
+            #[test]
+            fn provider_add_node_checked() {
+                fn test<P>(mut provider: P) -> bool
+                where
+                    P: AddNodeProvider,
+                {
+                    if provider.node_count() != 0 {
+                        let existing_node =
+                            provider.nodes().choose(&mut rand::thread_rng()).unwrap();
+
+                        assert_err!(
+                            provider.add_node_checked(existing_node),
+                            ProviderError::DuplicatedNode(existing_node)
+                        );
+                    }
+
+                    true
+                }
+
+                quickcheck::quickcheck(test as fn(super::$provider<Directed>) -> bool);
+                quickcheck::quickcheck(test as fn(super::$provider<Undirected>) -> bool);
+            }
+
+            #[test]
+            fn provider_del_node_checked() {
+                fn test<P>(mut provider: P) -> bool
+                where
+                    P: DelNodeProvider,
+                {
+                    let invalid_node = new_node_id(&provider);
+
+                    assert_err!(
+                        provider.del_node_checked(invalid_node),
+                        ProviderError::NodeDoesNotExist(invalid_node)
+                    );
+
+                    true
+                }
+
+                quickcheck::quickcheck(test as fn(super::$provider<Directed>) -> bool);
+                quickcheck::quickcheck(test as fn(super::$provider<Undirected>) -> bool);
+            }
+
+            #[test]
+            fn provider_contains_edge_checked() {
+                fn test<P>(provider: P) -> bool
+                where
+                    P: EdgeProvider,
+                {
+                    if provider.node_count() != 0 {
+                        let invalid_node = new_node_id(&provider);
+
+                        let valid_node = provider.nodes().choose(&mut rand::thread_rng()).unwrap();
+
+                        assert_err!(
+                            provider.contains_edge_checked(valid_node, invalid_node),
+                            ProviderError::InvalidNode(invalid_node)
+                        );
+
+                        assert_err!(
+                            provider.contains_edge_checked(invalid_node, valid_node),
+                            ProviderError::InvalidNode(invalid_node)
+                        );
+                    }
+
+                    true
+                }
+
+                quickcheck::quickcheck(test as fn(super::$provider<Directed>) -> bool);
+                quickcheck::quickcheck(test as fn(super::$provider<Undirected>) -> bool);
+            }
+
+            #[test]
+            fn provider_incoming_edges_checked() {
+                fn test<P>(provider: P) -> bool
+                where
+                    P: EdgeProvider,
+                {
+                    let invalid_node = new_node_id(&provider);
+
+                    assert_err!(
+                        provider.incoming_edges_checked(invalid_node),
+                        ProviderError::InvalidNode(invalid_node)
+                    );
+
+                    true
+                }
+
+                quickcheck::quickcheck(test as fn(super::$provider<Directed>) -> bool);
+                quickcheck::quickcheck(test as fn(super::$provider<Undirected>) -> bool);
+            }
+
+            #[test]
+            fn provider_outgoing_edges_checked() {
+                fn test<P>(provider: P) -> bool
+                where
+                    P: EdgeProvider,
+                {
+                    let invalid_node = new_node_id(&provider);
+
+                    assert_err!(
+                        provider.outgoing_edges_checked(invalid_node),
+                        ProviderError::InvalidNode(invalid_node)
+                    );
+
+                    true
+                }
+
+                quickcheck::quickcheck(test as fn(super::$provider<Directed>) -> bool);
+                quickcheck::quickcheck(test as fn(super::$provider<Undirected>) -> bool);
+            }
+
+            #[test]
+            fn provider_in_degree_checked() {
+                fn test<P>(provider: P) -> bool
+                where
+                    P: EdgeProvider,
+                {
+                    let invalid_node = new_node_id(&provider);
+
+                    assert_err!(
+                        provider.in_degree_checked(invalid_node),
+                        ProviderError::InvalidNode(invalid_node)
+                    );
+
+                    true
+                }
+
+                quickcheck::quickcheck(test as fn(super::$provider<Directed>) -> bool);
+                quickcheck::quickcheck(test as fn(super::$provider<Undirected>) -> bool);
+            }
+
+            #[test]
+            fn provider_out_degree_checked() {
+                fn test<P>(provider: P) -> bool
+                where
+                    P: EdgeProvider,
+                {
+                    let invalid_node = new_node_id(&provider);
+
+                    assert_err!(
+                        provider.out_degree_checked(invalid_node),
+                        ProviderError::InvalidNode(invalid_node)
+                    );
+
+                    true
+                }
+
+                quickcheck::quickcheck(test as fn(super::$provider<Directed>) -> bool);
+                quickcheck::quickcheck(test as fn(super::$provider<Undirected>) -> bool);
+            }
+
+            #[test]
+            fn provider_add_edge_checked() {
+                fn test<P>(mut provider: P) -> bool
+                where
+                    P: AddEdgeProvider,
+                {
+                    if provider.edge_count() != 0 {
+                        let (src_node, dst_node) = provider.edges().choose(&mut rand::thread_rng()).unwrap();
+
+                        assert_err!(
+                            provider.add_edge_checked(src_node, dst_node),
+                            ProviderError::MultiEdge(src_node, dst_node)
+                        );
+                    }
+
+                    true
+                }
+
+                quickcheck::quickcheck(test as fn(super::$provider<Directed>) -> bool);
+                quickcheck::quickcheck(test as fn(super::$provider<Undirected>) -> bool);
+            }
+
+            #[test]
+            fn provider_del_edge_checked() {
+                fn test<P>(mut provider: P) -> bool
+                where
+                    P: AddNodeProvider + DelEdgeProvider,
+                {
+                    if provider.node_count() != 0 {
+                        let new_node = new_node_id(&provider);
+                        let invalid_node = new_node + 1;
+                        let valid_node = provider.nodes().choose(&mut rand::thread_rng()).unwrap();
+
+                        provider.add_node(new_node);
+
+                        assert_err!(
+                            provider.del_edge_checked(invalid_node, valid_node),
+                            ProviderError::InvalidNode(invalid_node)
+                        );
+                        assert_err!(
+                            provider.del_edge_checked(valid_node, invalid_node),
+                            ProviderError::InvalidNode(invalid_node)
+                        );
+                        assert_err!(
+                            provider.del_edge_checked(new_node, valid_node),
+                            ProviderError::EdgeDoesNotExist(new_node, valid_node)
+                        );
+                    }
+
+                    true
+                }
+
+                quickcheck::quickcheck(test as fn(super::$provider<Directed>) -> bool);
+                quickcheck::quickcheck(test as fn(super::$provider<Undirected>) -> bool);
+            }
+
         }
     };
 }

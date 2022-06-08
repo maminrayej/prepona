@@ -217,6 +217,7 @@ impl<Dir: Direction> EdgeProvider for AdjMap<Dir> {
 
 impl<Dir: Direction> AddEdgeProvider for AdjMap<Dir> {
     fn add_edge(&mut self, src_node: NodeId, dst_node: NodeId) {
+        // FIXME: does not panic if nodes are invalid
         let sorted_nodes = self.sort_nodes(src_node, dst_node);
 
         self.edges
@@ -254,3 +255,223 @@ impl<Dir: Direction> DelEdgeProvider for AdjMap<Dir> {
 crate::provide::test_util::impl_arbitrary!(AdjMap);
 
 crate::provide::test_util::impl_test_suite!(AdjMap);
+
+#[cfg(test)]
+mod tests {
+    use rand::prelude::IteratorRandom;
+
+    use crate::{
+        provide::{
+            AddEdgeProvider, AddNodeProvider, DelEdgeProvider, DelNodeProvider, Directed,
+            Direction, EdgeProvider, NodeId, NodeProvider, Undirected,
+        },
+        storage::AdjMap,
+    };
+
+    fn new_node_id<P>(provider: &P) -> NodeId
+    where
+        P: NodeProvider,
+    {
+        provider.nodes().max().map_or(0.into(), |node| node + 1)
+    }
+
+    #[should_panic]
+    #[test]
+    fn adj_map_neighbors_of_invalid_node() {
+        fn test<Dir: Direction>(adj_map: AdjMap<Dir>) -> bool {
+            let invalid_node = new_node_id(&adj_map);
+
+            adj_map.neighbors(invalid_node);
+
+            true
+        }
+
+        quickcheck::quickcheck(test as fn(AdjMap<Directed>) -> bool);
+        quickcheck::quickcheck(test as fn(AdjMap<Undirected>) -> bool);
+    }
+
+    #[should_panic]
+    #[test]
+    fn adj_map_successors_of_invalid_node() {
+        fn test<Dir: Direction>(adj_map: AdjMap<Dir>) -> bool {
+            let invalid_node = new_node_id(&adj_map);
+
+            adj_map.successors(invalid_node);
+
+            true
+        }
+
+        quickcheck::quickcheck(test as fn(AdjMap<Directed>) -> bool);
+        quickcheck::quickcheck(test as fn(AdjMap<Undirected>) -> bool);
+    }
+
+    #[should_panic]
+    #[test]
+    fn adj_map_predecessors_of_invalid_node() {
+        fn test<Dir: Direction>(adj_map: AdjMap<Dir>) -> bool {
+            let invalid_node = new_node_id(&adj_map);
+
+            adj_map.predecessors(invalid_node);
+
+            true
+        }
+
+        quickcheck::quickcheck(test as fn(AdjMap<Directed>) -> bool);
+        quickcheck::quickcheck(test as fn(AdjMap<Undirected>) -> bool);
+    }
+
+    #[should_panic]
+    #[test]
+    fn adj_map_add_duplicate_node() {
+        fn test<Dir: Direction>(mut adj_map: AdjMap<Dir>) -> bool {
+            let existing_node = adj_map.nodes().choose(&mut rand::thread_rng()).unwrap();
+
+            adj_map.add_node(existing_node);
+
+            true
+        }
+
+        quickcheck::quickcheck(test as fn(AdjMap<Directed>) -> bool);
+        quickcheck::quickcheck(test as fn(AdjMap<Undirected>) -> bool);
+    }
+
+    #[should_panic]
+    #[test]
+    fn adj_map_delete_non_existing_node() {
+        fn test<Dir: Direction>(mut adj_map: AdjMap<Dir>) -> bool {
+            let invalid_node = new_node_id(&adj_map);
+
+            adj_map.del_node(invalid_node);
+
+            true
+        }
+
+        quickcheck::quickcheck(test as fn(AdjMap<Directed>) -> bool);
+        quickcheck::quickcheck(test as fn(AdjMap<Undirected>) -> bool);
+    }
+
+    #[should_panic]
+    #[test]
+    fn adj_map_incoming_edges_of_invalid_node() {
+        fn test<Dir: Direction>(adj_map: AdjMap<Dir>) -> bool {
+            let invalid_node = new_node_id(&adj_map);
+
+            adj_map.incoming_edges(invalid_node);
+
+            true
+        }
+
+        quickcheck::quickcheck(test as fn(AdjMap<Directed>) -> bool);
+        quickcheck::quickcheck(test as fn(AdjMap<Undirected>) -> bool);
+    }
+
+    #[should_panic]
+    #[test]
+    fn adj_map_outgoing_edges_of_invalid_node() {
+        fn test<Dir: Direction>(adj_map: AdjMap<Dir>) -> bool {
+            let invalid_node = new_node_id(&adj_map);
+
+            adj_map.outgoing_edges(invalid_node);
+
+            true
+        }
+
+        quickcheck::quickcheck(test as fn(AdjMap<Directed>) -> bool);
+        quickcheck::quickcheck(test as fn(AdjMap<Undirected>) -> bool);
+    }
+
+    #[should_panic]
+    #[test]
+    fn adj_map_in_degree_of_invalid_node() {
+        fn test<Dir: Direction>(adj_map: AdjMap<Dir>) -> bool {
+            let invalid_node = new_node_id(&adj_map);
+
+            adj_map.in_degree(invalid_node);
+
+            true
+        }
+
+        quickcheck::quickcheck(test as fn(AdjMap<Directed>) -> bool);
+        quickcheck::quickcheck(test as fn(AdjMap<Undirected>) -> bool);
+    }
+
+    #[should_panic]
+    #[test]
+    fn adj_map_out_degree_of_invalid_node() {
+        fn test<Dir: Direction>(adj_map: AdjMap<Dir>) -> bool {
+            let invalid_node = new_node_id(&adj_map);
+
+            adj_map.out_degree(invalid_node);
+
+            true
+        }
+
+        quickcheck::quickcheck(test as fn(AdjMap<Directed>) -> bool);
+        quickcheck::quickcheck(test as fn(AdjMap<Undirected>) -> bool);
+    }
+
+    #[should_panic]
+    #[test]
+    fn adj_map_add_multi_edge() {
+        fn test<Dir: Direction>(mut adj_map: AdjMap<Dir>) -> bool {
+            let (src_node, dst_node) = adj_map.edges().choose(&mut rand::thread_rng()).unwrap();
+
+            adj_map.add_edge(src_node, dst_node);
+
+            true
+        }
+
+        quickcheck::quickcheck(test as fn(AdjMap<Directed>) -> bool);
+        quickcheck::quickcheck(test as fn(AdjMap<Undirected>) -> bool);
+    }
+
+    #[should_panic]
+    #[test]
+    fn adj_map_del_non_existing_edge() {
+        fn test<Dir: Direction>(mut adj_map: AdjMap<Dir>) -> bool {
+            let new_node = new_node_id(&adj_map);
+            let valid_node = adj_map.nodes().choose(&mut rand::thread_rng()).unwrap();
+
+            adj_map.add_node(new_node);
+
+            adj_map.del_edge(new_node, valid_node);
+
+            true
+        }
+
+        quickcheck::quickcheck(test as fn(AdjMap<Directed>) -> bool);
+        quickcheck::quickcheck(test as fn(AdjMap<Undirected>) -> bool);
+    }
+
+    #[should_panic]
+    #[test]
+    fn adj_map_del_edge_with_invalid_src() {
+        fn test<Dir: Direction>(mut adj_map: AdjMap<Dir>) -> bool {
+            let invalid_node = new_node_id(&adj_map);
+            let valid_node = adj_map.nodes().choose(&mut rand::thread_rng()).unwrap();
+
+            adj_map.del_edge(invalid_node, valid_node);
+
+            true
+        }
+
+        quickcheck::quickcheck(test as fn(AdjMap<Directed>) -> bool);
+        quickcheck::quickcheck(test as fn(AdjMap<Undirected>) -> bool);
+    }
+
+    #[should_panic]
+    #[test]
+    fn adj_map_del_edge_with_invalid_dst() {
+        fn test<Dir: Direction>(mut adj_map: AdjMap<Dir>) -> bool {
+            let invalid_node = new_node_id(&adj_map);
+            let valid_node = adj_map.nodes().choose(&mut rand::thread_rng()).unwrap();
+
+            adj_map.del_edge(valid_node, invalid_node);
+
+            true
+        }
+
+        quickcheck::quickcheck(test as fn(AdjMap<Directed>) -> bool);
+        quickcheck::quickcheck(test as fn(AdjMap<Undirected>) -> bool);
+    }
+}

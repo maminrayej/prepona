@@ -109,7 +109,7 @@ pub trait DelNodeProvider: NodeProvider {
 
     #[allow(clippy::unit_arg)]
     fn del_node_checked(&mut self, node: NodeId) -> Result<()> {
-        if self.contains_node(node) {
+        if !self.contains_node(node) {
             return Err(ProviderError::NodeDoesNotExist(node).into());
         }
 
