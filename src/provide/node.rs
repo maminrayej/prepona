@@ -1,4 +1,4 @@
-use std::ops::Add;
+use std::ops::{Add, Range};
 
 use anyhow::Result;
 
@@ -18,6 +18,35 @@ impl Add<usize> for NodeId {
 
     fn add(self, rhs: usize) -> Self::Output {
         NodeId(self.0 + rhs)
+    }
+}
+
+#[derive(Debug)]
+pub struct NodeIdRange {
+    iter: Range<usize>,
+}
+
+impl Iterator for NodeIdRange {
+    type Item = NodeId;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.iter.next().map(|num| num.into())
+    }
+}
+
+impl NodeId {
+    pub fn until(&self, end: NodeId) -> NodeIdRange {
+        NodeIdRange {
+            iter: self.0..end.0,
+        }
+    }
+
+    pub fn to(&self, end: NodeId) -> NodeIdRange {
+        self.until(end + 1)
+    }
+
+    pub fn range(&self, len: usize) -> NodeIdRange {
+        self.until(*self + len)
     }
 }
 
