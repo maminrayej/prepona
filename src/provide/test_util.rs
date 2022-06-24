@@ -142,7 +142,6 @@ macro_rules! impl_test_suite {
                     assert!(provider
                         .edges()
                         .all(|(src_node, dst_node)| src_node != new_node && dst_node != new_node));
-                    assert_eq!(provider.neighbors(new_node).count(), 0);
                     assert_eq!(provider.successors(new_node).count(), 0);
                     assert_eq!(provider.predecessors(new_node).count(), 0);
                     assert_eq!(provider.incoming_edges(new_node).count(), 0);
@@ -153,7 +152,6 @@ macro_rules! impl_test_suite {
                     for other_node in provider.nodes() {
                         assert!(!provider.is_successor(new_node, other_node));
                         assert!(!provider.is_predecessor(new_node, other_node));
-                        assert!(!provider.neighbors(other_node).contains(&new_node));
                         assert!(!provider.successors(other_node).contains(&new_node));
                         assert!(!provider.predecessors(other_node).contains(&new_node));
                         assert!(!provider.outgoing_edges(other_node).contains(&new_node));
@@ -189,7 +187,6 @@ macro_rules! impl_test_suite {
                         .all(|(src_node, dst_node)| src_node != new_node && dst_node != new_node));
 
                     for other_node in provider.nodes() {
-                        assert!(!provider.neighbors(other_node).contains(&new_node));
                         assert!(!provider.successors(other_node).contains(&new_node));
                         assert!(!provider.predecessors(other_node).contains(&new_node));
                         assert!(!provider.outgoing_edges(other_node).contains(&new_node));
@@ -235,7 +232,6 @@ macro_rules! impl_test_suite {
                         .all(|(src_node, dst_node)| src_node != new_node && dst_node != new_node));
 
                     for other_node in provider.nodes() {
-                        assert!(!provider.neighbors(other_node).contains(&new_node));
                         assert!(!provider.successors(other_node).contains(&new_node));
                         assert!(!provider.predecessors(other_node).contains(&new_node));
                         assert!(!provider.outgoing_edges(other_node).contains(&new_node));
@@ -270,8 +266,6 @@ macro_rules! impl_test_suite {
                     assert!(provider.contains_node(dst_node));
                     assert!(provider.nodes().contains(&src_node));
                     assert!(provider.nodes().contains(&dst_node));
-                    assert!(provider.neighbors(src_node).contains(&dst_node));
-                    assert!(provider.neighbors(dst_node).contains(&src_node));
                     assert!(provider.is_successor(src_node, dst_node));
                     assert!(provider.is_predecessor(dst_node, src_node));
                     assert!(provider.successors(src_node).contains(&dst_node));
@@ -326,8 +320,6 @@ macro_rules! impl_test_suite {
                     assert!(provider.contains_node(dst_node));
                     assert!(provider.nodes().contains(&src_node));
                     assert!(provider.nodes().contains(&dst_node));
-                    assert!(!provider.neighbors(src_node).contains(&dst_node));
-                    assert!(!provider.neighbors(dst_node).contains(&src_node));
                     assert!(!provider.is_successor(src_node, dst_node));
                     assert!(!provider.is_predecessor(dst_node, src_node));
                     assert!(!provider.successors(src_node).contains(&dst_node));
@@ -352,26 +344,6 @@ macro_rules! impl_test_suite {
                         assert_eq!(provider.incoming_edges(src_node).count(), 0);
                         assert_eq!(provider.in_degree(src_node), 0);
                     }
-
-                    true
-                }
-
-                quickcheck::quickcheck(test as fn(super::$provider<Directed>) -> bool);
-                quickcheck::quickcheck(test as fn(super::$provider<Undirected>) -> bool);
-            }
-
-            #[test]
-            fn provider_neighbors_checked() {
-                fn test<P>(provider: P) -> bool
-                where
-                    P: NodeProvider,
-                {
-                    let invalid_node = new_node_id(&provider);
-
-                    assert_err!(
-                        provider.neighbors_checked(invalid_node),
-                        ProviderError::InvalidNode(invalid_node)
-                    );
 
                     true
                 }

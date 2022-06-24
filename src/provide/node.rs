@@ -1,4 +1,4 @@
-use std::ops::{Add, Range};
+use std::ops::{Add, Range, Sub};
 
 use anyhow::Result;
 
@@ -18,6 +18,14 @@ impl Add<usize> for NodeId {
 
     fn add(self, rhs: usize) -> Self::Output {
         NodeId(self.0 + rhs)
+    }
+}
+
+impl Sub<usize> for NodeId {
+    type Output = NodeId;
+
+    fn sub(self, rhs: usize) -> Self::Output {
+        NodeId(self.0 - rhs)
     }
 }
 
@@ -54,9 +62,6 @@ pub trait NodeProvider: Storage {
     type Nodes<'a>: Iterator<Item = NodeId>
     where
         Self: 'a;
-    type Neighbors<'a>: Iterator<Item = NodeId>
-    where
-        Self: 'a;
     type Successors<'a>: Iterator<Item = NodeId>
     where
         Self: 'a;
@@ -69,15 +74,6 @@ pub trait NodeProvider: Storage {
     fn node_count(&self) -> usize;
 
     fn nodes(&self) -> Self::Nodes<'_>;
-
-    fn neighbors(&self, node: NodeId) -> Self::Neighbors<'_>;
-    fn neighbors_checked(&self, node: NodeId) -> Result<Self::Neighbors<'_>> {
-        if !self.contains_node(node) {
-            return Err(ProviderError::InvalidNode(node).into());
-        }
-
-        Ok(self.neighbors(node))
-    }
 
     fn successors(&self, node: NodeId) -> Self::Successors<'_>;
     fn successors_checked(&self, node: NodeId) -> Result<Self::Successors<'_>> {

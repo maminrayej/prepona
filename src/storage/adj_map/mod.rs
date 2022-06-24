@@ -2,7 +2,6 @@ mod iters;
 
 pub use iters::*;
 
-use std::collections::HashSet;
 use std::marker::PhantomData;
 
 use indexmap::map::Entry::{Occupied, Vacant};
@@ -83,8 +82,6 @@ impl<Dir: Direction> EmptyStorage for AdjMap<Dir> {
 impl<Dir: Direction> NodeProvider for AdjMap<Dir> {
     type Nodes<'a> = Nodes<'a> where Dir: 'a;
 
-    type Neighbors<'a> = Neighbors<'a> where Dir: 'a;
-
     type Successors<'a> = OrientedNeighbors<'a, Dir> where Dir: 'a;
 
     type Predecessors<'a> = OrientedNeighbors<'a, Dir> where Dir: 'a;
@@ -100,13 +97,6 @@ impl<Dir: Direction> NodeProvider for AdjMap<Dir> {
     fn nodes(&self) -> Self::Nodes<'_> {
         Nodes {
             iter: self.nodes.keys(),
-        }
-    }
-
-    fn neighbors(&self, node: NodeId) -> Self::Neighbors<'_> {
-        Neighbors {
-            iter: self.nodes[&node].iter(),
-            seen: HashSet::new(),
         }
     }
 
@@ -273,21 +263,6 @@ mod tests {
         P: NodeProvider,
     {
         provider.nodes().max().map_or(0.into(), |node| node + 1)
-    }
-
-    #[should_panic]
-    #[test]
-    fn adj_map_neighbors_of_invalid_node() {
-        fn test<Dir: Direction>(adj_map: AdjMap<Dir>) -> bool {
-            let invalid_node = new_node_id(&adj_map);
-
-            adj_map.neighbors(invalid_node);
-
-            true
-        }
-
-        quickcheck::quickcheck(test as fn(AdjMap<Directed>) -> bool);
-        quickcheck::quickcheck(test as fn(AdjMap<Undirected>) -> bool);
     }
 
     #[should_panic]

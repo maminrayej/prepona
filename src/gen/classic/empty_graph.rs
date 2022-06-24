@@ -3,12 +3,12 @@ use crate::provide::{AddEdgeProvider, AddNodeProvider, EmptyStorage, NodeId};
 
 #[derive(Debug, Clone, Copy)]
 pub struct EmptyGraph {
-    node_count: usize
+    node_count: usize,
 }
 
 impl EmptyGraph {
     pub fn init(node_count: usize) -> EmptyGraph {
-        EmptyGraph {node_count}
+        EmptyGraph { node_count }
     }
 }
 
@@ -20,7 +20,7 @@ where
         for node in start_node.range(self.node_count) {
             storage.add_node(node);
         }
-        
+
         start_node + self.node_count
     }
 }
@@ -33,7 +33,9 @@ mod arbitrary {
 
     impl Arbitrary for EmptyGraph {
         fn arbitrary(g: &mut quickcheck::Gen) -> Self {
-            EmptyGraph { node_count: usize::arbitrary(g) % 32 }
+            EmptyGraph {
+                node_count: usize::arbitrary(g) % 32,
+            }
         }
     }
 }

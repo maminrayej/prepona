@@ -1,7 +1,7 @@
-use core::panic;
-
 use crate::gen::Generator;
 use crate::provide::{AddEdgeProvider, AddNodeProvider, EmptyStorage, NodeId};
+
+use super::EmptyGraph;
 
 #[derive(Debug, Clone, Copy)]
 pub struct StarGraph {
@@ -23,15 +23,13 @@ where
     S: EmptyStorage + AddNodeProvider + AddEdgeProvider,
 {
     fn generate_into(&self, storage: &mut S, start_node: NodeId) -> NodeId {
-        for node in start_node.range(self.node_count) {
-            storage.add_node(node);
-        }
+        let next_node = EmptyGraph::init(self.node_count).generate_into(storage, start_node);
 
-        for other_node in start_node.range(self.node_count).skip(1) {
+        for other_node in start_node.until(next_node).skip(1) {
             storage.add_edge(start_node, other_node)
         }
 
-        start_node + self.node_count
+        next_node
     }
 }
 
@@ -60,8 +58,32 @@ mod tests {
 
     use super::StarGraph;
 
+    #[test]
+    #[should_panic(expected = "Can not form a star graph with less than 4 nodes: 0 < 4")]
+    fn star_graph_of_size_zero() {
+        let _: AdjMap<Undirected> = StarGraph::init(0).generate();
+    }
+
+    #[test]
+    #[should_panic(expected = "Can not form a star graph with less than 4 nodes: 1 < 4")]
+    fn star_graph_of_size_one() {
+        let _: AdjMap<Undirected> = StarGraph::init(1).generate();
+    }
+
+    #[test]
+    #[should_panic(expected = "Can not form a star graph with less than 4 nodes: 2 < 4")]
+    fn star_graph_of_size_two() {
+        let _: AdjMap<Undirected> = StarGraph::init(2).generate();
+    }
+
+    #[test]
+    #[should_panic(expected = "Can not form a star graph with less than 4 nodes: 3 < 4")]
+    fn star_graph_of_size_three() {
+        let _: AdjMap<Undirected> = StarGraph::init(3).generate();
+    }
+
     #[quickcheck]
-    fn empty_graph_directed(generator: StarGraph) {
+    fn star_graph_directed(generator: StarGraph) {
         let storage: AdjMap<Directed> = generator.generate();
 
         assert_eq!(
@@ -97,7 +119,7 @@ mod tests {
     }
 
     #[quickcheck]
-    fn empty_graph_undirected(generator: StarGraph) {
+    fn star_graph_undirected(generator: StarGraph) {
         let storage: AdjMap<Undirected> = generator.generate();
 
         assert_eq!(

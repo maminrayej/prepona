@@ -1,6 +1,8 @@
 use crate::gen::Generator;
 use crate::provide::{AddEdgeProvider, AddNodeProvider, Direction, EmptyStorage, NodeId};
 
+use super::EmptyGraph;
+
 #[derive(Debug, Clone, Copy)]
 pub struct CompleteGraph {
     node_count: usize,
@@ -9,7 +11,7 @@ pub struct CompleteGraph {
 impl CompleteGraph {
     pub fn init(node_count: usize) -> CompleteGraph {
         if node_count < 3 {
-            panic!("Can not generate a complete graph with less than 3 nodes: ${node_count} < 3")
+            panic!("Can not generate a complete graph with less than 3 nodes: {node_count} < 3")
         }
 
         CompleteGraph { node_count }
@@ -21,19 +23,17 @@ where
     S: EmptyStorage + AddNodeProvider + AddEdgeProvider,
 {
     fn generate_into(&self, storage: &mut S, start_node: NodeId) -> NodeId {
-        for node in start_node.range(self.node_count) {
-            storage.add_node(node);
-        }
+        let next_node = EmptyGraph::init(self.node_count).generate_into(storage, start_node);
 
-        for src_node in start_node.range(self.node_count) {
-            for dst_node in start_node.range(self.node_count) {
+        for src_node in start_node.until(next_node) {
+            for dst_node in start_node.until(next_node) {
                 if src_node < dst_node || (src_node != dst_node && S::Dir::is_directed()) {
                     storage.add_edge(src_node, dst_node);
                 }
             }
         }
 
-        start_node + self.node_count
+        next_node
     }
 }
 
@@ -63,6 +63,24 @@ mod tests {
 
     use super::CompleteGraph;
 
+    #[test]
+    #[should_panic(expected = "Can not generate a complete graph with less than 3 nodes: 0 < 3")]
+    fn complete_graph_of_size_zero() {
+        let _: AdjMap<Undirected> = CompleteGraph::init(0).generate();
+    }
+
+    #[test]
+    #[should_panic(expected = "Can not generate a complete graph with less than 3 nodes: 1 < 3")]
+    fn complete_graph_of_size_one() {
+        let _: AdjMap<Undirected> = CompleteGraph::init(1).generate();
+    }
+
+    #[test]
+    #[should_panic(expected = "Can not generate a complete graph with less than 3 nodes: 2 < 3")]
+    fn complete_graph_of_size_two() {
+        let _: AdjMap<Undirected> = CompleteGraph::init(2).generate();
+    }
+
     #[quickcheck]
     fn complete_graph_directed(generator: CompleteGraph) {
         let storage: AdjMap<Directed> = generator.generate();
@@ -72,10 +90,6 @@ mod tests {
             storage.edge_count(),
             generator.node_count * (generator.node_count - 1)
         );
-        assert!(storage
-            .nodes()
-            .map(|node| storage.neighbors(node).count())
-            .all(|neighbors_count| neighbors_count == generator.node_count - 1));
         assert!(storage
             .nodes()
             .map(|node| storage.successors(node).count())
@@ -88,7 +102,6 @@ mod tests {
         for node1 in storage.nodes() {
             for node2 in storage.nodes() {
                 if node1 != node2 {
-                    assert!(storage.neighbors(node1).contains(&node2));
                     assert!(storage.predecessors(node1).contains(&node2));
                     assert!(storage.successors(node1).contains(&node2));
                 }
@@ -107,10 +120,6 @@ mod tests {
         );
         assert!(storage
             .nodes()
-            .map(|node| storage.neighbors(node).count())
-            .all(|neighbors_count| neighbors_count == generator.node_count - 1));
-        assert!(storage
-            .nodes()
             .map(|node| storage.successors(node).count())
             .all(|neighbors_count| neighbors_count == generator.node_count - 1));
         assert!(storage
@@ -121,7 +130,6 @@ mod tests {
         for node1 in storage.nodes() {
             for node2 in storage.nodes() {
                 if node1 != node2 {
-                    assert!(storage.neighbors(node1).contains(&node2));
                     assert!(storage.predecessors(node1).contains(&node2));
                     assert!(storage.successors(node1).contains(&node2));
                 }
