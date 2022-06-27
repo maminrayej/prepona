@@ -180,6 +180,7 @@ impl<Dir: Direction> EdgeProvider for AdjMap<Dir> {
         }
     }
 
+    // TODO: Redundant -> Replace with a call to predecessors
     fn incoming_edges(&self, node: NodeId) -> Self::IncomingEdges<'_> {
         OrientedNeighbors {
             iter: self.nodes[&node].iter(),
@@ -188,6 +189,7 @@ impl<Dir: Direction> EdgeProvider for AdjMap<Dir> {
         }
     }
 
+    // TODO: Redundant -> Replace with a call to successors
     fn outgoing_edges(&self, node: NodeId) -> Self::OutgoingEdges<'_> {
         OrientedNeighbors {
             iter: self.nodes[&node].iter(),
