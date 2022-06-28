@@ -5,7 +5,13 @@ use anyhow::Result;
 use super::{ProviderError, Storage};
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Hash)]
-pub struct NodeId(usize);
+pub struct NodeId(pub(crate) usize);
+
+impl NodeId {
+    pub fn inner(&self) -> usize {
+        self.0
+    }
+}
 
 impl From<usize> for NodeId {
     fn from(val: usize) -> Self {

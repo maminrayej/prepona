@@ -183,3 +183,403 @@ where
         self.inner
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use itertools::Itertools;
+    use quickcheck_macros::quickcheck;
+
+    use crate::gen::{CompleteGraph, CycleGraph, Generator, PathGraph};
+    use crate::provide::{Directed, EdgeProvider, NodeProvider, Undirected};
+    use crate::storage::AdjMap;
+
+    use super::GenericView;
+
+    #[quickcheck]
+    fn generic_view_of_undirected_complete_graph(generator: CompleteGraph) {
+        let graph: AdjMap<Undirected> = generator.generate();
+
+        let view = GenericView::new(
+            &graph,
+            graph.nodes().filter(|node| node.inner() % 2 == 0).collect(),
+            graph
+                .edges()
+                .filter(|(src_node, dst_node)| {
+                    src_node.inner() % 2 == 0 && dst_node.inner() % 2 == 0
+                })
+                .collect(),
+        );
+
+        let expected_node_count = (graph.node_count() / 2) + graph.node_count() % 2;
+
+        assert_eq!(view.node_count(), expected_node_count);
+        assert_eq!(
+            view.edge_count(),
+            expected_node_count * (expected_node_count - 1) / 2
+        );
+        assert!(view
+            .nodes()
+            .all(|node| view.successors(node).count() == expected_node_count - 1));
+
+        assert!(view
+            .nodes()
+            .all(|node| view.predecessors(node).count() == expected_node_count - 1));
+
+        assert!(view
+            .nodes()
+            .all(|node| view.incoming_edges(node).count() == expected_node_count - 1));
+
+        assert!(view
+            .nodes()
+            .all(|node| view.outgoing_edges(node).count() == expected_node_count - 1));
+
+        assert!(view
+            .nodes()
+            .all(|node| view.in_degree(node) == expected_node_count - 1));
+
+        assert!(view
+            .nodes()
+            .all(|node| view.out_degree(node) == expected_node_count - 1));
+
+        for node1 in view.nodes() {
+            for node2 in view.nodes() {
+                if node1 != node2 {
+                    assert!(view.predecessors(node1).contains(&node2));
+                    assert!(view.successors(node1).contains(&node2));
+                }
+            }
+        }
+    }
+
+    #[quickcheck]
+    fn generic_view_of_directed_complete_graph(generator: CompleteGraph) {
+        let graph: AdjMap<Directed> = generator.generate();
+
+        let view = GenericView::new(
+            &graph,
+            graph.nodes().filter(|node| node.inner() % 2 == 0).collect(),
+            graph
+                .edges()
+                .filter(|(src_node, dst_node)| {
+                    src_node.inner() % 2 == 0 && dst_node.inner() % 2 == 0
+                })
+                .collect(),
+        );
+
+        let expected_node_count = (graph.node_count() / 2) + graph.node_count() % 2;
+
+        assert_eq!(view.node_count(), expected_node_count);
+        assert_eq!(
+            view.edge_count(),
+            expected_node_count * (expected_node_count - 1)
+        );
+        assert!(view
+            .nodes()
+            .all(|node| view.successors(node).count() == expected_node_count - 1));
+
+        assert!(view
+            .nodes()
+            .all(|node| view.predecessors(node).count() == expected_node_count - 1));
+
+        assert!(view
+            .nodes()
+            .all(|node| view.incoming_edges(node).count() == expected_node_count - 1));
+
+        assert!(view
+            .nodes()
+            .all(|node| view.outgoing_edges(node).count() == expected_node_count - 1));
+
+        assert!(view
+            .nodes()
+            .all(|node| view.in_degree(node) == expected_node_count - 1));
+
+        assert!(view
+            .nodes()
+            .all(|node| view.out_degree(node) == expected_node_count - 1));
+
+        for node1 in view.nodes() {
+            for node2 in view.nodes() {
+                if node1 != node2 {
+                    assert!(view.predecessors(node1).contains(&node2));
+                    assert!(view.successors(node1).contains(&node2));
+                }
+            }
+        }
+    }
+
+    #[quickcheck]
+    fn generic_view_of_undirected_path_graph(generator: PathGraph) {
+        let graph: AdjMap<Undirected> = generator.generate();
+
+        let view = GenericView::new(
+            &graph,
+            graph.nodes().filter(|node| node.inner() % 2 == 0).collect(),
+            graph
+                .edges()
+                .filter(|(src_node, dst_node)| {
+                    src_node.inner() % 2 == 0 && dst_node.inner() % 2 == 0
+                })
+                .collect(),
+        );
+
+        let expected_node_count = (graph.node_count() / 2) + graph.node_count() % 2;
+
+        assert_eq!(view.node_count(), expected_node_count);
+        assert_eq!(view.edge_count(), 0);
+
+        assert!(view.nodes().all(|node| view.successors(node).count() == 0));
+
+        assert!(view
+            .nodes()
+            .all(|node| view.predecessors(node).count() == 0));
+
+        assert!(view
+            .nodes()
+            .all(|node| view.incoming_edges(node).count() == 0));
+
+        assert!(view
+            .nodes()
+            .all(|node| view.outgoing_edges(node).count() == 0));
+
+        assert!(view.nodes().all(|node| view.in_degree(node) == 0));
+
+        assert!(view.nodes().all(|node| view.out_degree(node) == 0));
+
+        for node1 in view.nodes() {
+            for node2 in view.nodes() {
+                if node1 != node2 {
+                    assert!(!view.predecessors(node1).contains(&node2));
+                    assert!(!view.successors(node1).contains(&node2));
+                }
+            }
+        }
+    }
+
+    #[quickcheck]
+    fn generic_view_of_directed_path_graph(generator: PathGraph) {
+        let graph: AdjMap<Directed> = generator.generate();
+
+        let view = GenericView::new(
+            &graph,
+            graph.nodes().filter(|node| node.inner() % 2 == 0).collect(),
+            graph
+                .edges()
+                .filter(|(src_node, dst_node)| {
+                    src_node.inner() % 2 == 0 && dst_node.inner() % 2 == 0
+                })
+                .collect(),
+        );
+
+        let expected_node_count = (graph.node_count() / 2) + graph.node_count() % 2;
+
+        assert_eq!(view.node_count(), expected_node_count);
+        assert_eq!(view.edge_count(), 0);
+
+        assert!(view.nodes().all(|node| view.successors(node).count() == 0));
+
+        assert!(view
+            .nodes()
+            .all(|node| view.predecessors(node).count() == 0));
+
+        assert!(view
+            .nodes()
+            .all(|node| view.incoming_edges(node).count() == 0));
+
+        assert!(view
+            .nodes()
+            .all(|node| view.outgoing_edges(node).count() == 0));
+
+        assert!(view.nodes().all(|node| view.in_degree(node) == 0));
+
+        assert!(view.nodes().all(|node| view.out_degree(node) == 0));
+
+        for node1 in view.nodes() {
+            for node2 in view.nodes() {
+                if node1 != node2 {
+                    assert!(!view.predecessors(node1).contains(&node2));
+                    assert!(!view.successors(node1).contains(&node2));
+                }
+            }
+        }
+    }
+
+    #[quickcheck]
+    fn generic_view_of_undirected_halved_path_graph(generator: PathGraph) {
+        let storage: AdjMap<Undirected> = generator.generate();
+
+        let view = GenericView::new(
+            &storage,
+            storage
+                .nodes()
+                .filter(|node| node.inner() < storage.node_count() / 2)
+                .collect(),
+            storage
+                .edges()
+                .filter(|(node1, node2)| {
+                    node1.inner() < storage.node_count() / 2
+                        && node2.inner() < storage.node_count() / 2
+                })
+                .collect(),
+        );
+
+        let expected_node_count = storage.node_count() / 2;
+        if expected_node_count != 0 {
+            assert_eq!(view.node_count(), expected_node_count);
+
+            assert_eq!(view.edge_count(), expected_node_count - 1);
+
+            if expected_node_count > 1 {
+                assert_eq!(
+                    view.nodes()
+                        .filter(|node| view.successors(*node).count() == 1)
+                        .count(),
+                    2
+                );
+
+                assert_eq!(
+                    view.nodes()
+                        .filter(|node| view.successors(*node).count() == 2)
+                        .count(),
+                    expected_node_count - 2
+                )
+            }
+        }
+    }
+
+    #[quickcheck]
+    fn generic_view_of_directed_halved_path_graph(generator: PathGraph) {
+        let storage: AdjMap<Directed> = generator.generate();
+
+        let view = GenericView::new(
+            &storage,
+            storage
+                .nodes()
+                .filter(|node| node.inner() < storage.node_count() / 2)
+                .collect(),
+            storage
+                .edges()
+                .filter(|(node1, node2)| {
+                    node1.inner() < storage.node_count() / 2
+                        && node2.inner() < storage.node_count() / 2
+                })
+                .collect(),
+        );
+
+        let expected_node_count = storage.node_count() / 2;
+        assert_eq!(view.node_count(), expected_node_count);
+
+        if expected_node_count != 0 {
+            assert_eq!(view.edge_count(), expected_node_count - 1);
+
+            assert_eq!(
+                view.nodes()
+                    .filter(|node| view.outgoing_edges(*node).count() == 0)
+                    .count(),
+                1
+            );
+
+            assert_eq!(
+                view.nodes()
+                    .filter(|node| view.incoming_edges(*node).count() == 0)
+                    .count(),
+                1
+            );
+
+            assert_eq!(
+                view.nodes()
+                    .filter(|node| view.outgoing_edges(*node).count() == 1)
+                    .count(),
+                expected_node_count - 1
+            );
+
+            assert_eq!(
+                view.nodes()
+                    .filter(|node| view.incoming_edges(*node).count() == 1)
+                    .count(),
+                expected_node_count - 1
+            );
+        }
+    }
+
+    #[quickcheck]
+    fn generic_view_of_undirected_cycle_graph(generator: CycleGraph) {
+        let storage: AdjMap<Undirected> = generator.generate();
+
+        let view = GenericView::new(
+            &storage,
+            storage.nodes().filter(|node| node.inner() != 0).collect(),
+            storage
+                .edges()
+                .filter(|(node1, node2)| node1.inner() != 0 && node2.inner() != 0)
+                .collect(),
+        );
+
+        let expected_node_count = storage.node_count() - 1;
+
+        assert_eq!(view.node_count(), expected_node_count);
+
+        assert_eq!(view.edge_count(), expected_node_count - 1);
+
+        assert_eq!(
+            view.nodes()
+                .filter(|node| view.successors(*node).count() == 1)
+                .count(),
+            2
+        );
+
+        assert_eq!(
+            view.nodes()
+                .filter(|node| view.successors(*node).count() == 2)
+                .count(),
+            expected_node_count - 2
+        )
+    }
+
+    #[quickcheck]
+    fn generic_view_of_directed_cycle_graph(generator: CycleGraph) {
+        let storage: AdjMap<Directed> = generator.generate();
+
+        let view = GenericView::new(
+            &storage,
+            storage.nodes().filter(|node| node.inner() != 0).collect(),
+            storage
+                .edges()
+                .filter(|(node1, node2)| node1.inner() != 0 && node2.inner() != 0)
+                .collect(),
+        );
+
+        let expected_node_count = storage.node_count() - 1;
+
+        assert_eq!(view.node_count(), expected_node_count);
+
+        assert_eq!(view.edge_count(), expected_node_count - 1);
+
+        assert_eq!(
+            view.nodes()
+                .filter(|node| view.outgoing_edges(*node).count() == 0)
+                .count(),
+            1
+        );
+
+        assert_eq!(
+            view.nodes()
+                .filter(|node| view.incoming_edges(*node).count() == 0)
+                .count(),
+            1
+        );
+
+        assert_eq!(
+            view.nodes()
+                .filter(|node| view.outgoing_edges(*node).count() == 1)
+                .count(),
+            expected_node_count - 1
+        );
+
+        assert_eq!(
+            view.nodes()
+                .filter(|node| view.incoming_edges(*node).count() == 1)
+                .count(),
+            expected_node_count - 1
+        );
+    }
+}
