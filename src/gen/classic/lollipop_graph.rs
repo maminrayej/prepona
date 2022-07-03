@@ -5,8 +5,8 @@ use super::{CompleteGraph, PathGraph};
 
 #[derive(Debug, Clone, Copy)]
 pub struct LollipopGraph {
-    complete_graph_size: usize,
-    path_graph_size: usize,
+    pub complete_graph_size: usize,
+    pub path_graph_size: usize,
 }
 
 impl LollipopGraph {

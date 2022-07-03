@@ -7,7 +7,7 @@ use super::EmptyGraph;
 
 #[derive(Debug, Clone, Copy)]
 pub struct PathGraph {
-    node_count: usize,
+    pub node_count: usize,
 }
 
 impl PathGraph {

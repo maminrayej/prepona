@@ -3,7 +3,7 @@ use crate::provide::{AddEdgeProvider, AddNodeProvider, EmptyStorage, NodeId};
 
 #[derive(Debug, Clone, Copy)]
 pub struct EmptyGraph {
-    node_count: usize,
+    pub node_count: usize,
 }
 
 impl EmptyGraph {

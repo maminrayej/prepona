@@ -5,7 +5,7 @@ use super::PathGraph;
 
 #[derive(Debug, Clone, Copy)]
 pub struct LadderGraph {
-    side_node_count: usize,
+    pub side_node_count: usize,
 }
 
 impl LadderGraph {

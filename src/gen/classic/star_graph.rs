@@ -5,7 +5,7 @@ use super::EmptyGraph;
 
 #[derive(Debug, Clone, Copy)]
 pub struct StarGraph {
-    node_count: usize,
+    pub node_count: usize,
 }
 
 impl StarGraph {
