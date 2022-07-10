@@ -15,11 +15,15 @@ pub struct GenericView<'i, G> {
 }
 
 impl<'i, G> GenericView<'i, G> {
-    pub fn new(inner: &'i G, nodes: IndexSet<NodeId>, edges: IndexSet<(NodeId, NodeId)>) -> Self {
+    pub fn new(
+        inner: &'i G,
+        nodes: impl Iterator<Item = NodeId>,
+        edges: impl Iterator<Item = (NodeId, NodeId)>,
+    ) -> Self {
         Self {
             inner,
-            nodes,
-            edges,
+            nodes: nodes.collect(),
+            edges: edges.collect(),
         }
     }
 }
@@ -201,13 +205,10 @@ mod tests {
 
         let view = GenericView::new(
             &graph,
-            graph.nodes().filter(|node| node.inner() % 2 == 0).collect(),
-            graph
-                .edges()
-                .filter(|(src_node, dst_node)| {
-                    src_node.inner() % 2 == 0 && dst_node.inner() % 2 == 0
-                })
-                .collect(),
+            graph.nodes().filter(|node| node.inner() % 2 == 0),
+            graph.edges().filter(|(src_node, dst_node)| {
+                src_node.inner() % 2 == 0 && dst_node.inner() % 2 == 0
+            }),
         );
 
         let expected_node_count = (graph.node_count() / 2) + graph.node_count() % 2;
@@ -257,13 +258,10 @@ mod tests {
 
         let view = GenericView::new(
             &graph,
-            graph.nodes().filter(|node| node.inner() % 2 == 0).collect(),
-            graph
-                .edges()
-                .filter(|(src_node, dst_node)| {
-                    src_node.inner() % 2 == 0 && dst_node.inner() % 2 == 0
-                })
-                .collect(),
+            graph.nodes().filter(|node| node.inner() % 2 == 0),
+            graph.edges().filter(|(src_node, dst_node)| {
+                src_node.inner() % 2 == 0 && dst_node.inner() % 2 == 0
+            }),
         );
 
         let expected_node_count = (graph.node_count() / 2) + graph.node_count() % 2;
@@ -313,13 +311,10 @@ mod tests {
 
         let view = GenericView::new(
             &graph,
-            graph.nodes().filter(|node| node.inner() % 2 == 0).collect(),
-            graph
-                .edges()
-                .filter(|(src_node, dst_node)| {
-                    src_node.inner() % 2 == 0 && dst_node.inner() % 2 == 0
-                })
-                .collect(),
+            graph.nodes().filter(|node| node.inner() % 2 == 0),
+            graph.edges().filter(|(src_node, dst_node)| {
+                src_node.inner() % 2 == 0 && dst_node.inner() % 2 == 0
+            }),
         );
 
         let expected_node_count = (graph.node_count() / 2) + graph.node_count() % 2;
@@ -361,13 +356,10 @@ mod tests {
 
         let view = GenericView::new(
             &graph,
-            graph.nodes().filter(|node| node.inner() % 2 == 0).collect(),
-            graph
-                .edges()
-                .filter(|(src_node, dst_node)| {
-                    src_node.inner() % 2 == 0 && dst_node.inner() % 2 == 0
-                })
-                .collect(),
+            graph.nodes().filter(|node| node.inner() % 2 == 0),
+            graph.edges().filter(|(src_node, dst_node)| {
+                src_node.inner() % 2 == 0 && dst_node.inner() % 2 == 0
+            }),
         );
 
         let expected_node_count = (graph.node_count() / 2) + graph.node_count() % 2;
@@ -411,15 +403,10 @@ mod tests {
             &storage,
             storage
                 .nodes()
-                .filter(|node| node.inner() < storage.node_count() / 2)
-                .collect(),
-            storage
-                .edges()
-                .filter(|(node1, node2)| {
-                    node1.inner() < storage.node_count() / 2
-                        && node2.inner() < storage.node_count() / 2
-                })
-                .collect(),
+                .filter(|node| node.inner() < storage.node_count() / 2),
+            storage.edges().filter(|(node1, node2)| {
+                node1.inner() < storage.node_count() / 2 && node2.inner() < storage.node_count() / 2
+            }),
         );
 
         let expected_node_count = storage.node_count() / 2;
@@ -454,15 +441,10 @@ mod tests {
             &storage,
             storage
                 .nodes()
-                .filter(|node| node.inner() < storage.node_count() / 2)
-                .collect(),
-            storage
-                .edges()
-                .filter(|(node1, node2)| {
-                    node1.inner() < storage.node_count() / 2
-                        && node2.inner() < storage.node_count() / 2
-                })
-                .collect(),
+                .filter(|node| node.inner() < storage.node_count() / 2),
+            storage.edges().filter(|(node1, node2)| {
+                node1.inner() < storage.node_count() / 2 && node2.inner() < storage.node_count() / 2
+            }),
         );
 
         let expected_node_count = storage.node_count() / 2;
@@ -507,11 +489,10 @@ mod tests {
 
         let view = GenericView::new(
             &storage,
-            storage.nodes().filter(|node| node.inner() != 0).collect(),
+            storage.nodes().filter(|node| node.inner() != 0),
             storage
                 .edges()
-                .filter(|(node1, node2)| node1.inner() != 0 && node2.inner() != 0)
-                .collect(),
+                .filter(|(node1, node2)| node1.inner() != 0 && node2.inner() != 0),
         );
 
         let expected_node_count = storage.node_count() - 1;
@@ -541,11 +522,10 @@ mod tests {
 
         let view = GenericView::new(
             &storage,
-            storage.nodes().filter(|node| node.inner() != 0).collect(),
+            storage.nodes().filter(|node| node.inner() != 0),
             storage
                 .edges()
-                .filter(|(node1, node2)| node1.inner() != 0 && node2.inner() != 0)
-                .collect(),
+                .filter(|(node1, node2)| node1.inner() != 0 && node2.inner() != 0),
         );
 
         let expected_node_count = storage.node_count() - 1;
