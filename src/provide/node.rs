@@ -1,7 +1,5 @@
 use std::ops::{Add, Range, Sub};
 
-use anyhow::Result;
-
 use super::{ProviderError, Storage};
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Hash)]
@@ -82,40 +80,44 @@ pub trait NodeProvider: Storage {
     fn nodes(&self) -> Self::Nodes<'_>;
 
     fn successors(&self, node: NodeId) -> Self::Successors<'_>;
-    fn successors_checked(&self, node: NodeId) -> Result<Self::Successors<'_>> {
+    fn successors_checked(&self, node: NodeId) -> Result<Self::Successors<'_>, ProviderError> {
         if !self.contains_node(node) {
-            return Err(ProviderError::InvalidNode(node).into());
+            return Err(ProviderError::InvalidNode(node));
         }
 
         Ok(self.successors(node))
     }
 
     fn predecessors(&self, node: NodeId) -> Self::Predecessors<'_>;
-    fn predecessors_checked(&self, node: NodeId) -> Result<Self::Predecessors<'_>> {
+    fn predecessors_checked(&self, node: NodeId) -> Result<Self::Predecessors<'_>, ProviderError> {
         if !self.contains_node(node) {
-            return Err(ProviderError::InvalidNode(node).into());
+            return Err(ProviderError::InvalidNode(node));
         }
 
         Ok(self.predecessors(node))
     }
 
     fn is_successor(&self, node: NodeId, successor: NodeId) -> bool;
-    fn is_successor_checked(&self, node: NodeId, successor: NodeId) -> Result<bool> {
+    fn is_successor_checked(&self, node: NodeId, successor: NodeId) -> Result<bool, ProviderError> {
         if !self.contains_node(node) {
-            return Err(ProviderError::InvalidNode(node).into());
+            return Err(ProviderError::InvalidNode(node));
         } else if !self.contains_node(successor) {
-            return Err(ProviderError::InvalidNode(successor).into());
+            return Err(ProviderError::InvalidNode(successor));
         }
 
         Ok(self.is_successor(node, successor))
     }
 
     fn is_predecessor(&self, node: NodeId, predecessor: NodeId) -> bool;
-    fn is_predecessor_checked(&self, node: NodeId, predecessor: NodeId) -> Result<bool> {
+    fn is_predecessor_checked(
+        &self,
+        node: NodeId,
+        predecessor: NodeId,
+    ) -> Result<bool, ProviderError> {
         if !self.contains_node(node) {
-            return Err(ProviderError::InvalidNode(node).into());
+            return Err(ProviderError::InvalidNode(node));
         } else if !self.contains_node(predecessor) {
-            return Err(ProviderError::InvalidNode(predecessor).into());
+            return Err(ProviderError::InvalidNode(predecessor));
         }
 
         Ok(self.is_predecessor(node, predecessor))
@@ -126,9 +128,9 @@ pub trait AddNodeProvider: NodeProvider {
     fn add_node(&mut self, node: NodeId);
 
     #[allow(clippy::unit_arg)]
-    fn add_node_checked(&mut self, node: NodeId) -> Result<()> {
+    fn add_node_checked(&mut self, node: NodeId) -> Result<(), ProviderError> {
         if self.contains_node(node) {
-            return Err(ProviderError::DuplicatedNode(node).into());
+            return Err(ProviderError::DuplicatedNode(node));
         }
 
         Ok(self.add_node(node))
@@ -139,9 +141,9 @@ pub trait DelNodeProvider: NodeProvider {
     fn del_node(&mut self, node: NodeId);
 
     #[allow(clippy::unit_arg)]
-    fn del_node_checked(&mut self, node: NodeId) -> Result<()> {
+    fn del_node_checked(&mut self, node: NodeId) -> Result<(), ProviderError> {
         if !self.contains_node(node) {
-            return Err(ProviderError::NodeDoesNotExist(node).into());
+            return Err(ProviderError::NodeDoesNotExist(node));
         }
 
         Ok(self.del_node(node))

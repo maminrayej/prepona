@@ -100,9 +100,7 @@ macro_rules! impl_test_suite {
 
             macro_rules! assert_err {
                 ($result: expr, $err_type:tt::$err_kind:tt($expected_node: expr)) => {
-                    if let $err_type::$err_kind(node) =
-                        $result.err().unwrap().downcast::<$err_type>().unwrap()
-                    {
+                    if let $err_type::$err_kind(node) = $result.err().unwrap() {
                         if node != $expected_node {
                             panic!("Function returned an incorrect node as part of its error")
                         }
@@ -111,9 +109,7 @@ macro_rules! impl_test_suite {
                     }
                 };
                 ($result: expr, $err_type:tt::$err_kind:tt($expected_node1: expr, $expected_node2: expr)) => {
-                    if let $err_type::$err_kind(node1, node2) =
-                        $result.err().unwrap().downcast::<$err_type>().unwrap()
-                    {
+                    if let $err_type::$err_kind(node1, node2) = $result.err().unwrap() {
                         if node1 != $expected_node1 || node2 != $expected_node2 {
                             panic!("Function returned an incorrect edge as part of its error")
                         }

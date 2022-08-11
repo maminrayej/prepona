@@ -2,7 +2,7 @@ use thiserror::Error;
 
 use super::NodeId;
 
-#[derive(Debug, Error)]
+#[derive(Debug, Error, PartialEq, Eq)]
 pub enum ProviderError {
     #[error("Provide node is invalid: {0:?}")]
     InvalidNode(NodeId),
