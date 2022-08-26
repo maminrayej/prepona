@@ -1,6 +1,4 @@
-use std::marker::PhantomData;
-
-use crate::provide::{Direction, NodeId, NodeIdMapProvider, NodeProvider};
+use crate::provide::{DefaultIdMap, Direction, IdMap, NodeId, NodeProvider};
 
 const UNKNOWN: usize = usize::MAX;
 
@@ -29,57 +27,72 @@ pub enum EdgeType {
     CrossEdge,
 }
 
-pub enum Event<'a, G: NodeIdMapProvider> {
-    Begin(&'a State<G>, NodeId),
-    Discover(&'a State<G>, NodeId),
-    Finish(&'a State<G>, NodeId),
-    End(&'a State<G>),
-    VisitEdge(&'a State<G>, EdgeType, NodeId, NodeId),
+pub enum Event<'a, I: IdMap> {
+    Begin(&'a State<I>, NodeId),
+    Discover(&'a State<I>, NodeId),
+    Finish(&'a State<I>, NodeId),
+    End(&'a State<I>),
+    VisitEdge(&'a State<I>, EdgeType, NodeId, NodeId),
 }
 
-pub struct State<G: NodeIdMapProvider> {
-    pub id_map: <G as NodeIdMapProvider>::NodeIdMap,
+pub struct State<I: IdMap> {
+    pub id_map: I,
 
     pub time: usize,
     pub discover: Vec<usize>,
     pub finished: Vec<usize>,
     pub parent: Vec<usize>,
-
-    pub(crate) phantom_g: PhantomData<G>,
 }
 
-pub struct DFS<'a, G>
+pub struct DFS<'a, G, I = DefaultIdMap>
 where
-    G: NodeProvider + NodeIdMapProvider,
+    G: NodeProvider,
+    I: IdMap,
 {
     graph: &'a G,
     starting_nodes: Vec<NodeId>,
-    state: State<G>,
+    state: State<I>,
 }
 
 impl<'a, G> DFS<'a, G>
 where
-    G: NodeProvider + NodeIdMapProvider,
+    G: NodeProvider,
 {
     pub fn init(graph: &'a G) -> Self {
-        Self::with_starters(graph, None.into_iter())
+        Self::with_ids_and_starters(graph, DefaultIdMap::new(graph), None.into_iter())
     }
 
     pub fn with_starters(graph: &'a G, starting_nodes: impl Iterator<Item = NodeId>) -> Self {
+        Self::with_ids_and_starters(graph, DefaultIdMap::new(graph), starting_nodes)
+    }
+}
+
+impl<'a, G, I> DFS<'a, G, I>
+where
+    G: NodeProvider,
+    I: IdMap,
+{
+    pub fn with_ids(graph: &'a G, id_map: I) -> Self {
+        Self::with_ids_and_starters(graph, id_map, None.into_iter())
+    }
+
+    pub fn with_ids_and_starters(
+        graph: &'a G,
+        id_map: I,
+        starting_nodes: impl Iterator<Item = NodeId>,
+    ) -> Self {
         let node_count = graph.node_count();
 
         DFS {
             graph,
             starting_nodes: starting_nodes.collect(),
             state: State {
-                id_map: graph.id_map(),
+                id_map,
 
                 time: 0,
                 discover: vec![UNKNOWN; node_count],
                 finished: vec![UNKNOWN; node_count],
                 parent: vec![UNKNOWN; node_count],
-
-                phantom_g: PhantomData,
             },
         }
     }
@@ -129,7 +142,7 @@ where
         self.state.parent.get(rid).copied()
     }
 
-    pub fn execute(mut self, mut callback: impl FnMut(Event<G>) -> ControlFlow) {
+    pub fn execute(mut self, mut callback: impl FnMut(Event<I>) -> ControlFlow) {
         while let Some(start_node) = self.next_start_node() {
             callback!(callback(Event::Begin(&self.state, start_node)), {
                 let start_vid = self.state.id_map[start_node];
@@ -216,7 +229,7 @@ mod tests {
         CompleteGraph, CycleGraph, EmptyGraph, Generator, LadderGraph, LollipopGraph, NullGraph,
         PathGraph, StarGraph,
     };
-    use crate::provide::{EdgeProvider, NodeIdMapProvider, NodeProvider, Undirected};
+    use crate::provide::{EdgeProvider, IdMap, NodeProvider, Undirected};
     use crate::storage::AdjMap;
 
     use super::ControlFlow::Continue;
@@ -248,7 +261,7 @@ mod tests {
             }
         }
 
-        pub fn count<G: NodeIdMapProvider>(&mut self, event: Event<G>) {
+        pub fn count<I: IdMap>(&mut self, event: Event<I>) {
             match event {
                 Event::Begin(_, _) => self.begin_called += 1,
                 Event::Discover(_, _) => self.discover_called += 1,

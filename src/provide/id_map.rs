@@ -3,20 +3,12 @@ use std::ops::Index;
 
 use itertools::Itertools;
 
-use super::NodeId;
+use super::{NodeId, NodeProvider};
 
-pub trait IdMap:
-    Index<Self::VirtId, Output = Self::RealId> + Index<Self::RealId, Output = Self::VirtId>
+pub trait IdMap<VirtId = usize, RealId = NodeId>:
+    Index<VirtId, Output = RealId> + Index<RealId, Output = VirtId>
 {
-    type VirtId;
-
-    type RealId;
-}
-
-pub trait NodeIdMapProvider {
-    type NodeIdMap: IdMap<VirtId = usize, RealId = NodeId>;
-
-    fn id_map(&self) -> Self::NodeIdMap;
+    fn new(graph: &impl NodeProvider) -> Self;
 }
 
 pub struct DefaultIdMap {
@@ -24,9 +16,9 @@ pub struct DefaultIdMap {
     virt_to_real: Vec<NodeId>,
 }
 
-impl DefaultIdMap {
-    pub fn new(nodes: impl Iterator<Item = NodeId>) -> Self {
-        let virt_to_real = nodes.collect_vec();
+impl IdMap for DefaultIdMap {
+    fn new(graph: &impl NodeProvider) -> Self {
+        let virt_to_real = graph.nodes().collect_vec();
         let real_to_virt = virt_to_real
             .iter()
             .copied()
@@ -55,10 +47,4 @@ impl Index<usize> for DefaultIdMap {
     fn index(&self, index: usize) -> &Self::Output {
         &self.virt_to_real[index]
     }
-}
-
-impl IdMap for DefaultIdMap {
-    type VirtId = usize;
-
-    type RealId = NodeId;
 }

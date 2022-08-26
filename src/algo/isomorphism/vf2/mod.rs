@@ -2,7 +2,7 @@ mod state;
 
 pub use state::*;
 
-use crate::provide::{Direction, EdgeProvider, NodeId, NodeIdMapProvider, NodeProvider};
+use crate::provide::{DefaultIdMap, Direction, EdgeProvider, IdMap, NodeId, NodeProvider};
 
 /// VF2 isomorphism algorithm.
 ///
@@ -10,13 +10,14 @@ use crate::provide::{Direction, EdgeProvider, NodeId, NodeIdMapProvider, NodePro
 /// * `Dir`: Indicates wether the provided graphs (`G1` and `G2`) are directed or not.
 /// * `G1`: Type of the first graph.
 /// * `G2`: Type of the second graph.
-pub struct VF2Isomorphism<'a, Dir, G1, G2>
+pub struct VF2Isomorphism<'a, Dir, G1, G2, I = DefaultIdMap>
 where
     Dir: Direction,
-    G1: NodeProvider<Dir = Dir> + EdgeProvider + NodeIdMapProvider,
-    G2: NodeProvider<Dir = Dir> + EdgeProvider + NodeIdMapProvider,
+    G1: NodeProvider<Dir = Dir> + EdgeProvider,
+    G2: NodeProvider<Dir = Dir> + EdgeProvider,
+    I: IdMap,
 {
-    state: VF2State<'a, Dir, G1, G2>,
+    state: VF2State<'a, Dir, G1, G2, I>,
 }
 
 // Indicates the source from which the candidates pair are chosen.
@@ -57,12 +58,32 @@ enum Action {
 impl<'a, Dir, G1, G2> VF2Isomorphism<'a, Dir, G1, G2>
 where
     Dir: Direction,
-    G1: NodeProvider<Dir = Dir> + EdgeProvider + NodeIdMapProvider,
-    G2: NodeProvider<Dir = Dir> + EdgeProvider + NodeIdMapProvider,
+    G1: NodeProvider<Dir = Dir> + EdgeProvider,
+    G2: NodeProvider<Dir = Dir> + EdgeProvider,
 {
     pub fn init(g1: &'a G1, g2: &'a G2, isomorphism_type: IsomorphismType) -> Self {
+        let id_map1 = DefaultIdMap::new(g1);
+        let id_map2 = DefaultIdMap::new(g2);
+        Self::with_ids(g1, g2, id_map1, id_map2, isomorphism_type)
+    }
+}
+
+impl<'a, Dir, G1, G2, I> VF2Isomorphism<'a, Dir, G1, G2, I>
+where
+    Dir: Direction,
+    G1: NodeProvider<Dir = Dir> + EdgeProvider,
+    G2: NodeProvider<Dir = Dir> + EdgeProvider,
+    I: IdMap,
+{
+    pub fn with_ids(
+        g1: &'a G1,
+        g2: &'a G2,
+        id_map1: I,
+        id_map2: I,
+        isomorphism_type: IsomorphismType,
+    ) -> Self {
         VF2Isomorphism {
-            state: VF2State::init(g1, g2, isomorphism_type),
+            state: VF2State::init(g1, g2, id_map1, id_map2, isomorphism_type),
         }
     }
 
