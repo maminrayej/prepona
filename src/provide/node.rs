@@ -2,7 +2,7 @@ use std::ops::{Add, Range, Sub};
 
 use super::{ProviderError, Storage};
 
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Hash)]
+#[derive(Debug, Default, PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Hash)]
 pub struct NodeId(pub(crate) usize);
 
 impl NodeId {
