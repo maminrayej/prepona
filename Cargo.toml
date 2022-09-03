@@ -11,6 +11,7 @@ readme = "README.md"
 thiserror = "1.0.30"
 indexmap = "1.8.0"
 itertools = "0.10.1"
+rudy = "0.1.0"
 
 [dev-dependencies]
 quickcheck = "1.0.3"

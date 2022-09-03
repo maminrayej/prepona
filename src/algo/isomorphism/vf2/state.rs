@@ -1,4 +1,4 @@
-use crate::provide::{Direction, EdgeProvider, NodeId, NodeIdMapProvider, NodeProvider};
+use crate::provide::{Direction, EdgeProvider, IdMap, NodeId, NodeProvider};
 
 use super::ListType;
 
@@ -83,17 +83,18 @@ impl IsomorphismType {
 // * `Dir`: Specifies wether G1 and G2 are directed or undirected.
 // * `G1`: The first.
 // * `G2`: The second graph.
-pub(crate) struct VF2State<'a, Dir, G1, G2>
+pub(crate) struct VF2State<'a, Dir, G1, G2, I>
 where
     Dir: Direction,
-    G1: NodeProvider<Dir = Dir> + EdgeProvider + NodeIdMapProvider,
-    G2: NodeProvider<Dir = Dir> + EdgeProvider + NodeIdMapProvider,
+    G1: NodeProvider<Dir = Dir> + EdgeProvider,
+    G2: NodeProvider<Dir = Dir> + EdgeProvider,
+    I: IdMap,
 {
     pub(crate) g1: &'a G1,
     pub(crate) g2: &'a G2,
 
-    pub(crate) id_map1: <G1 as NodeIdMapProvider>::NodeIdMap,
-    pub(crate) id_map2: <G2 as NodeIdMapProvider>::NodeIdMap,
+    pub(crate) id_map1: I,
+    pub(crate) id_map2: I,
 
     // The type of isomorphism to search for.
     pub(crate) isomorphism_type: IsomorphismType,
@@ -123,17 +124,24 @@ where
     pub(crate) in2_size: usize,  // Size of T2_in
 }
 
-impl<'a, Dir, G1, G2> VF2State<'a, Dir, G1, G2>
+impl<'a, Dir, G1, G2, I> VF2State<'a, Dir, G1, G2, I>
 where
     Dir: Direction,
-    G1: NodeProvider<Dir = Dir> + EdgeProvider + NodeIdMapProvider,
-    G2: NodeProvider<Dir = Dir> + EdgeProvider + NodeIdMapProvider,
+    G1: NodeProvider<Dir = Dir> + EdgeProvider,
+    G2: NodeProvider<Dir = Dir> + EdgeProvider,
+    I: IdMap,
 {
     // # Arguments
     // * `g1`: First graph.
     // * `g2`: Second graph.
     // * `isomorphism_type`: The type of isomorphism to search for.
-    pub(crate) fn init(g1: &'a G1, g2: &'a G2, isomorphism_type: IsomorphismType) -> Self {
+    pub(crate) fn init(
+        g1: &'a G1,
+        g2: &'a G2,
+        id_map1: I,
+        id_map2: I,
+        isomorphism_type: IsomorphismType,
+    ) -> Self {
         let g1_node_count = g1.node_count();
         let g2_node_count = g2.node_count();
 
@@ -141,8 +149,8 @@ where
             g1,
             g2,
 
-            id_map1: g1.id_map(),
-            id_map2: g2.id_map(),
+            id_map1,
+            id_map2,
 
             isomorphism_type,
 

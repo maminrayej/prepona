@@ -9,7 +9,7 @@ use indexmap::{IndexMap, IndexSet};
 
 use crate::provide::{
     AddEdgeProvider, AddNodeProvider, DelEdgeProvider, DelNodeProvider, Direction, EdgeProvider,
-    EmptyStorage, NodeId, NodeProvider, Orientation, Storage, NodeIdMapProvider, DefaultIdMap,
+    EmptyStorage, NodeId, NodeProvider, Orientation, Storage,
 };
 
 #[derive(Debug, Clone)]
@@ -241,14 +241,6 @@ impl<Dir: Direction> DelEdgeProvider for AdjMap<Dir> {
                 }
             })
             .unwrap();
-    }
-}
-
-impl<Dir: Direction> NodeIdMapProvider for AdjMap<Dir> {
-    type NodeIdMap = DefaultIdMap;
-
-    fn id_map(&self) -> Self::NodeIdMap {
-        DefaultIdMap::new(self.nodes())
     }
 }
 

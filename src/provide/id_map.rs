@@ -1,38 +1,31 @@
-use std::collections::HashMap;
+use rudy::rudymap::RudyMap;
 use std::ops::Index;
 
 use itertools::Itertools;
 
-use super::NodeId;
+use super::{NodeId, NodeProvider};
 
-pub trait IdMap:
-    Index<Self::VirtId, Output = Self::RealId> + Index<Self::RealId, Output = Self::VirtId>
+pub trait IdMap<VirtId = usize, RealId = NodeId>:
+    Index<VirtId, Output = RealId> + Index<RealId, Output = VirtId>
 {
-    type VirtId;
-
-    type RealId;
-}
-
-pub trait NodeIdMapProvider {
-    type NodeIdMap: IdMap<VirtId = usize, RealId = NodeId>;
-
-    fn id_map(&self) -> Self::NodeIdMap;
+    fn new(graph: &impl NodeProvider) -> Self;
 }
 
 pub struct DefaultIdMap {
-    real_to_virt: HashMap<NodeId, usize>,
+    real_to_virt: RudyMap<NodeId, usize>,
     virt_to_real: Vec<NodeId>,
 }
 
-impl DefaultIdMap {
-    pub fn new(nodes: impl Iterator<Item = NodeId>) -> Self {
-        let virt_to_real = nodes.collect_vec();
-        let real_to_virt = virt_to_real
+impl IdMap for DefaultIdMap {
+    fn new(graph: &impl NodeProvider) -> Self {
+        let virt_to_real = graph.nodes().collect_vec();
+        let mut real_to_virt = RudyMap::new();
+        let success = virt_to_real
             .iter()
-            .copied()
             .enumerate()
-            .map(|(index, node)| (node, index))
-            .collect();
+            .map(|(index, node)| real_to_virt.insert(*node, index))
+            .all(|duplicated| duplicated.is_none());
+        debug_assert!(success);
 
         Self {
             real_to_virt,
@@ -45,7 +38,7 @@ impl Index<NodeId> for DefaultIdMap {
     type Output = usize;
 
     fn index(&self, index: NodeId) -> &Self::Output {
-        &self.real_to_virt[&index]
+        &self.real_to_virt.get(index).unwrap()
     }
 }
 
@@ -57,8 +50,14 @@ impl Index<usize> for DefaultIdMap {
     }
 }
 
-impl IdMap for DefaultIdMap {
-    type VirtId = usize;
+impl rudy::Key for NodeId {
+    type Bytes = <usize as rudy::Key>::Bytes;
 
-    type RealId = NodeId;
+    fn into_bytes(self) -> Self::Bytes {
+        self.0.into_bytes()
+    }
+
+    fn from_bytes(bytes: Self::Bytes) -> Self {
+        Self::from(usize::from_bytes(bytes))
+    }
 }
