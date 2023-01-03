@@ -70,3 +70,28 @@ pub trait Node: Storage {
         Ok(self.is_pred_of(node, pred))
     }
 }
+
+pub trait AddNode: Node {
+    fn add_node(&mut self, node: NodeID);
+    fn add_node_checked(&mut self, node: NodeID) -> Result<(), Error> {
+        if self.contains_node(node) {
+            return Err(Error::NodeExists(node));
+        }
+
+        Ok(self.add_node(node))
+    }
+}
+
+pub trait DelNode: Node {
+    #[rustfmt::skip]
+    type DeletedEdges: Iterator<Item = (NodeID, NodeID)>;
+
+    fn del_node(&mut self, node: NodeID) -> Self::DeletedEdges;
+    fn del_node_checked(&mut self, node: NodeID) -> Result<Self::DeletedEdges, Error> {
+        if self.contains_node(node) {
+            return Err(Error::NodeNotFound(node));
+        }
+
+        Ok(self.del_node(node))
+    }
+}
