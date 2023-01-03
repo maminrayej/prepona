@@ -6,4 +6,7 @@ use crate::provide::NodeID;
 pub enum Error {
     #[error("Node: {0:?} not found")]
     NodeNotFound(NodeID),
+
+    #[error("Node: {0:?} already exists")]
+    NodeExists(NodeID),
 }

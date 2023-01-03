@@ -12,6 +12,11 @@ pub use node_par::*;
 mod edge;
 pub use edge::*;
 
+#[cfg(feature = "parallel")]
+mod edge_par;
+#[cfg(feature = "parallel")]
+pub use edge_par::*;
+
 mod map;
 pub use map::*;
 
