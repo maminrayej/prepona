@@ -78,6 +78,7 @@ pub trait AddNode: Node {
             return Err(Error::NodeExists(node));
         }
 
+        #[allow(clippy::unit_arg)]
         Ok(self.add_node(node))
     }
 }

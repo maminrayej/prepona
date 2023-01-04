@@ -1,11 +1,10 @@
+mod iter;
+pub use iter::*;
+
+pub mod selector;
+
 use crate::provide::*;
-
-pub trait Selector {
-    type Storage;
-    type Element;
-
-    fn select(&self, storage: &Self::Storage, element: &Self::Element) -> bool;
-}
+use crate::view::selector::Selector;
 
 pub struct View<'a, S, NS, ES> {
     storage: &'a S,
@@ -20,28 +19,6 @@ impl<'a, S, NS, ES> View<'a, S, NS, ES> {
             nselect,
             eselect,
         }
-    }
-}
-
-pub struct NodeSelector<'a, S, NS, I>
-where
-    S: Node + 'a,
-{
-    storage: &'a S,
-    inner: I,
-    nselect: &'a NS,
-}
-
-impl<'a, S, NS, I> Iterator for NodeSelector<'a, S, NS, I>
-where
-    S: Node,
-    NS: Selector<Storage = S, Element = NodeID>,
-    I: Iterator<Item = NodeID>,
-{
-    type Item = NodeID;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.inner.find(|n| self.nselect.select(self.storage, n))
     }
 }
 
@@ -92,62 +69,6 @@ where
             inner: self.storage.preds(node),
             nselect: &self.nselect,
         }
-    }
-}
-
-pub struct AllEdgeSelector<'a, S, NS, ES, I>
-where
-    S: Edge + 'a,
-{
-    storage: &'a S,
-    inner: I,
-    eselect: &'a ES,
-    nselect: &'a NS,
-}
-
-impl<'a, S, NS, ES, I> Iterator for AllEdgeSelector<'a, S, NS, ES, I>
-where
-    S: Edge + 'a,
-    NS: Selector<Storage = S, Element = NodeID>,
-    ES: Selector<Storage = S, Element = (NodeID, NodeID)>,
-    I: Iterator<Item = (NodeID, NodeID)>,
-{
-    type Item = (NodeID, NodeID);
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.inner.find(|(src, dst)| {
-            self.nselect.select(self.storage, src)
-                && self.nselect.select(self.storage, dst)
-                && self.eselect.select(self.storage, &(*src, *dst))
-        })
-    }
-}
-
-pub struct EdgeSelector<'a, S, NS, ES, I>
-where
-    S: Edge + 'a,
-{
-    src: NodeID,
-    inner: I,
-    storage: &'a S,
-    nselect: &'a NS,
-    eselect: &'a ES,
-}
-
-impl<'a, S, NS, ES, I> Iterator for EdgeSelector<'a, S, NS, ES, I>
-where
-    S: Edge + 'a,
-    NS: Selector<Storage = S, Element = NodeID>,
-    ES: Selector<Storage = S, Element = (NodeID, NodeID)>,
-    I: Iterator<Item = NodeID>,
-{
-    type Item = NodeID;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.inner.find(|dst| {
-            self.nselect.select(self.storage, dst)
-                && self.eselect.select(self.storage, &(self.src, *dst))
-        })
     }
 }
 

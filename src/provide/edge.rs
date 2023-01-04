@@ -80,6 +80,7 @@ pub trait AddEdge: Edge {
             return Err(Error::NodeNotFound(dst));
         }
 
+        #[allow(clippy::unit_arg)]
         Ok(self.add_edge(src, dst))
     }
 }
@@ -94,6 +95,7 @@ pub trait DelEdge: Edge {
             return Err(Error::NodeNotFound(dst));
         }
 
+        #[allow(clippy::unit_arg)]
         Ok(self.del_edge(src, dst))
     }
 }
