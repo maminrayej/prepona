@@ -89,10 +89,8 @@ pub trait DelEdge: Edge {
     fn del_edge(&mut self, src: NodeID, dst: NodeID);
 
     fn del_edge_checked(&mut self, src: NodeID, dst: NodeID) -> Result<(), Error> {
-        if !self.contains_node(src) {
-            return Err(Error::NodeNotFound(src));
-        } else if !self.contains_node(dst) {
-            return Err(Error::NodeNotFound(dst));
+        if !self.contains_edge_checked(src, dst)? {
+            return Err(Error::EdgeNotFound(src, dst));
         }
 
         #[allow(clippy::unit_arg)]

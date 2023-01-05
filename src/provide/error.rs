@@ -9,4 +9,7 @@ pub enum Error {
 
     #[error("Node: {0:?} already exists")]
     NodeExists(NodeID),
+
+    #[error("Edge: {0:?} -> {1:?} not found")]
+    EdgeNotFound(NodeID, NodeID),
 }
