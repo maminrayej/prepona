@@ -17,7 +17,11 @@ pub trait EdgeProp: Edge {
 pub trait EdgePropMut: EdgeProp {
     fn edge_prop_mut(&mut self, src: NodeID, dst: NodeID) -> &mut Self::Prop;
 
-    fn edge_prop_mut_checked(&mut self, src: NodeID, dst: NodeID) -> Result<&mut Self::Prop, Error> {
+    fn edge_prop_mut_checked(
+        &mut self,
+        src: NodeID,
+        dst: NodeID,
+    ) -> Result<&mut Self::Prop, Error> {
         if !self.contains_edge(src, dst) {
             return Err(Error::EdgeNotFound(src, dst));
         }
@@ -29,7 +33,12 @@ pub trait EdgePropMut: EdgeProp {
 pub trait AddEdgeProp: EdgeProp {
     fn insert_edge_prop(&mut self, src: NodeID, dst: NodeID, prop: Self::Prop) -> bool;
 
-    fn insert_edge_prop_checked(&mut self, src: NodeID, dst: NodeID, prop: Self::Prop) -> Result<bool, Error> {
+    fn insert_edge_prop_checked(
+        &mut self,
+        src: NodeID,
+        dst: NodeID,
+        prop: Self::Prop,
+    ) -> Result<bool, Error> {
         if !self.contains_edge(src, dst) {
             return Err(Error::EdgeNotFound(src, dst));
         }

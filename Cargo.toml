@@ -3,12 +3,12 @@ name = "prepona"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
-quickcheck = "1.0.3"
 thiserror = "1.0.38"
 rayon = { version = "1.6.1", optional = true }
+
+[dev-dependencies]
+quickcheck = "1.0.3"
 
 [features]
 parallel = ["dep:rayon"]
