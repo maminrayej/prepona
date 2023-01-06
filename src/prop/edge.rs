@@ -3,6 +3,11 @@ use crate::provide::*;
 pub trait EdgeProp: Edge {
     type Prop;
 
+    #[rustfmt::skip]
+    type EdgeProps<'a>: Iterator<Item = (NodeID, NodeID, &'a Self::Prop)> where Self: 'a;
+
+    fn edge_props(&self, src: NodeID, dst: NodeID) -> Self::EdgeProps<'_>;
+
     fn edge_prop(&self, src: NodeID, dst: NodeID) -> &Self::Prop;
 
     fn edge_prop_checked(&self, src: NodeID, dst: NodeID) -> Result<&Self::Prop, Error> {
@@ -15,6 +20,11 @@ pub trait EdgeProp: Edge {
 }
 
 pub trait EdgePropMut: EdgeProp {
+    #[rustfmt::skip]
+    type EdgePropsMut<'a>: Iterator<Item = (NodeID, NodeID, &'a mut Self::Prop)> where Self: 'a;
+
+    fn edge_props_mut(&mut self) -> Self::EdgePropsMut<'_>;
+
     fn edge_prop_mut(&mut self, src: NodeID, dst: NodeID) -> &mut Self::Prop;
 
     fn edge_prop_mut_checked(
