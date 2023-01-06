@@ -1,4 +1,4 @@
-pub trait Selector {
+pub trait Selector: Sized {
     type Storage;
     type Element;
 
@@ -30,7 +30,7 @@ pub trait Selector {
     }
 }
 
-pub struct AndSelector<'a, S1: ?Sized, S2: ?Sized> {
+pub struct AndSelector<'a, S1, S2> {
     sel1: &'a S1,
     sel2: &'a S2,
 }
@@ -49,7 +49,7 @@ where
     }
 }
 
-pub struct OrSelector<'a, S1: ?Sized, S2: ?Sized> {
+pub struct OrSelector<'a, S1, S2> {
     sel1: &'a S1,
     sel2: &'a S2,
 }
@@ -68,7 +68,7 @@ where
     }
 }
 
-pub struct NotSelector<'a, S: ?Sized> {
+pub struct NotSelector<'a, S> {
     sel: &'a S,
 }
 
@@ -85,7 +85,7 @@ where
     }
 }
 
-pub struct XORSelector<'a, S1: ?Sized, S2: ?Sized> {
+pub struct XORSelector<'a, S1, S2> {
     sel1: &'a S1,
     sel2: &'a S2,
 }
