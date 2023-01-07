@@ -27,3 +27,7 @@ pub trait Storage {
     type Dir: Direction;
     type Map: IDMap;
 }
+
+pub trait EmptyStorage: Storage {
+    fn init() -> Self;
+}
