@@ -21,7 +21,7 @@ pub trait Node: Storage {
     fn preds(&self, node: NodeID) -> Self::Preds<'_>;
 
     // >>> Provided Functions <<< //
-    fn node_conut(&self) -> usize {
+    fn node_count(&self) -> usize {
         self.nodes().count()
     }
 

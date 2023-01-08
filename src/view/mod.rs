@@ -30,6 +30,11 @@ where
 
     // FIXME: This should be a custom map
     type Map = S::Map;
+
+    fn idmap(&self) -> Self::Map {
+        todo!()
+    }
+   
 }
 
 impl<'b, S, NS, ES> Node for View<'b, S, NS, ES>

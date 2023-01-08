@@ -26,6 +26,8 @@ pub use error::*;
 pub trait Storage {
     type Dir: Direction;
     type Map: IDMap;
+
+    fn idmap(&self) -> Self::Map;
 }
 
 pub trait EmptyStorage: Storage {
