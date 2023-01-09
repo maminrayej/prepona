@@ -1,25 +1,8 @@
-use std::ops;
-
+use crate::algo::visit::macros::on_event;
+use crate::algo::visit::ControlFlow;
 use crate::provide::*;
 
 const INF: usize = usize::MAX;
-
-pub type ControlFlow = ops::ControlFlow<(), Continue>;
-
-macro_rules! on_event {
-    ($res: expr) => {
-        match $res? {
-            Continue::Prune => continue,
-            Continue::Noop => {}
-        }
-    };
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Continue {
-    Prune,
-    Noop,
-}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum EdgeType {
@@ -30,7 +13,7 @@ pub enum EdgeType {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Event {
+pub enum DfsEvent {
     Begin(NodeID),
     Discover(NodeID),
     Finish(NodeID),
@@ -87,45 +70,33 @@ where
             EdgeType::Tree
         } else if self.is_discovered(dst) && !self.is_finished(dst) {
             EdgeType::Back
-        } else if self.discover_of(src) < self.discover_of(dst) {
+        } else if self.discover[src] < self.discover[dst] {
             EdgeType::Forward
         } else {
             EdgeType::Cross
         }
     }
 
-    fn discover_of(&self, id: usize) -> usize {
-        self.discover[id]
-    }
-
     fn is_discovered(&self, id: usize) -> bool {
-        self.discover_of(id) != INF
-    }
-
-    fn finished_of(&self, id: usize) -> usize {
-        self.finished[id]
+        self.discover[id] != INF
     }
 
     fn is_finished(&self, id: usize) -> bool {
-        self.finished_of(id) != INF
+        self.finished[id] != INF
     }
 
-    fn parent_of(&self, id: usize) -> Option<usize> {
-        self.parent.get(id).copied()
-    }
-
-    pub fn execute(&mut self, callback: impl FnMut(Event) -> ControlFlow) {
+    pub fn execute(&mut self, callback: impl FnMut(DfsEvent) -> ControlFlow) {
         self._execute(callback);
     }
 
-    fn _execute(&mut self, mut callback: impl FnMut(Event) -> ControlFlow) -> ControlFlow {
+    fn _execute(&mut self, mut callback: impl FnMut(DfsEvent) -> ControlFlow) -> ControlFlow {
         while let Some(start) = self.next_start() {
             let start_vid = self.idmap[start];
 
             self.time += 1;
             self.discover[start_vid] = self.time;
 
-            on_event!(callback(Event::Discover(start)));
+            on_event!(callback(DfsEvent::Discover(start)));
 
             let mut stack = vec![(start, start_vid, 0, self.storage.succs(start))];
 
@@ -134,7 +105,7 @@ where
                     let dst_vid = self.idmap[dst];
 
                     #[rustfmt::skip]
-                    if S::Dir::is_undirected() && (self.parent_of(src_vid) == Some(dst_vid) || self.is_finished(dst_vid)) {
+                    if S::Dir::is_undirected() && (self.parent[src_vid] == dst_vid || self.is_finished(dst_vid)) {
                         stack.push((src, src_vid, depth, succs));
                         continue;
                     };
@@ -147,7 +118,7 @@ where
                             self.time += 1;
                             self.discover[dst_vid] = self.time;
 
-                            on_event!(callback(Event::Discover(dst)));
+                            on_event!(callback(DfsEvent::Discover(dst)));
 
                             stack.push((src, src_vid, depth, succs));
                             stack.push((dst, dst_vid, depth + 1, self.storage.succs(dst)));
@@ -160,11 +131,11 @@ where
                     self.time += 1;
                     self.finished[src_vid] = self.time;
 
-                    on_event!(callback(Event::Finish(src)));
+                    on_event!(callback(DfsEvent::Finish(src)));
                 }
             }
-            on_event!(callback(Event::End(start)));
+            on_event!(callback(DfsEvent::End(start)));
         }
-        ops::ControlFlow::Break(())
+        ControlFlow::Break(())
     }
 }

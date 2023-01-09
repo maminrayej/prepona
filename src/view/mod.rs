@@ -34,7 +34,6 @@ where
     fn idmap(&self) -> Self::Map {
         todo!()
     }
-   
 }
 
 impl<'b, S, NS, ES> Node for View<'b, S, NS, ES>
