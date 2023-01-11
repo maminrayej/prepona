@@ -87,5 +87,7 @@ where
 
             visited[node_vid] = true;
         }
+
+        // TODO: Construct the shortest path tree
     }
 }
