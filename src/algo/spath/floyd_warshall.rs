@@ -20,8 +20,8 @@ where
 
         let mut dist = vec![vec![INF; node_count]; node_count];
 
-        for i in 0..dist.len() {
-            dist[i][i] = 0;
+        for (i, item) in dist.iter_mut().enumerate() {
+            item[i] = 0;
         }
 
         for src in self.storage.nodes() {
@@ -50,7 +50,7 @@ where
                 }
             }
 
-            for i in 0..dist.len() {
+            for (i, _) in dist.iter().enumerate() {
                 if dist[i][i] < 0 {
                     panic!("Graph contains negative cycle");
                 }
