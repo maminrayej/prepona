@@ -1,5 +1,6 @@
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
+mod common;
 pub mod algo;
 pub mod prop;
 pub mod provide;
