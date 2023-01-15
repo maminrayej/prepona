@@ -1,7 +1,11 @@
 mod iter;
 pub use iter::*;
 
-pub mod selector;
+mod reverse;
+pub use reverse::*;
+
+mod selector;
+pub use selector::*;
 
 use crate::provide::*;
 use crate::view::selector::Selector;
