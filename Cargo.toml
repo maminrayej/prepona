@@ -6,14 +6,14 @@ edition = "2021"
 [dependencies]
 thiserror = "1.0.38"
 rayon = { version = "1.6.1", optional = true }
-itertools = { version = "0.10.5", optional = true }
+itertools = "0.10.5"
 
 [dev-dependencies]
 quickcheck = "1.0.3"
 
 [features]
 parallel = ["dep:rayon"]
-generate = ["dep:itertools"]
+generate = []
 
 [package.metadata.docs.rs]
 all-features = true

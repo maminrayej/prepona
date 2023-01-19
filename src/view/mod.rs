@@ -4,6 +4,9 @@ pub use iter::*;
 mod reverse;
 pub use reverse::*;
 
+mod complement;
+pub use complement::*;
+
 mod selector;
 pub use selector::*;
 
