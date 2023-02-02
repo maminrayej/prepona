@@ -1,7 +1,7 @@
 use rayon::prelude::ParallelIterator;
 
 use crate::prop::NodeProp;
-use crate::provide::*;
+use crate::give::*;
 
 #[cfg_attr(docsrs, doc(cfg(feature = "parallel")))]
 pub trait NodePropPar: NodeProp {

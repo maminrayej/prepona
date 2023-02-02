@@ -1,4 +1,4 @@
-use crate::provide::*;
+use crate::give::*;
 
 pub trait EdgeProp: Edge {
     type Prop;
@@ -11,7 +11,7 @@ pub trait EdgeProp: Edge {
     fn edge_prop(&self, src: NodeID, dst: NodeID) -> &Self::Prop;
 
     fn edge_prop_checked(&self, src: NodeID, dst: NodeID) -> Result<&Self::Prop, Error> {
-        if !self.contains_edge(src, dst) {
+        if !self.has_edge(src, dst) {
             return Err(Error::EdgeNotFound(src, dst));
         }
 
@@ -32,7 +32,7 @@ pub trait EdgePropMut: EdgeProp {
         src: NodeID,
         dst: NodeID,
     ) -> Result<&mut Self::Prop, Error> {
-        if !self.contains_edge(src, dst) {
+        if !self.has_edge(src, dst) {
             return Err(Error::EdgeNotFound(src, dst));
         }
 
@@ -49,7 +49,7 @@ pub trait AddEdgeProp: EdgeProp {
         dst: NodeID,
         prop: Self::Prop,
     ) -> Result<bool, Error> {
-        if !self.contains_edge(src, dst) {
+        if !self.has_edge(src, dst) {
             return Err(Error::EdgeNotFound(src, dst));
         }
 
@@ -61,7 +61,7 @@ pub trait DelEdgeProp: EdgeProp {
     fn delete_edge_prop(&mut self, src: NodeID, dst: NodeID) -> Self::Prop;
 
     fn delete_edge_prop_checked(&mut self, src: NodeID, dst: NodeID) -> Result<Self::Prop, Error> {
-        if !self.contains_edge(src, dst) {
+        if !self.has_edge(src, dst) {
             return Err(Error::EdgeNotFound(src, dst));
         }
 

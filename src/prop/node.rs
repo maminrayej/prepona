@@ -1,4 +1,4 @@
-use crate::provide::*;
+use crate::give::*;
 
 pub trait NodeProp: Node {
     type Prop;
@@ -11,7 +11,7 @@ pub trait NodeProp: Node {
     fn node_prop(&self, node: NodeID) -> &Self::Prop;
 
     fn node_prop_checked(&self, node: NodeID) -> Result<&Self::Prop, Error> {
-        if !self.contains_node(node) {
+        if !self.has_node(node) {
             return Err(Error::NodeNotFound(node));
         }
 
@@ -28,7 +28,7 @@ pub trait NodePropMut: NodeProp {
     fn node_prop_mut(&mut self, node: NodeID) -> &mut Self::Prop;
 
     fn node_prop_mut_checked(&mut self, node: NodeID) -> Result<&mut Self::Prop, Error> {
-        if !self.contains_node(node) {
+        if !self.has_node(node) {
             return Err(Error::NodeNotFound(node));
         }
 
@@ -40,7 +40,7 @@ pub trait AddNodeProp: NodeProp {
     fn insert_node_prop(&mut self, node: NodeID, prop: Self::Prop) -> bool;
 
     fn insert_node_prop_checked(&mut self, node: NodeID, prop: Self::Prop) -> Result<bool, Error> {
-        if !self.contains_node(node) {
+        if !self.has_node(node) {
             return Err(Error::NodeNotFound(node));
         }
 
@@ -52,7 +52,7 @@ pub trait DelNodeProp: NodeProp {
     fn delete_node_prop(&mut self, node: NodeID) -> Self::Prop;
 
     fn delete_node_prop_checked(&mut self, node: NodeID) -> Result<Self::Prop, Error> {
-        if !self.contains_node(node) {
+        if !self.has_node(node) {
             return Err(Error::NodeNotFound(node));
         }
 

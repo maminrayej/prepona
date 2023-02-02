@@ -1,7 +1,7 @@
 use rayon::prelude::ParallelIterator;
 
 use crate::prop::EdgeProp;
-use crate::provide::*;
+use crate::give::*;
 
 #[cfg_attr(docsrs, doc(cfg(feature = "parallel")))]
 pub trait EdgePropPar: EdgeProp {

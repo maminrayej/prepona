@@ -1,9 +1,8 @@
 use std::collections::VecDeque;
 
+use crate::algo::visit::macros::on_event;
 use crate::algo::visit::ControlFlow;
-use crate::provide::*;
-
-use super::macros::on_event;
+use crate::give::*;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Color {
@@ -23,45 +22,46 @@ pub enum BfsEvent {
 #[derive(Debug)]
 pub struct Bfs<'a, S: Storage> {
     storage: &'a S,
-    idmap: S::Map,
-    starters: Vec<NodeID>,
+    starter: Vec<NodeID>,
 
+    idmap: S::Map,
     color: Vec<Color>,
 }
 
 impl<'a, S> Bfs<'a, S>
 where
-    S: Node + Edge,
+    S: Edge,
 {
     pub fn init(storage: &'a S) -> Self {
         Self::with_starters(storage, vec![])
     }
 
-    pub fn with_starters(storage: &'a S, starters: Vec<NodeID>) -> Self {
+    pub fn with_starters(storage: &'a S, starter: Vec<NodeID>) -> Self {
         let node_count = storage.node_count();
 
         Self {
             storage,
+            starter,
+
             idmap: storage.idmap(),
-            starters,
             color: vec![Color::White; node_count],
         }
     }
 
     #[rustfmt::skip]
     fn next_start(&mut self) -> Option<NodeID> {
-        if !self.starters.is_empty() {
-            Some(self.starters.swap_remove(0))
+        if !self.starter.is_empty() {
+            Some(self.starter.swap_remove(0))
         } else {
             self.color.iter().position(|c| *c == Color::White).map(|i| self.idmap[i])
         }
     }
 
-    pub fn execute(&mut self, callback: impl FnMut(BfsEvent) -> ControlFlow) {
-        self._execute(callback);
+    pub fn exec(&mut self, callback: impl FnMut(BfsEvent) -> ControlFlow) {
+        self._exec(callback);
     }
 
-    fn _execute(&mut self, mut callback: impl FnMut(BfsEvent) -> ControlFlow) -> ControlFlow {
+    fn _exec(&mut self, mut callback: impl FnMut(BfsEvent) -> ControlFlow) -> ControlFlow {
         let mut queue = VecDeque::new();
 
         while let Some(start) = self.next_start() {
@@ -92,7 +92,6 @@ where
             }
             on_event!(callback(BfsEvent::End(start)));
         }
-
         ControlFlow::Break(())
     }
 }

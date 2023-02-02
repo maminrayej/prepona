@@ -1,4 +1,6 @@
-use crate::provide::*;
+use std::collections::HashMap;
+
+use crate::give::*;
 
 const INF: isize = isize::MAX;
 
@@ -8,14 +10,18 @@ pub struct FloydWarshall<'a, S> {
 
 impl<'a, S> FloydWarshall<'a, S>
 where
-    S: Node + Edge,
+    S: Edge,
 {
     pub fn init(storage: &'a S) -> Self {
         FloydWarshall { storage }
     }
 
-    pub fn exec(&self, cost_of: impl Fn(NodeID, NodeID) -> isize) {
+    pub fn exec(
+        &self,
+        cost_of: impl Fn(NodeID, NodeID) -> isize,
+    ) -> HashMap<(NodeID, NodeID), isize> {
         let node_count = self.storage.node_count();
+
         let idmap = self.storage.idmap();
 
         let mut dist = vec![vec![INF; node_count]; node_count];
@@ -56,5 +62,23 @@ where
                 }
             }
         }
+
+        let mut cost_map = HashMap::new();
+
+        for src in self.storage.nodes() {
+            let src_vid = idmap[src];
+
+            for dst in self.storage.nodes() {
+                let dst_vid = idmap[dst];
+
+                let cost = dist[src_vid][dst_vid];
+
+                if cost != INF {
+                    cost_map.insert((src, dst), cost);
+                }
+            }
+        }
+
+        cost_map
     }
 }

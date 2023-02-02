@@ -1,12 +1,13 @@
-use std::collections::BinaryHeap;
+use std::collections::{BinaryHeap, HashSet};
 
-use crate::provide::*;
+use crate::give::*;
+use crate::view::{AllNodeSelector, EdgeSetSelector, View};
 
-struct Element(NodeID, usize);
+struct Element(NodeID, NodeID, usize);
 
 impl PartialEq for Element {
     fn eq(&self, other: &Self) -> bool {
-        self.1 == other.1
+        self.2 == other.2
     }
 }
 
@@ -14,7 +15,7 @@ impl Eq for Element {}
 
 impl PartialOrd for Element {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        self.1.partial_cmp(&other.1)
+        self.2.partial_cmp(&other.2)
     }
 }
 
@@ -30,37 +31,56 @@ pub struct Prim<'a, S> {
 
 impl<'a, S> Prim<'a, S>
 where
-    S: Node + Edge,
+    S: Edge,
 {
     pub fn init(storage: &'a S) -> Self {
         Self { storage }
     }
 
-    pub fn exec(&self, weight: impl Fn(NodeID, NodeID) -> usize) {
+    pub fn exec(
+        &self,
+        weight: impl Fn(NodeID, NodeID) -> usize,
+    ) -> View<'a, S, AllNodeSelector<S>, EdgeSetSelector<S>> {
         let node_count = self.storage.node_count();
+
         let idmap = self.storage.idmap();
 
-        let mut in_set = vec![false; node_count];
+        let mut visited = vec![false; node_count];
+
         let mut heap = BinaryHeap::new();
 
-        heap.push(Element(NodeID(0), 0));
+        let mut used_edges = HashSet::new();
 
-        while let Some(Element(node, _w)) = heap.pop() {
-            let node_vid = idmap[node];
+        let mut src = self.storage.nodes().take(1).next().unwrap();
 
-            if in_set[node_vid] {
-                continue;
-            }
+        loop {
+            let src_vid = idmap[src];
 
-            for dst in self.storage.outgoing(node) {
-                if in_set[node_vid] {
+            for dst in self.storage.outgoing(src) {
+                let dst_vid = idmap[dst];
+
+                if visited[dst_vid] {
                     continue;
                 }
 
-                heap.push(Element(dst, weight(node, dst)));
+                heap.push(Element(src, dst, weight(src, dst)));
             }
 
-            in_set[node_vid] = true;
+            visited[src_vid] = true;
+
+            let Some(Element(s, d, _)) = heap.pop() else {
+                break;
+            };
+
+            used_edges.insert((s, d));
+
+            src = d;
         }
+
+        View::new(
+            self.storage,
+            AllNodeSelector::new(),
+            EdgeSetSelector::new(used_edges),
+        )
     }
 }

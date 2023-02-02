@@ -1,14 +1,18 @@
+mod view;
+pub use view::DijkstraSPT;
+
 use std::collections::BinaryHeap;
 
 use crate::give::*;
+use crate::view::{EdgeSetSelector, NodeSetSelector, View};
 
 const INF: usize = usize::MAX;
 
-struct Element(NodeID, usize, usize);
+struct Element(NodeID, usize);
 
 impl PartialEq for Element {
     fn eq(&self, other: &Self) -> bool {
-        self.2 == other.2
+        self.1 == other.1
     }
 }
 
@@ -16,7 +20,7 @@ impl Eq for Element {}
 
 impl PartialOrd for Element {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        self.2.partial_cmp(&other.2)
+        self.1.partial_cmp(&other.1)
     }
 }
 
@@ -26,25 +30,26 @@ impl Ord for Element {
     }
 }
 
-pub struct AStar<'a, S> {
+pub struct Dijkstra<'a, S> {
     storage: &'a S,
 }
 
-impl<'a, S> AStar<'a, S>
+impl<'a, S> Dijkstra<'a, S>
 where
-    S: Node + Edge,
+    S: Edge,
 {
     pub fn init(storage: &'a S) -> Self {
-        AStar { storage }
+        Dijkstra { storage }
     }
 
     pub fn exec(
         &mut self,
         start: NodeID,
+        target: Option<NodeID>,
         cost_of: impl Fn(NodeID, NodeID) -> usize,
-        estimate_of: impl Fn(NodeID) -> usize,
-    ) {
+    ) -> DijkstraSPT<'a, S> {
         let node_count = self.storage.node_count();
+
         let idmap = self.storage.idmap();
 
         let mut visited = vec![false; node_count];
@@ -55,13 +60,17 @@ where
         let start_vid = idmap[start];
 
         costs[start_vid] = 0;
-        heap.push(Element(start, 0, estimate_of(start)));
+        heap.push(Element(start, 0));
 
-        while let Some(Element(node, cost, _)) = heap.pop() {
+        while let Some(Element(node, cost)) = heap.pop() {
             let node_vid = idmap[node];
 
             if visited[node_vid] {
                 continue;
+            }
+
+            if target == Some(node) {
+                break;
             }
 
             for dst in self.storage.outgoing(node) {
@@ -77,11 +86,34 @@ where
                 if new_cost < old_cost {
                     costs[dst_vid] = new_cost;
                     used_edge[dst_vid] = Some((node, dst));
-                    heap.push(Element(dst, new_cost, new_cost + estimate_of(dst)));
+                    heap.push(Element(dst, new_cost));
                 }
             }
 
             visited[node_vid] = true;
+        }
+
+        let node_set = visited
+            .into_iter()
+            .enumerate()
+            .filter_map(|(i, visited)| if visited { Some(idmap[i]) } else { None })
+            .collect();
+
+        let edge_set = used_edge.into_iter().filter_map(|e| e).collect();
+
+        let cost_map = costs
+            .into_iter()
+            .enumerate()
+            .map(|(i, cost)| (idmap[i], cost))
+            .collect();
+
+        DijkstraSPT {
+            view: View::new(
+                self.storage,
+                NodeSetSelector::new(node_set),
+                EdgeSetSelector::new(edge_set),
+            ),
+            cost: cost_map,
         }
     }
 }

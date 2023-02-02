@@ -1,18 +1,16 @@
 mod node;
 pub use node::*;
 
-#[cfg(feature = "parallel")]
-mod node_par;
-#[cfg(feature = "parallel")]
-pub use node_par::*;
-
 mod edge;
 pub use edge::*;
 
-#[cfg(feature = "parallel")]
-mod edge_par;
-#[cfg(feature = "parallel")]
-pub use edge_par::*;
+cfg_parallel! {
+    mod node_par;
+    pub use node_par::*;
+
+    mod edge_par;
+    pub use edge_par::*;
+}
 
 pub trait StorageProp {
     type Prop;
