@@ -13,10 +13,20 @@ pub trait NodeRef: Storage {
     type Preds<'a>: Iterator<Item = (NodeId, &'a Self::Node)> where Self: 'a;
 
     fn contains_node(&self, nid: NodeId) -> bool;
+    fn node_count(&self) -> usize;
 
+    fn node(&self, nid: NodeId) -> &Self::Node;
     fn nodes(&self) -> Self::Nodes<'_>;
     fn succs(&self, nid: NodeId) -> Self::Succs<'_>;
     fn preds(&self, nid: NodeId) -> Self::Preds<'_>;
+
+    fn node_checked(&self, nid: NodeId) -> Result<&Self::Node> {
+        if self.contains_node(nid) {
+            Ok(self.node(nid))
+        } else {
+            Err(Error::NodeNotFound(nid))
+        }
+    }
 
     fn succs_checked(&self, nid: NodeId) -> Result<Self::Succs<'_>> {
         if self.contains_node(nid) {

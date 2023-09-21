@@ -6,16 +6,16 @@ mod internal {
 }
 
 pub trait Direction: internal::Sealed {
-    fn is_directed(&self) -> bool;
-    fn is_undirected(&self) -> bool {
-        !self.is_directed()
+    fn is_directed() -> bool;
+    fn is_undirected() -> bool {
+        !Self::is_directed()
     }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Directed;
 impl Direction for Directed {
-    fn is_directed(&self) -> bool {
+    fn is_directed() -> bool {
         true
     }
 }
@@ -23,7 +23,7 @@ impl Direction for Directed {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Undirected;
 impl Direction for Undirected {
-    fn is_directed(&self) -> bool {
+    fn is_directed() -> bool {
         false
     }
 }

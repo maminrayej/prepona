@@ -5,5 +5,6 @@
 #[macro_use]
 mod macros;
 
+pub mod algo;
 pub mod error;
 pub mod provide;

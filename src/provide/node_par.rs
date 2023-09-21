@@ -12,10 +12,20 @@ pub trait NodeRefPar: Storage {
     type Preds<'a>: ParallelIterator<Item = (NodeId, &'a Self::Node)> where Self: 'a;
 
     fn contains_node_par(&self, nid: NodeId) -> bool;
+    fn node_count_par(&self) -> usize;
 
+    fn node_par(&self, nid: NodeId) -> &Self::Node;
     fn nodes_par(&self) -> Self::Nodes<'_>;
     fn succs_par(&self, nid: NodeId) -> Self::Succs<'_>;
     fn preds_par(&self, nid: NodeId) -> Self::Preds<'_>;
+
+    fn node_par_checked(&self, nid: NodeId) -> Result<&Self::Node> {
+        if self.contains_node_par(nid) {
+            Ok(self.node_par(nid))
+        } else {
+            Err(Error::NodeNotFound(nid))
+        }
+    }
 
     fn succs_par_checked(&self, nid: NodeId) -> Result<Self::Succs<'_>> {
         if self.contains_node_par(nid) {
@@ -24,6 +34,7 @@ pub trait NodeRefPar: Storage {
             Err(Error::NodeNotFound(nid))
         }
     }
+
     fn preds_par_checked(&self, nid: NodeId) -> Result<Self::Preds<'_>> {
         if self.contains_node_par(nid) {
             Ok(self.preds_par(nid))

@@ -23,4 +23,6 @@ pub trait Storage {
     type Edge;
     type Dir: Direction;
     type Map: IdMap;
+
+    fn idmap(&self) -> Self::Map;
 }
