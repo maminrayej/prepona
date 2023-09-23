@@ -15,6 +15,7 @@ pub trait NodeRef: Storage {
     fn contains_node(&self, nid: NodeId) -> bool;
     fn node_count(&self) -> usize;
 
+    /* TODO: should this method return Option<&Self::Node> */
     fn node(&self, nid: NodeId) -> &Self::Node;
     fn nodes(&self) -> Self::Nodes<'_>;
     fn succs(&self, nid: NodeId) -> Self::Succs<'_>;
