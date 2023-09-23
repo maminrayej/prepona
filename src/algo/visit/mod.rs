@@ -4,6 +4,9 @@ pub use dfs::*;
 mod bfs;
 pub use bfs::*;
 
+mod topo;
+pub use topo::*;
+
 const UNKNOWN: usize = usize::MAX;
 
 pub type VisitFlow = std::ops::ControlFlow<(), Continue>;

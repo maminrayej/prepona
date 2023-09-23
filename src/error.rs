@@ -12,4 +12,6 @@ pub enum Error {
     EdgeNotFound(NodeId, NodeId, EdgeId),
     #[error("Edge already exists: {0:?} -> {1:?}: {2:?}")]
     EdgeExists(NodeId, NodeId, EdgeId),
+    #[error("Input graph is not a DAG")]
+    NotDAG,
 }

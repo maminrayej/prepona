@@ -47,6 +47,7 @@ where
     S: NodeRef,
     I: Iterator<Item = NodeId>,
 {
+    /* TODO: accept IntoIterator instead of Iterator */
     pub fn new(storage: &'a S, starts: I) -> Self {
         let node_count = storage.node_count();
 
