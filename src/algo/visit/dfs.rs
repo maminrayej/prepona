@@ -1,25 +1,6 @@
-use std::ops::ControlFlow;
-
 use crate::provide::{Direction, EdgeId, EdgeRef, NodeId, NodeRef, Storage};
 
-const UNKNOWN: usize = usize::MAX;
-
-pub type VisitFlow = ControlFlow<(), Continue>;
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Continue {
-    Noop,
-    Prune,
-}
-
-macro_rules! control {
-    ($e: expr) => {
-        match $e? {
-            Continue::Noop => {}
-            Continue::Prune => continue,
-        }
-    };
-}
+use super::{control, VisitFlow, UNKNOWN};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum EdgeType {
