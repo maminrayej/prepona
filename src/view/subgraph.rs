@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 
-use crate::provide::{NodeId, NodeRef, Storage};
+use crate::provide::{EdgeId, EdgeRef, NodeId, NodeRef, Storage};
 
 use super::Filter;
 
@@ -39,11 +39,7 @@ where
     }
 }
 
-pub struct FilteredNodes<'a, S, NF, I>
-where
-    S: Storage + 'a,
-    I: Iterator<Item = (NodeId, &'a S::Node)>,
-{
+pub struct FilteredNodes<'a, S, NF, I> {
     inner: I,
     nfilter: &'a NF,
 
@@ -60,7 +56,7 @@ where
 
     fn next(&mut self) -> Option<Self::Item> {
         while let Some((nid, node)) = self.inner.next() {
-            if self.nfilter.select(&nid) {
+            if self.nfilter.filter(&nid) {
                 return Some((nid, node));
             }
         }
@@ -79,7 +75,7 @@ where
     type Preds<'b> = FilteredNodes<'b, S, NF, S::Preds<'b>> where Self: 'b;
 
     fn contains_node(&self, nid: NodeId) -> bool {
-        self.storage.contains_node(nid) && self.nfilter.select(&nid)
+        self.storage.contains_node(nid) && self.nfilter.filter(&nid)
     }
 
     fn node_count(&self) -> usize {
@@ -87,7 +83,11 @@ where
     }
 
     fn node(&self, nid: NodeId) -> &Self::Node {
-        todo!()
+        if self.contains_node(nid) {
+            self.storage.node(nid)
+        } else {
+            panic!("Node not found: {0:?}", nid);
+        }
     }
 
     fn nodes(&self) -> Self::Nodes<'_> {
@@ -110,6 +110,107 @@ where
         FilteredNodes {
             inner: self.storage.preds(nid),
             nfilter: &self.nfilter,
+            phantom_s: PhantomData,
+        }
+    }
+}
+
+pub struct FilteredAllEdges<'a, S, NF, EF, I> {
+    inner: I,
+    nfilter: &'a NF,
+    efilter: &'a EF,
+
+    phantom_s: PhantomData<S>,
+}
+
+impl<'a, S, NF, EF, I> Iterator for FilteredAllEdges<'a, S, NF, EF, I>
+where
+    S: EdgeRef + 'a,
+    NF: Filter<Item = NodeId>,
+    EF: Filter<Item = EdgeId>,
+    I: Iterator<Item = <S::AllEdges<'a> as Iterator>::Item>,
+{
+    type Item = I::Item;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        while let Some((src, dst, eid, edge)) = self.inner.next() {
+            if self.nfilter.filter(&src) && self.nfilter.filter(&dst) && self.efilter.filter(&eid) {
+                return Some((src, dst, eid, edge));
+            }
+        }
+
+        None
+    }
+}
+
+pub struct FilteredEdges<'a, S, NF, EF, I> {
+    inner: I,
+    nfilter: &'a NF,
+    efilter: &'a EF,
+
+    phantom_s: PhantomData<S>,
+}
+
+impl<'a, S, NF, EF, I> Iterator for FilteredEdges<'a, S, NF, EF, I>
+where
+    S: EdgeRef + 'a,
+    NF: Filter<Item = NodeId>,
+    EF: Filter<Item = EdgeId>,
+    I: Iterator<Item = <S::Incoming<'a> as Iterator>::Item>,
+{
+    type Item = I::Item;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        while let Some((dst, eid, edge)) = self.inner.next() {
+            if self.nfilter.filter(&dst) && self.efilter.filter(&eid) {
+                return Some((dst, eid, edge));
+            }
+        }
+
+        None
+    }
+}
+
+impl<'a, S, NF, EF> EdgeRef for Subgraph<'a, S, NF, EF>
+where
+    S: EdgeRef,
+    NF: Filter<Item = NodeId>,
+    EF: Filter<Item = EdgeId>,
+{
+    type AllEdges<'b> = FilteredAllEdges<'b, S, NF, EF, S::AllEdges<'b>> where Self: 'b;
+    type Incoming<'b>  = FilteredEdges<'b, S, NF, EF, S::Incoming<'b>> where Self: 'b;
+    type Outgoing<'b>  = FilteredEdges<'b, S, NF, EF, S::Outgoing<'b>> where Self: 'b;
+
+    fn contains_edge(&self, src: NodeId, dst: NodeId, eid: EdgeId) -> bool {
+        self.storage.contains_edge(src, dst, eid)
+            && self.nfilter.filter(&src)
+            && self.nfilter.filter(&dst)
+            && self.efilter.filter(&eid)
+    }
+
+    fn edges(&self) -> Self::AllEdges<'_> {
+        FilteredAllEdges {
+            inner: self.storage.edges(),
+            nfilter: &self.nfilter,
+            efilter: &self.efilter,
+            phantom_s: PhantomData,
+        }
+    }
+
+    fn incoming(&self, nid: NodeId) -> Self::Incoming<'_> {
+        FilteredEdges {
+            inner: self.storage.incoming(nid),
+            nfilter: &self.nfilter,
+            efilter: &self.efilter,
+            phantom_s: PhantomData,
+        }
+    }
+
+    fn outgoing(&self, nid: NodeId) -> Self::Outgoing<'_> {
+        FilteredEdges {
+            inner: self.storage.outgoing(nid),
+            nfilter: &self.nfilter,
+            efilter: &self.efilter,
             phantom_s: PhantomData,
         }
     }

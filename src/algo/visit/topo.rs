@@ -21,17 +21,15 @@ where
     where
         F: FnMut((NodeId, &'a S::Node)) -> VisitFlow,
     {
+        let mut result = Ok(());
+
         let dfs = Dfs::new(self.storage, None.into_iter());
 
-        let mut result = Ok(());
+        #[rustfmt::skip]
         dfs.exec(|e| {
             let flow = if let DfsEvent::Discover(nid, node) = e {
                 f((nid, node))
-            } else if let DfsEvent::Edge {
-                ety: EdgeType::Back,
-                ..
-            } = e
-            {
+            } else if let DfsEvent::Edge { ety: EdgeType::Back, .. } = e {
                 result = Err(Error::NotDAG);
 
                 ControlFlow::Break(())

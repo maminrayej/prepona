@@ -1,7 +1,7 @@
 pub trait Filter {
     type Item;
 
-    fn select(&self, item: &Self::Item) -> bool;
+    fn filter(&self, item: &Self::Item) -> bool;
 }
 
 macro_rules! op {
@@ -18,8 +18,8 @@ macro_rules! op {
         {
             type Item = T;
 
-            fn select(&self, item: &Self::Item) -> bool {
-                self.f1.select(item) $op self.f2.select(item)
+            fn filter(&self, item: &Self::Item) -> bool {
+                self.f1.filter(item) $op self.f2.filter(item)
             }
         }
 
@@ -43,8 +43,8 @@ where
 {
     type Item = F::Item;
 
-    fn select(&self, item: &Self::Item) -> bool {
-        !self.f.select(item)
+    fn filter(&self, item: &Self::Item) -> bool {
+        !self.f.filter(item)
     }
 }
 

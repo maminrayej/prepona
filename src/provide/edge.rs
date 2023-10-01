@@ -12,7 +12,7 @@ pub trait EdgeRef: NodeRef {
     #[rustfmt::skip]
     type Outgoing<'a>: Iterator<Item = (NodeId, EdgeId, &'a Self::Edge)> where Self: 'a;
 
-    fn contains_edge(&self, eid: EdgeId) -> bool;
+    fn contains_edge(&self, src: NodeId, dst: NodeId, eid: EdgeId) -> bool;
 
     fn edges(&self) -> Self::AllEdges<'_>;
     fn incoming(&self, nid: NodeId) -> Self::Incoming<'_>;
@@ -45,7 +45,7 @@ pub trait EdgeAdd: EdgeRef {
         eid: EdgeId,
         edge: Self::Edge,
     ) -> Result<()> {
-        if !self.contains_edge(eid) {
+        if !self.contains_edge(src, dst, eid) {
             Ok(self.add_edge(src, dst, eid, edge))
         } else {
             Err(Error::EdgeExists(src, dst, eid))
@@ -57,7 +57,7 @@ pub trait EdgeDel: EdgeRef {
     fn del_edge(&mut self, src: NodeId, dst: NodeId, eid: EdgeId) -> Self::Edge;
 
     fn del_edge_checked(&mut self, src: NodeId, dst: NodeId, eid: EdgeId) -> Result<Self::Edge> {
-        if self.contains_edge(eid) {
+        if self.contains_edge(src, dst, eid) {
             Ok(self.del_edge(src, dst, eid))
         } else {
             Err(Error::EdgeNotFound(src, dst, eid))
