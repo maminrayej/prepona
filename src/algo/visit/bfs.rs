@@ -1,22 +1,15 @@
 use std::collections::VecDeque;
 
-use crate::provide::{EdgeId, EdgeRef, NodeId, Storage};
+use crate::provide::{EdgeRef, Id, NodeId, Storage};
 
 use super::{control, VisitFlow};
 
 pub enum BfsEvent<'a, N, E> {
-    Begin(NodeId, &'a N),
-    Discover(NodeId, &'a N),
-    Finish(NodeId, &'a N),
+    Begin(&'a N),
+    Discover(&'a N),
+    Finish(&'a N),
     End,
-    Edge {
-        src_nid: NodeId,
-        src: &'a N,
-        dst_nid: NodeId,
-        dst: &'a N,
-        eid: EdgeId,
-        edge: &'a E,
-    },
+    Edge { src: &'a N, dst: &'a N, edge: &'a E },
 }
 
 pub struct Bfs<'a, S, I>
@@ -82,17 +75,18 @@ where
         while let Some(start_nid) = self.next_node() {
             let start = self.storage.node(start_nid);
 
-            control!(f(BfsEvent::Begin(start_nid, start)));
+            control!(f(BfsEvent::Begin(start)));
 
             let start_idx = self.idmap[start_nid];
             self.discovered[start_idx] = true;
 
-            control!(f(BfsEvent::Discover(start_nid, start)));
+            control!(f(BfsEvent::Discover(start)));
 
-            queue.push_back((start, start_nid, self.storage.outgoing(start_nid)));
+            queue.push_back((start, self.storage.outgoing(start_nid)));
 
-            while let Some((src, src_nid, mut outgoing)) = queue.pop_front() {
-                for (dst_nid, eid, edge) in outgoing.by_ref() {
+            while let Some((src, mut outgoing)) = queue.pop_front() {
+                for (dst, edge) in outgoing.by_ref() {
+                    let dst_nid = dst.id();
                     let dst = self.storage.node(dst_nid);
                     let dst_idx = self.idmap[dst_nid];
 
@@ -101,21 +95,14 @@ where
                     }
 
                     self.discovered[dst_idx] = true;
-                    control!(f(BfsEvent::Discover(dst_nid, dst)));
+                    control!(f(BfsEvent::Discover(dst)));
 
-                    control!(f(BfsEvent::Edge {
-                        src_nid,
-                        src,
-                        dst_nid,
-                        dst,
-                        eid,
-                        edge,
-                    }));
+                    control!(f(BfsEvent::Edge { src, dst, edge }));
 
-                    queue.push_back((dst, dst_nid, self.storage.outgoing(dst_nid)));
+                    queue.push_back((dst, self.storage.outgoing(dst_nid)));
                 }
 
-                control!(f(BfsEvent::Finish(src_nid, src)));
+                control!(f(BfsEvent::Finish(src)));
             }
 
             control!(f(BfsEvent::End));

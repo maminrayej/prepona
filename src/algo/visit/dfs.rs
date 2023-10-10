@@ -1,4 +1,4 @@
-use crate::provide::{Direction, EdgeId, EdgeRef, NodeId, NodeRef, Storage};
+use crate::provide::{Direction, EdgeRef, Id, NodeId, NodeRef, Storage};
 
 use super::{control, VisitFlow, UNKNOWN};
 
@@ -12,16 +12,13 @@ pub enum EdgeType {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DfsEvent<'a, N, E> {
-    Begin(NodeId, &'a N),
-    Discover(NodeId, &'a N),
-    Finish(NodeId, &'a N),
+    Begin(&'a N),
+    Discover(&'a N),
+    Finish(&'a N),
     End,
     Edge {
-        src_nid: NodeId,
         src: &'a N,
-        dst_nid: NodeId,
         dst: &'a N,
-        eid: EdgeId,
         edge: &'a E,
         ety: EdgeType,
     },
@@ -131,13 +128,13 @@ where
         while let Some(start_nid) = self.next_node() {
             let start = self.storage.node(start_nid);
 
-            control!(f(DfsEvent::Begin(start_nid, start)));
+            control!(f(DfsEvent::Begin(start)));
 
             self.tick();
             let start_idx = self.idmap[start_nid];
             self.discover[start_idx] = self.time;
 
-            control!(f(DfsEvent::Discover(start_nid, start)));
+            control!(f(DfsEvent::Discover(start)));
 
             stack.push((
                 start,
@@ -149,7 +146,8 @@ where
 
             /* start the DFS algorithm from the `start` node */
             while let Some((src, src_nid, src_idx, depth, mut outgoing)) = stack.pop() {
-                if let Some((dst_nid, eid, edge)) = outgoing.next() {
+                if let Some((dst, edge)) = outgoing.next() {
+                    let dst_nid = dst.id();
                     let dst = self.storage.node(dst_nid);
                     let dst_idx = self.idmap[dst_nid];
 
@@ -165,7 +163,7 @@ where
                         self.parent[dst_idx] = src_idx;
                         self.discover[dst_idx] = self.time;
 
-                        control!(f(DfsEvent::Discover(dst_nid, dst)));
+                        control!(f(DfsEvent::Discover(dst)));
 
                         stack.push((src, src_nid, src_idx, depth, outgoing));
                         stack.push((
@@ -180,11 +178,8 @@ where
                     }
 
                     control!(f(DfsEvent::Edge {
-                        src_nid,
                         src,
-                        dst_nid,
                         dst,
-                        eid,
                         edge,
                         ety,
                     }));
@@ -192,7 +187,7 @@ where
                     self.tick();
                     self.finished[src_idx] = self.time;
 
-                    control!(f(DfsEvent::Finish(src_nid, src)));
+                    control!(f(DfsEvent::Finish(src)));
                 }
             }
 

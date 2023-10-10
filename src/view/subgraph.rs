@@ -1,8 +1,7 @@
 use std::marker::PhantomData;
 
-use crate::provide::{EdgeId, EdgeRef, NodeId, NodeRef, Storage};
-
-use super::Filter;
+use crate::provide::{EdgeId, EdgeRef, Id, NodeId, NodeRef, Storage};
+use crate::view::Filter;
 
 pub struct Subgraph<'a, S, NF, EF> {
     storage: &'a S,
@@ -12,9 +11,12 @@ pub struct Subgraph<'a, S, NF, EF> {
 }
 
 impl<'a, S, NF, EF> Subgraph<'a, S, NF, EF> {
-    pub fn new(storage: &'a S, nfilter: NF, efilter: EF) -> Self {
-        /* TODO: compute node_count once */
-        let ncount = 0;
+    pub fn new(storage: &'a S, nfilter: NF, efilter: EF) -> Self
+    where
+        S: NodeRef,
+        NF: Filter<Item = NodeId>,
+    {
+        let ncount = storage.nodes().filter(|n| nfilter.filter(&n.id())).count();
 
         Self {
             storage,
@@ -35,7 +37,7 @@ where
     type Map = S::Map;
 
     fn idmap(&self) -> Self::Map {
-        todo!()
+        self.storage.idmap()
     }
 }
 
@@ -50,14 +52,14 @@ impl<'a, S, NF, I> Iterator for FilteredNodes<'a, S, NF, I>
 where
     S: NodeRef + 'a,
     NF: Filter<Item = NodeId>,
-    I: Iterator<Item = (NodeId, &'a S::Node)>,
+    I: Iterator<Item = <S::Nodes<'a> as Iterator>::Item>,
 {
-    type Item = (NodeId, &'a S::Node);
+    type Item = I::Item;
 
     fn next(&mut self) -> Option<Self::Item> {
-        while let Some((nid, node)) = self.inner.next() {
-            if self.nfilter.filter(&nid) {
-                return Some((nid, node));
+        while let Some(node) = self.inner.next() {
+            if self.nfilter.filter(&node.id()) {
+                return Some(node);
             }
         }
 
@@ -74,8 +76,8 @@ where
     type Succs<'b> = FilteredNodes<'b, S, NF, S::Succs<'b>> where Self: 'b;
     type Preds<'b> = FilteredNodes<'b, S, NF, S::Preds<'b>> where Self: 'b;
 
-    fn contains_node(&self, nid: NodeId) -> bool {
-        self.storage.contains_node(nid) && self.nfilter.filter(&nid)
+    fn has_node(&self, nid: NodeId) -> bool {
+        self.storage.has_node(nid) && self.nfilter.filter(&nid)
     }
 
     fn node_count(&self) -> usize {
@@ -83,7 +85,7 @@ where
     }
 
     fn node(&self, nid: NodeId) -> &Self::Node {
-        if self.contains_node(nid) {
+        if self.has_node(nid) {
             self.storage.node(nid)
         } else {
             panic!("Node not found: {0:?}", nid);
@@ -133,9 +135,12 @@ where
     type Item = I::Item;
 
     fn next(&mut self) -> Option<Self::Item> {
-        while let Some((src, dst, eid, edge)) = self.inner.next() {
-            if self.nfilter.filter(&src) && self.nfilter.filter(&dst) && self.efilter.filter(&eid) {
-                return Some((src, dst, eid, edge));
+        while let Some((src, dst, edge)) = self.inner.next() {
+            if self.nfilter.filter(&src.id())
+                && self.nfilter.filter(&dst.id())
+                && self.efilter.filter(&edge.id())
+            {
+                return Some((src, dst, edge));
             }
         }
 
@@ -161,9 +166,9 @@ where
     type Item = I::Item;
 
     fn next(&mut self) -> Option<Self::Item> {
-        while let Some((dst, eid, edge)) = self.inner.next() {
-            if self.nfilter.filter(&dst) && self.efilter.filter(&eid) {
-                return Some((dst, eid, edge));
+        while let Some((dst, edge)) = self.inner.next() {
+            if self.nfilter.filter(&dst.id()) && self.efilter.filter(&edge.id()) {
+                return Some((dst, edge));
             }
         }
 
@@ -178,11 +183,11 @@ where
     EF: Filter<Item = EdgeId>,
 {
     type AllEdges<'b> = FilteredAllEdges<'b, S, NF, EF, S::AllEdges<'b>> where Self: 'b;
-    type Incoming<'b>  = FilteredEdges<'b, S, NF, EF, S::Incoming<'b>> where Self: 'b;
-    type Outgoing<'b>  = FilteredEdges<'b, S, NF, EF, S::Outgoing<'b>> where Self: 'b;
+    type Incoming<'b> = FilteredEdges<'b, S, NF, EF, S::Incoming<'b>> where Self: 'b;
+    type Outgoing<'b> = FilteredEdges<'b, S, NF, EF, S::Outgoing<'b>> where Self: 'b;
 
-    fn contains_edge(&self, src: NodeId, dst: NodeId, eid: EdgeId) -> bool {
-        self.storage.contains_edge(src, dst, eid)
+    fn has_edge(&self, src: NodeId, dst: NodeId, eid: EdgeId) -> bool {
+        self.storage.has_edge(src, dst, eid)
             && self.nfilter.filter(&src)
             && self.nfilter.filter(&dst)
             && self.efilter.filter(&eid)

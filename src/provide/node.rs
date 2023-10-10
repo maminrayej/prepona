@@ -6,13 +6,14 @@ pub struct NodeId(usize);
 
 pub trait NodeRef: Storage {
     #[rustfmt::skip]
-    type Nodes<'a>: Iterator<Item = (NodeId, &'a Self::Node)> where Self: 'a;
+    type Nodes<'a>: Iterator<Item = &'a Self::Node> where Self: 'a;
     #[rustfmt::skip]
-    type Succs<'a>: Iterator<Item = (NodeId, &'a Self::Node)> where Self: 'a;
+    type Succs<'a>: Iterator<Item = &'a Self::Node> where Self: 'a;
     #[rustfmt::skip]
-    type Preds<'a>: Iterator<Item = (NodeId, &'a Self::Node)> where Self: 'a;
+    type Preds<'a>: Iterator<Item = &'a Self::Node> where Self: 'a;
 
-    fn contains_node(&self, nid: NodeId) -> bool;
+    fn has_node(&self, nid: NodeId) -> bool;
+
     fn node_count(&self) -> usize;
 
     /* TODO: should this method return Option<&Self::Node> */
@@ -22,7 +23,7 @@ pub trait NodeRef: Storage {
     fn preds(&self, nid: NodeId) -> Self::Preds<'_>;
 
     fn node_checked(&self, nid: NodeId) -> Result<&Self::Node> {
-        if self.contains_node(nid) {
+        if self.has_node(nid) {
             Ok(self.node(nid))
         } else {
             Err(Error::NodeNotFound(nid))
@@ -30,7 +31,7 @@ pub trait NodeRef: Storage {
     }
 
     fn succs_checked(&self, nid: NodeId) -> Result<Self::Succs<'_>> {
-        if self.contains_node(nid) {
+        if self.has_node(nid) {
             Ok(self.succs(nid))
         } else {
             Err(Error::NodeNotFound(nid))
@@ -38,7 +39,7 @@ pub trait NodeRef: Storage {
     }
 
     fn preds_checked(&self, nid: NodeId) -> Result<Self::Preds<'_>> {
-        if self.contains_node(nid) {
+        if self.has_node(nid) {
             Ok(self.preds(nid))
         } else {
             Err(Error::NodeNotFound(nid))
@@ -50,7 +51,7 @@ pub trait NodeAdd: NodeRef {
     fn add_node(&mut self, nid: NodeId, node: Self::Node);
 
     fn add_node_checked(&mut self, nid: NodeId, node: Self::Node) -> Result<()> {
-        if !self.contains_node(nid) {
+        if !self.has_node(nid) {
             Ok(self.add_node(nid, node))
         } else {
             Err(Error::NodeExists(nid))
@@ -62,7 +63,7 @@ pub trait NodeDel: NodeRef {
     fn node_del(&mut self, nid: NodeId);
 
     fn node_del_checked(&mut self, nid: NodeId) -> Result<()> {
-        if self.contains_node(nid) {
+        if self.has_node(nid) {
             Ok(self.node_del(nid))
         } else {
             Err(Error::NodeNotFound(nid))

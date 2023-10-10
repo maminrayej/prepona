@@ -1,7 +1,7 @@
 use std::ops::ControlFlow;
 
 use crate::error::{Error, Result};
-use crate::provide::{EdgeRef, NodeId};
+use crate::provide::EdgeRef;
 
 use super::{Continue, Dfs, DfsEvent, EdgeType, VisitFlow};
 
@@ -19,7 +19,7 @@ where
 
     pub fn exec<F>(&self, mut f: F) -> Result<()>
     where
-        F: FnMut((NodeId, &'a S::Node)) -> VisitFlow,
+        F: FnMut(&'a S::Node) -> VisitFlow,
     {
         let mut result = Ok(());
 
@@ -27,8 +27,8 @@ where
 
         #[rustfmt::skip]
         dfs.exec(|e| {
-            let flow = if let DfsEvent::Discover(nid, node) = e {
-                f((nid, node))
+            let flow = if let DfsEvent::Discover(node) = e {
+                f(node)
             } else if let DfsEvent::Edge { ety: EdgeType::Back, .. } = e {
                 result = Err(Error::NotDAG);
 

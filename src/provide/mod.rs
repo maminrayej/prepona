@@ -18,9 +18,15 @@ cfg_parallel! {
     pub use edge_par::*;
 }
 
+pub trait Id {
+    type Id;
+
+    fn id(&self) -> Self::Id;
+}
+
 pub trait Storage {
-    type Node;
-    type Edge;
+    type Node: Id<Id = NodeId>;
+    type Edge: Id<Id = EdgeId>;
     type Dir: Direction;
     type Map: IdMap;
 

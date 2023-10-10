@@ -5,38 +5,40 @@ use crate::provide::{NodeId, Storage};
 
 pub trait NodeRefPar: Storage {
     #[rustfmt::skip]
-    type Nodes<'a>: ParallelIterator<Item = (NodeId, &'a Self::Node)> where Self: 'a;
+    type NodesPar<'a>: ParallelIterator<Item = &'a Self::Node> where Self: 'a;
     #[rustfmt::skip]
-    type Succs<'a>: ParallelIterator<Item = (NodeId, &'a Self::Node)> where Self: 'a;
+    type SuccsPar<'a>: ParallelIterator<Item = &'a Self::Node> where Self: 'a;
     #[rustfmt::skip]
-    type Preds<'a>: ParallelIterator<Item = (NodeId, &'a Self::Node)> where Self: 'a;
+    type PredsPar<'a>: ParallelIterator<Item = &'a Self::Node> where Self: 'a;
 
-    fn contains_node_par(&self, nid: NodeId) -> bool;
+    fn has_node_par(&self, nid: NodeId) -> bool;
+
     fn node_count_par(&self) -> usize;
 
+    /* TODO: should this method return Option<&Self::Node> */
     fn node_par(&self, nid: NodeId) -> &Self::Node;
-    fn nodes_par(&self) -> Self::Nodes<'_>;
-    fn succs_par(&self, nid: NodeId) -> Self::Succs<'_>;
-    fn preds_par(&self, nid: NodeId) -> Self::Preds<'_>;
+    fn nodes_par(&self) -> Self::NodesPar<'_>;
+    fn succs_par(&self, nid: NodeId) -> Self::SuccsPar<'_>;
+    fn preds_par(&self, nid: NodeId) -> Self::PredsPar<'_>;
 
-    fn node_par_checked(&self, nid: NodeId) -> Result<&Self::Node> {
-        if self.contains_node_par(nid) {
+    fn node_checked_par(&self, nid: NodeId) -> Result<&Self::Node> {
+        if self.has_node_par(nid) {
             Ok(self.node_par(nid))
         } else {
             Err(Error::NodeNotFound(nid))
         }
     }
 
-    fn succs_par_checked(&self, nid: NodeId) -> Result<Self::Succs<'_>> {
-        if self.contains_node_par(nid) {
+    fn succs_checked_par(&self, nid: NodeId) -> Result<Self::SuccsPar<'_>> {
+        if self.has_node_par(nid) {
             Ok(self.succs_par(nid))
         } else {
             Err(Error::NodeNotFound(nid))
         }
     }
 
-    fn preds_par_checked(&self, nid: NodeId) -> Result<Self::Preds<'_>> {
-        if self.contains_node_par(nid) {
+    fn preds_checked_par(&self, nid: NodeId) -> Result<Self::PredsPar<'_>> {
+        if self.has_node_par(nid) {
             Ok(self.preds_par(nid))
         } else {
             Err(Error::NodeNotFound(nid))

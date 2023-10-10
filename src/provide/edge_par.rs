@@ -5,28 +5,28 @@ use crate::provide::{EdgeId, NodeId, NodeRefPar};
 
 pub trait EdgeRefPar: NodeRefPar {
     #[rustfmt::skip]
-    type AllEdges<'a>: ParallelIterator<Item = (NodeId, NodeId, EdgeId, &'a Self::Edge)> where Self: 'a;
+    type AllEdgesPar<'a>: ParallelIterator<Item = (&'a Self::Node, &'a Self::Node, &'a Self::Edge)> where Self: 'a;
     #[rustfmt::skip]
-    type Incoming<'a>: ParallelIterator<Item = (NodeId, EdgeId, &'a Self::Edge)> where Self: 'a;
+    type IncomingPar<'a>: ParallelIterator<Item = (&'a Self::Node, &'a Self::Edge)> where Self: 'a;
     #[rustfmt::skip]
-    type Outgoing<'a>: ParallelIterator<Item = (NodeId, EdgeId, &'a Self::Edge)> where Self: 'a;
+    type OutgoingPar<'a>: ParallelIterator<Item = (&'a Self::Node, &'a Self::Edge)> where Self: 'a;
 
-    fn contains_edge_par(&self, eid: EdgeId) -> bool;
+    fn has_edge_par(&self, src: NodeId, dst: NodeId, eid: EdgeId) -> bool;
 
-    fn edges_par(&self) -> Self::AllEdges<'_>;
-    fn incoming_par(&self, nid: NodeId) -> Self::Incoming<'_>;
-    fn outgoing_par(&self, nid: NodeId) -> Self::Outgoing<'_>;
+    fn edges_par(&self) -> Self::AllEdgesPar<'_>;
+    fn incoming_par(&self, nid: NodeId) -> Self::IncomingPar<'_>;
+    fn outgoing_par(&self, nid: NodeId) -> Self::OutgoingPar<'_>;
 
-    fn incoming_par_checked(&self, nid: NodeId) -> Result<Self::Incoming<'_>> {
-        if self.contains_node_par(nid) {
+    fn incoming_checked_par(&self, nid: NodeId) -> Result<Self::IncomingPar<'_>> {
+        if self.has_node_par(nid) {
             Ok(self.incoming_par(nid))
         } else {
             Err(Error::NodeNotFound(nid))
         }
     }
 
-    fn outgoing_checked(&self, nid: NodeId) -> Result<Self::Outgoing<'_>> {
-        if self.contains_node_par(nid) {
+    fn outgoing_checked_par(&self, nid: NodeId) -> Result<Self::OutgoingPar<'_>> {
+        if self.has_node_par(nid) {
             Ok(self.outgoing_par(nid))
         } else {
             Err(Error::NodeNotFound(nid))
