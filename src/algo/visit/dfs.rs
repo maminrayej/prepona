@@ -136,16 +136,10 @@ where
 
             control!(f(DfsEvent::Discover(start)));
 
-            stack.push((
-                start,
-                start_nid,
-                start_idx,
-                0,
-                self.storage.outgoing(start_nid),
-            ));
+            stack.push((start, start_idx, 0, self.storage.outgoing(start_nid)));
 
             /* start the DFS algorithm from the `start` node */
-            while let Some((src, src_nid, src_idx, depth, mut outgoing)) = stack.pop() {
+            while let Some((src, src_idx, depth, mut outgoing)) = stack.pop() {
                 if let Some((dst, edge)) = outgoing.next() {
                     let dst_nid = dst.id();
                     let dst = self.storage.node(dst_nid);
@@ -153,7 +147,7 @@ where
 
                     /* TODO: see if you can get rid of this condition */
                     if S::Dir::is_undirected() && self.parent[src_idx] == dst_idx {
-                        stack.push((src, src_nid, src_idx, depth, outgoing));
+                        stack.push((src, src_idx, depth, outgoing));
                         continue;
                     }
 
@@ -165,16 +159,10 @@ where
 
                         control!(f(DfsEvent::Discover(dst)));
 
-                        stack.push((src, src_nid, src_idx, depth, outgoing));
-                        stack.push((
-                            dst,
-                            dst_nid,
-                            dst_idx,
-                            depth + 1,
-                            self.storage.outgoing(dst_nid),
-                        ));
+                        stack.push((src, src_idx, depth, outgoing));
+                        stack.push((dst, dst_idx, depth + 1, self.storage.outgoing(dst_nid)));
                     } else {
-                        stack.push((src, src_nid, src_idx, depth, outgoing));
+                        stack.push((src, src_idx, depth, outgoing));
                     }
 
                     control!(f(DfsEvent::Edge {
