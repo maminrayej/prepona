@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 pub trait Filter {
     type Item;
 
@@ -50,4 +52,15 @@ where
 
 pub fn not<F>(f: F) -> Not<F> {
     Not { f }
+}
+
+impl<T> Filter for HashSet<T>
+where
+    T: std::hash::Hash + Eq,
+{
+    type Item = T;
+
+    fn filter(&self, item: &Self::Item) -> bool {
+        self.contains(item)
+    }
 }

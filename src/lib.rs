@@ -7,5 +7,5 @@ mod macros;
 
 pub mod algo;
 pub mod error;
+pub mod filter;
 pub mod provide;
-pub mod view;

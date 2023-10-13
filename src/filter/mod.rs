@@ -1,8 +1,8 @@
 mod filter;
 pub use filter::*;
 
-mod subgraph;
-pub use subgraph::*;
+mod view;
+pub use view::*;
 
 mod reverse;
 pub use reverse::*;

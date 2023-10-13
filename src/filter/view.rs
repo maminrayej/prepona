@@ -1,16 +1,16 @@
 use std::marker::PhantomData;
 
+use crate::filter::Filter;
 use crate::provide::{EdgeId, EdgeRef, Id, NodeId, NodeRef, Storage};
-use crate::view::Filter;
 
-pub struct Subgraph<'a, S, NF, EF> {
+pub struct View<'a, S, NF, EF> {
     storage: &'a S,
     ncount: usize,
     nfilter: NF,
     efilter: EF,
 }
 
-impl<'a, S, NF, EF> Subgraph<'a, S, NF, EF> {
+impl<'a, S, NF, EF> View<'a, S, NF, EF> {
     pub fn new(storage: &'a S, nfilter: NF, efilter: EF) -> Self
     where
         S: NodeRef,
@@ -27,7 +27,7 @@ impl<'a, S, NF, EF> Subgraph<'a, S, NF, EF> {
     }
 }
 
-impl<'a, S, NF, EF> Storage for Subgraph<'a, S, NF, EF>
+impl<'a, S, NF, EF> Storage for View<'a, S, NF, EF>
 where
     S: Storage,
 {
@@ -67,7 +67,7 @@ where
     }
 }
 
-impl<'a, S, NF, EF> NodeRef for Subgraph<'a, S, NF, EF>
+impl<'a, S, NF, EF> NodeRef for View<'a, S, NF, EF>
 where
     S: NodeRef,
     NF: Filter<Item = NodeId>,
@@ -176,7 +176,7 @@ where
     }
 }
 
-impl<'a, S, NF, EF> EdgeRef for Subgraph<'a, S, NF, EF>
+impl<'a, S, NF, EF> EdgeRef for View<'a, S, NF, EF>
 where
     S: EdgeRef,
     NF: Filter<Item = NodeId>,

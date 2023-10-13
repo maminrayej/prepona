@@ -1,12 +1,12 @@
 use std::marker::PhantomData;
 
+use crate::filter::{Filter, View};
 use crate::provide::{Directed, EdgeId, EdgeRef, NodeId, NodeRef, Storage};
-use crate::view::{Filter, Subgraph};
 
 use super::{FilteredAllEdges, FilteredEdges, FilteredNodes};
 
 pub struct Reverse<'a, S, NF, EF> {
-    view: Subgraph<'a, S, NF, EF>,
+    view: View<'a, S, NF, EF>,
 }
 
 impl<'a, S, NF, EF> Storage for Reverse<'a, S, NF, EF>
