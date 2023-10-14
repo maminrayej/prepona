@@ -1,10 +1,47 @@
 mod dijkstra;
-use std::collections::HashMap;
-
 pub use dijkstra::*;
+
+mod bellman_ford;
+pub use bellman_ford::*;
+
+mod floyd_warshall;
+pub use floyd_warshall::*;
+
+mod astar;
+pub use astar::*;
+
+use std::collections::HashMap;
+use std::hash::Hash;
 
 use crate::filter::{Filter, FilteredAllEdges, FilteredEdges, FilteredNodes, View};
 use crate::provide::{EdgeId, EdgeRef, NodeId, NodeRef, Storage};
+
+#[derive(Debug, Clone, Copy)]
+struct DataEntry<T, C> {
+    data: T,
+    comp: C,
+}
+impl<T, C: PartialEq> PartialEq for DataEntry<T, C> {
+    fn eq(&self, other: &Self) -> bool {
+        self.comp.eq(&other.comp)
+    }
+}
+impl<T, C: Eq> Eq for DataEntry<T, C> {}
+impl<T, C: PartialOrd> PartialOrd for DataEntry<T, C> {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        self.comp.partial_cmp(&other.comp)
+    }
+}
+impl<T, C: Ord> Ord for DataEntry<T, C> {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.comp.cmp(&other.comp)
+    }
+}
+impl<T, C: Hash> Hash for DataEntry<T, C> {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.comp.hash(state)
+    }
+}
 
 pub struct PathView<'a, S, C, NF, EF> {
     view: View<'a, S, NF, EF>,

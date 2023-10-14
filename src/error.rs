@@ -14,4 +14,6 @@ pub enum Error {
     EdgeExists(NodeId, NodeId, EdgeId),
     #[error("Input graph is not a DAG")]
     NotDAG,
+    #[error("Input graph contains a negative cycle")]
+    NegativeCycle,
 }

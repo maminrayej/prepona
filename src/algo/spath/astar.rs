@@ -4,30 +4,37 @@ use std::collections::{BinaryHeap, HashSet};
 use crate::algo::spath::{DataEntry, PathView};
 use crate::provide::{EdgeId, EdgeRef, Id, NodeId, Storage};
 
-pub struct Dijkstra<'a, S>
+pub struct AStar<'a, S>
 where
     S: Storage,
 {
     storage: &'a S,
     idmap: S::Map,
     start: &'a S::Node,
+    target: &'a S::Node,
 }
 
-impl<'a, S> Dijkstra<'a, S>
+impl<'a, S> AStar<'a, S>
 where
     S: EdgeRef,
 {
-    pub fn new(storage: &'a S, start: &'a S::Node) -> Self {
+    pub fn new(storage: &'a S, start: &'a S::Node, target: &'a S::Node) -> Self {
         Self {
             storage,
             idmap: storage.idmap(),
             start,
+            target,
         }
     }
 
-    pub fn exec<F>(self, cost_fn: F) -> PathView<'a, S, usize, HashSet<NodeId>, HashSet<EdgeId>>
+    pub fn exec<F, H>(
+        self,
+        cost_fn: F,
+        hue_of: H,
+    ) -> PathView<'a, S, usize, HashSet<NodeId>, HashSet<EdgeId>>
     where
         F: Fn(&'a S::Node, &'a S::Node, &'a S::Edge) -> usize,
+        H: Fn(&'a S::Node, &'a S::Node) -> usize,
     {
         let mut heap = BinaryHeap::new();
         let mut cost_of = vec![usize::MAX; self.storage.node_count()];
@@ -40,17 +47,17 @@ where
 
         heap.push(DataEntry {
             data: self.start,
-            comp: Reverse(0),
+            comp: Reverse(hue_of(self.start, self.target)),
         });
 
         while let Some(DataEntry {
             data: src,
-            comp: Reverse(cost),
+            comp: Reverse(_hue_cost),
         }) = heap.pop()
         {
-            let node_idx = self.idmap[src.id()];
+            let src_idx = self.idmap[src.id()];
 
-            if visited[node_idx] {
+            if visited[src_idx] {
                 continue;
             }
 
@@ -61,9 +68,9 @@ where
                     continue;
                 }
 
-                let new_cost = cost_of[node_idx] + cost_fn(src, dst, edge);
+                let new_cost = cost_of[src_idx] + cost_fn(src, dst, edge);
 
-                if new_cost < cost {
+                if new_cost < cost_of[dst_idx] {
                     used_edges.insert(DataEntry {
                         data: edge.id(),
                         comp: dst_idx,
@@ -71,13 +78,13 @@ where
                     cost_of[dst_idx] = new_cost;
                     heap.push(DataEntry {
                         data: dst,
-                        comp: Reverse(new_cost),
+                        comp: Reverse(new_cost + hue_of(dst, self.target)),
                     });
                 }
             }
 
             node_set.insert(src.id());
-            visited[node_idx] = true;
+            visited[src_idx] = true;
         }
 
         let edge_set: HashSet<EdgeId> = used_edges
