@@ -1,8 +1,8 @@
 use std::collections::HashSet;
 
 use crate::algo::visit::{Continue, Dfs, DfsEvent, VisitFlow};
-use crate::filter::View;
 use crate::provide::{EdgeId, EdgeRef, Id, NodeId, Storage, Undirected};
+use crate::view::View;
 
 pub struct ConnectedComponents<'a, S>
 where

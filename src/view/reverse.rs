@@ -1,7 +1,7 @@
 use std::marker::PhantomData;
 
-use crate::filter::{Filter, View};
 use crate::provide::{Directed, EdgeId, EdgeRef, NodeId, NodeRef, Storage};
+use crate::view::{Filter, View};
 
 use super::{FilteredAllEdges, FilteredEdges, FilteredNodes};
 

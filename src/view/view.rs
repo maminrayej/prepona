@@ -1,7 +1,7 @@
 use std::marker::PhantomData;
 
-use crate::filter::Filter;
 use crate::provide::{EdgeId, EdgeRef, Id, NodeId, NodeRef, Storage};
+use crate::view::Filter;
 
 pub struct View<'a, S, NF, EF> {
     storage: &'a S,

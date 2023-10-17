@@ -13,8 +13,8 @@ pub use astar::*;
 use std::collections::HashMap;
 use std::hash::Hash;
 
-use crate::filter::{Filter, FilteredAllEdges, FilteredEdges, FilteredNodes, View};
 use crate::provide::{EdgeId, EdgeRef, NodeId, NodeRef, Storage};
+use crate::view::{Filter, FilteredAllEdges, FilteredEdges, FilteredNodes, View};
 
 #[derive(Debug, Clone, Copy)]
 struct DataEntry<T, C> {

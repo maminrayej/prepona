@@ -152,6 +152,14 @@ where
                     }
 
                     let ety = self.edge_type(src_idx, dst_idx);
+
+                    control!(f(DfsEvent::Edge {
+                        src,
+                        dst,
+                        edge,
+                        ety,
+                    }));
+
                     if let EdgeType::Tree = ety {
                         self.tick();
                         self.parent[dst_idx] = src_idx;
@@ -164,13 +172,6 @@ where
                     } else {
                         stack.push((src, src_idx, depth, outgoing));
                     }
-
-                    control!(f(DfsEvent::Edge {
-                        src,
-                        dst,
-                        edge,
-                        ety,
-                    }));
                 } else {
                     self.tick();
                     self.finished[src_idx] = self.time;
