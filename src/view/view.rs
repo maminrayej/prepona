@@ -14,7 +14,7 @@ impl<'a, S, NF, EF> View<'a, S, NF, EF> {
     pub fn new(storage: &'a S, nfilter: NF, efilter: EF) -> Self
     where
         S: NodeRef,
-        NF: Filter<Item = NodeId>,
+        NF: Filter<NodeId>,
     {
         let ncount = storage.nodes().filter(|n| nfilter.filter(&n.id())).count();
 
@@ -51,7 +51,7 @@ pub struct FilteredNodes<'a, S, NF, I> {
 impl<'a, S, NF, I> Iterator for FilteredNodes<'a, S, NF, I>
 where
     S: NodeRef + 'a,
-    NF: Filter<Item = NodeId>,
+    NF: Filter<NodeId>,
     I: Iterator<Item = <S::Nodes<'a> as Iterator>::Item>,
 {
     type Item = I::Item;
@@ -70,7 +70,7 @@ where
 impl<'a, S, NF, EF> NodeRef for View<'a, S, NF, EF>
 where
     S: NodeRef,
-    NF: Filter<Item = NodeId>,
+    NF: Filter<NodeId>,
 {
     type Nodes<'b> = FilteredNodes<'b, S, NF, S::Nodes<'b>> where Self: 'b;
     type Succs<'b> = FilteredNodes<'b, S, NF, S::Succs<'b>> where Self: 'b;
@@ -128,8 +128,8 @@ pub struct FilteredAllEdges<'a, S, NF, EF, I> {
 impl<'a, S, NF, EF, I> Iterator for FilteredAllEdges<'a, S, NF, EF, I>
 where
     S: EdgeRef + 'a,
-    NF: Filter<Item = NodeId>,
-    EF: Filter<Item = EdgeId>,
+    NF: Filter<NodeId>,
+    EF: Filter<EdgeId>,
     I: Iterator<Item = <S::AllEdges<'a> as Iterator>::Item>,
 {
     type Item = I::Item;
@@ -159,8 +159,8 @@ pub struct FilteredEdges<'a, S, NF, EF, I> {
 impl<'a, S, NF, EF, I> Iterator for FilteredEdges<'a, S, NF, EF, I>
 where
     S: EdgeRef + 'a,
-    NF: Filter<Item = NodeId>,
-    EF: Filter<Item = EdgeId>,
+    NF: Filter<NodeId>,
+    EF: Filter<EdgeId>,
     I: Iterator<Item = <S::Incoming<'a> as Iterator>::Item>,
 {
     type Item = I::Item;
@@ -179,8 +179,8 @@ where
 impl<'a, S, NF, EF> EdgeRef for View<'a, S, NF, EF>
 where
     S: EdgeRef,
-    NF: Filter<Item = NodeId>,
-    EF: Filter<Item = EdgeId>,
+    NF: Filter<NodeId>,
+    EF: Filter<EdgeId>,
 {
     type AllEdges<'b> = FilteredAllEdges<'b, S, NF, EF, S::AllEdges<'b>> where Self: 'b;
     type Incoming<'b> = FilteredEdges<'b, S, NF, EF, S::Incoming<'b>> where Self: 'b;

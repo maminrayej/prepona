@@ -1,9 +1,7 @@
 use std::collections::HashSet;
 
-pub trait Filter {
-    type Item;
-
-    fn filter(&self, item: &Self::Item) -> bool;
+pub trait Filter<T> {
+    fn filter(&self, item: &T) -> bool;
 }
 
 macro_rules! op {
@@ -13,14 +11,12 @@ macro_rules! op {
             f2: F2,
         }
 
-        impl<T, F1, F2> Filter for $name<F1, F2>
+        impl<T, F1, F2> Filter<T> for $name<F1, F2>
         where
-            F1: Filter<Item = T>,
-            F2: Filter<Item = T>,
+            F1: Filter<T>,
+            F2: Filter<T>,
         {
-            type Item = T;
-
-            fn filter(&self, item: &Self::Item) -> bool {
+            fn filter(&self, item: &T) -> bool {
                 self.f1.filter(item) $op self.f2.filter(item)
             }
         }
@@ -39,13 +35,11 @@ pub struct Not<F> {
     f: F,
 }
 
-impl<F> Filter for Not<F>
+impl<T, F> Filter<T> for Not<F>
 where
-    F: Filter,
+    F: Filter<T>,
 {
-    type Item = F::Item;
-
-    fn filter(&self, item: &Self::Item) -> bool {
+    fn filter(&self, item: &T) -> bool {
         !self.f.filter(item)
     }
 }
@@ -54,13 +48,28 @@ pub fn not<F>(f: F) -> Not<F> {
     Not { f }
 }
 
-impl<T> Filter for HashSet<T>
+impl<T> Filter<T> for HashSet<T>
 where
     T: std::hash::Hash + Eq,
 {
-    type Item = T;
-
-    fn filter(&self, item: &Self::Item) -> bool {
+    fn filter(&self, item: &T) -> bool {
         self.contains(item)
+    }
+}
+
+impl<T, K> Filter<K> for T
+where
+    T: Fn(&K) -> bool,
+{
+    fn filter(&self, item: &K) -> bool {
+        (self)(item)
+    }
+}
+
+#[derive(Debug)]
+pub struct AcceptAll;
+impl<T> Filter<T> for AcceptAll {
+    fn filter(&self, _: &T) -> bool {
+        true
     }
 }

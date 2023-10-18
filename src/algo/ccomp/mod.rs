@@ -1,5 +1,8 @@
 mod ccs;
 pub use ccs::*;
 
-mod scc;
-pub use scc::*;
+mod tarjan;
+pub use tarjan::*;
+
+mod kosaraju;
+pub use kosaraju::*;

@@ -9,6 +9,19 @@ pub struct Reverse<'a, S, NF, EF> {
     view: View<'a, S, NF, EF>,
 }
 
+impl<'a, S, NF, EF> Reverse<'a, S, NF, EF>
+where
+    S: NodeRef,
+    NF: Filter<NodeId>,
+    EF: Filter<EdgeId>,
+{
+    pub fn new(storage: &'a S, nfilter: NF, efilter: EF) -> Self {
+        Self {
+            view: View::new(storage, nfilter, efilter),
+        }
+    }
+}
+
 impl<'a, S, NF, EF> Storage for Reverse<'a, S, NF, EF>
 where
     S: Storage<Dir = Directed>,
@@ -26,7 +39,7 @@ where
 impl<'a, S, NF, EF> NodeRef for Reverse<'a, S, NF, EF>
 where
     S: NodeRef<Dir = Directed>,
-    NF: Filter<Item = NodeId>,
+    NF: Filter<NodeId>,
 {
     type Nodes<'b> = FilteredNodes<'b, S, NF, S::Nodes<'b>> where Self: 'b;
     type Succs<'b> = FilteredNodes<'b, S, NF, S::Preds<'b>> where Self: 'b;
@@ -77,8 +90,8 @@ where
 impl<'a, S, NF, EF> EdgeRef for Reverse<'a, S, NF, EF>
 where
     S: EdgeRef<Dir = Directed>,
-    NF: Filter<Item = NodeId>,
-    EF: Filter<Item = EdgeId>,
+    NF: Filter<NodeId>,
+    EF: Filter<EdgeId>,
 {
     type AllEdges<'b> = ReversedAllEdges<S, FilteredAllEdges<'b, S, NF, EF, S::AllEdges<'b>>> where Self: 'b;
     type Incoming<'b> = FilteredEdges<'b, S, NF, EF, S::Outgoing<'b>> where Self: 'b;

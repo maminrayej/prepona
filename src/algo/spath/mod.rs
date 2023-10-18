@@ -52,7 +52,7 @@ impl<'a, S, C, NF, EF> PathView<'a, S, C, NF, EF> {
     pub fn new(storage: &'a S, nfilter: NF, efilter: EF, dist: HashMap<NodeId, C>) -> Self
     where
         S: NodeRef,
-        NF: Filter<Item = NodeId>,
+        NF: Filter<NodeId>,
     {
         Self {
             view: View::new(storage, nfilter, efilter),
@@ -82,7 +82,7 @@ where
 impl<'a, S, C, NF, EF> NodeRef for PathView<'a, S, C, NF, EF>
 where
     S: NodeRef,
-    NF: Filter<Item = NodeId>,
+    NF: Filter<NodeId>,
 {
     type Nodes<'b> = FilteredNodes<'b, S, NF, S::Nodes<'b>> where Self: 'b;
     type Succs<'b> = FilteredNodes<'b, S, NF, S::Succs<'b>> where Self: 'b;
@@ -116,8 +116,8 @@ where
 impl<'a, S, C, NF, EF> EdgeRef for PathView<'a, S, C, NF, EF>
 where
     S: EdgeRef,
-    NF: Filter<Item = NodeId>,
-    EF: Filter<Item = EdgeId>,
+    NF: Filter<NodeId>,
+    EF: Filter<EdgeId>,
 {
     type AllEdges<'b> = FilteredAllEdges<'b, S, NF, EF, S::AllEdges<'b>> where Self: 'b;
     type Incoming<'b> = FilteredEdges<'b, S, NF, EF, S::Incoming<'b>> where Self: 'b;
